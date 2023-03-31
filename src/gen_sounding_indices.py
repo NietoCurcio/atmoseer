@@ -19,8 +19,6 @@ def compute_indices(df_probe_original):
                                            df_probe['dewpoint'][0] * units.degC)
     parcel_profile =  parcel_profile.magnitude * units.degC
 
-#
-
     indices = dict()
 
     CAPE = mpcalc.surface_based_cape_cin(pressure_values, temperature_values, dewpoint_values)

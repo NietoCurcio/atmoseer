@@ -1,7 +1,6 @@
 
 import pandas as pd
 import numpy as np
-from Utils.near_stations import prox
 
 def apply_windowing(X, 
                     initial_time_step, 
@@ -36,47 +35,3 @@ def apply_windowing(X,
     X_temp, y_temp = X_temp[idxs], y_temp[idxs]
 
   return X_temp, y_temp
-
-def generate_windowed_split(arquivo, id_target = 'CHUVA', window_size = 6):
-  
-  train_df = pd.read_csv(arquivo + '_train.csv')
-  del train_df['Unnamed: 0']
-  
-  val_df = pd.read_csv(arquivo + '_val.csv')
-  del val_df['Unnamed: 0']
-
-  test_df = pd.read_csv(arquivo + '_test.csv')
-  del test_df['Unnamed: 0']
-
-  train_arr = np.array(train_df)
-  val_arr = np.array(val_df)
-  test_arr = np.array(test_df)
-
-  idx_target = train_df.columns.get_loc(id_target)
-  print(idx_target)
-
-  TIME_WINDOW_SIZE = window_size
-  IDX_TARGET = id_target
-      
-  X_train, y_train = apply_windowing(train_arr, 
-                                    initial_time_step=0, 
-                                    max_time_step=len(train_arr)-TIME_WINDOW_SIZE-1, 
-                                    window_size = TIME_WINDOW_SIZE, 
-                                    idx_target = idx_target)
-  y_train = y_train.reshape(-1,1)
-
-  X_val, y_val = apply_windowing(val_arr, 
-                                initial_time_step=0, 
-                                max_time_step=len(val_arr)-TIME_WINDOW_SIZE-1, 
-                                window_size = TIME_WINDOW_SIZE, 
-                                idx_target = idx_target)
-  y_val = y_val.reshape(-1,1)
-
-  X_test, y_test = apply_windowing(test_arr, 
-                                  initial_time_step=0, 
-                                  max_time_step=len(test_arr)-TIME_WINDOW_SIZE-1, 
-                                  window_size = TIME_WINDOW_SIZE, 
-                                  idx_target = idx_target)
-  y_test = y_test.reshape(-1,1)
-
-  return X_train, y_train, X_val, y_val, X_test, y_test

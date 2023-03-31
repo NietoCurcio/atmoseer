@@ -11,32 +11,10 @@ import time
 from numpy import array, mean
 from typing import List
 from math import cos, asin, sqrt
-from utils.windowing import generate_windowed_split
 from utils.model import NetOrdinalClassification, label2ordinalencoding, NetRegression
 from utils.training import fit, create_train_n_val_loaders, DeviceDataLoader, to_device, gen_learning_curve, seed_everything
 
 cor_est = ['alto_da_boa_vista','guaratiba','iraja','jardim_botanico','riocentro','santa_cruz','sao_cristovao','vidigal']
-
-def apply_subsampling(X, y, percentage = 0.1):
-  print('*BEGIN*')
-  print(X.shape)
-  print(y.shape)
-  y_eq_zero_idxs = np.where(y==0)[0]
-  print('# original samples  eq zero:', y_eq_zero_idxs.shape)
-  y_gt_zero_idxs = np.where(y>0)[0]
-  print('# original samples gt zero:', y_gt_zero_idxs.shape)
-  mask = np.random.choice([True, False], size=y.shape[0], p=[percentage, 1.0-percentage])
-  y_train_subsample_idxs = np.where(mask==True)[0]
-  print('# subsample:', y_train_subsample_idxs.shape)
-  idxs = np.intersect1d(y_eq_zero_idxs, y_train_subsample_idxs)
-  print('# subsample that are eq zero:', idxs.shape)
-  idxs = np.union1d(idxs, y_gt_zero_idxs)
-  print('# subsample final:', idxs.shape)
-  X, y = X[idxs], y[idxs]
-  print(X.shape)
-  print(y.shape)
-  print('*END*')
-  return X, y
 
 def train(X_train, y_train, X_val, y_val, ordinal_regression):
   N_EPOCHS = 5000
