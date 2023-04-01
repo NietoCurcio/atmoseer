@@ -14,8 +14,6 @@ from math import cos, asin, sqrt
 from utils.model import NetOrdinalClassification, label2ordinalencoding, NetRegression
 from utils.training import fit, create_train_n_val_loaders, DeviceDataLoader, to_device, gen_learning_curve, seed_everything
 
-cor_est = ['alto_da_boa_vista','guaratiba','iraja','jardim_botanico','riocentro','santa_cruz','sao_cristovao','vidigal']
-
 def train(X_train, y_train, X_val, y_val, ordinal_regression):
   N_EPOCHS = 5000
   PATIENCE = 500
@@ -66,19 +64,6 @@ def train(X_train, y_train, X_val, y_val, ordinal_regression):
 
   return model
 
-def build_model(ordinal_regression = True, file = ''):
-  seed_everything()
-
-  # TODO: get np arrays from disk
-
-  model = train(X_train, y_train, X_val, y_val, ordinal_regression)
-  
-  # load the best model
-  model.load_state_dict(torch.load('../model/Modelo_'+ aux_nome +'.pt'))
-
-  model.evaluate(X_test, y_test)
-
-
 def main(argv):
     arg_file = ""
     arg_model = True
@@ -95,9 +80,9 @@ def main(argv):
             print(arg_help)  # print the help message
             sys.exit(2)
         elif opt in ("-f", "--file"):
-            arg_file = arg
+            file = arg
         elif opt in ("-r", "--reg"):
-            arg_model = False
+            ordinal_regression = False
 
     global aux_nome
     global num_sta
@@ -106,7 +91,19 @@ def main(argv):
     aux_nome = arg_file
     num_sta = str(arg_model)
     start_time = time.time()
-    build_model(ordinal_regression = arg_model, file = arg_file)
+
+    # build_model(ordinal_regression = arg_model, file = arg_file)
+    seed_everything()
+
+    # TODO: get np arrays from disk
+
+    model = train(X_train, y_train, X_val, y_val, ordinal_regression)
+    
+    # load the best model
+    model.load_state_dict(torch.load('../model/Modelo_'+ aux_nome +'.pt'))
+
+    model.evaluate(X_test, y_test)
+
     print("--- %s seconds ---" % (time.time() - start_time))
 
 

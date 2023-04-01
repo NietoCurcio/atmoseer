@@ -12,6 +12,8 @@ COR_STATION_NAMES_RJ = ('alto_da_boa_vista',
                         'sao_cristovao',
                         'vidigal')
 
+TIME_WINDOW_SIZE = 6
+
 # Observed variables for INMET weather stations:
 # ,DC_NOME,
 # PRE_INS,

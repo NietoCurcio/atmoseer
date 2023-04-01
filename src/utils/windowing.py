@@ -6,12 +6,12 @@ def apply_windowing(X,
                     initial_time_step, 
                     max_time_step, 
                     window_size, 
-                    idx_target,
+                    target_idx,
                     only_y_not_nan = True,
                     only_y_gt_zero = True,
                     only_X_not_nan = True):
 
-  assert idx_target >= 0 and idx_target < X.shape[1]
+  assert target_idx >= 0 and target_idx < X.shape[1]
   assert initial_time_step >= 0
   assert max_time_step >= initial_time_step
 
@@ -24,7 +24,7 @@ def apply_windowing(X,
         np.expand_dims(np.arange(max_time_step + 1), 0).T
   )
 
-  X_temp, y_temp = X[sub_windows], X[window_size:(max_time_step+window_size+1):1, idx_target]
+  X_temp, y_temp = X[sub_windows], X[window_size:(max_time_step+window_size+1):1, target_idx]
 
   if only_y_not_nan and only_y_gt_zero and only_X_not_nan:
     y_train_not_nan_idx = np.where(~np.isnan(y_temp))[0]

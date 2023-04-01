@@ -5,72 +5,77 @@ import getopt
 import pickle
 from utils.near_stations import prox
 from globals import *
-from util import transform_hour
+from util import transform_hour, find_contiguous_observation_blocks
 from utils.windowing import apply_windowing
 
 def apply_subsampling(X, y, percentage = 0.1):
-  print('*BEGIN*')
-  print(X.shape)
-  print(y.shape)
-  y_eq_zero_idxs = np.where(y==0)[0]
-  print('# original samples  eq zero:', y_eq_zero_idxs.shape)
-  y_gt_zero_idxs = np.where(y>0)[0]
-  print('# original samples gt zero:', y_gt_zero_idxs.shape)
-  mask = np.random.choice([True, False], size=y.shape[0], p=[percentage, 1.0-percentage])
-  y_train_subsample_idxs = np.where(mask==True)[0]
-  print('# subsample:', y_train_subsample_idxs.shape)
-  idxs = np.intersect1d(y_eq_zero_idxs, y_train_subsample_idxs)
-  print('# subsample that are eq zero:', idxs.shape)
-  idxs = np.union1d(idxs, y_gt_zero_idxs)
-  print('# subsample final:', idxs.shape)
-  X, y = X[idxs], y[idxs]
-  print(X.shape)
-  print(y.shape)
-  print('*END*')
-  return X, y
+    print('*BEGIN*')
+    print(X.shape)
+    print(y.shape)
+    y_eq_zero_idxs = np.where(y==0)[0]
+    print('# original samples  eq zero:', y_eq_zero_idxs.shape)
+    y_gt_zero_idxs = np.where(y>0)[0]
+    print('# original samples gt zero:', y_gt_zero_idxs.shape)
+    mask = np.random.choice([True, False], size=y.shape[0], p=[percentage, 1.0-percentage])
+    y_train_subsample_idxs = np.where(mask==True)[0]
+    print('# subsample:', y_train_subsample_idxs.shape)
+    idxs = np.intersect1d(y_eq_zero_idxs, y_train_subsample_idxs)
+    print('# subsample that are eq zero:', idxs.shape)
+    idxs = np.union1d(idxs, y_gt_zero_idxs)
+    print('# subsample final:', idxs.shape)
+    X, y = X[idxs], y[idxs]
+    print(X.shape)
+    print(y.shape)
+    print('*END*')
+    return X, y
 
-def generate_windowed_split(train_df, val_df, test_df, target_name, window_size = 6):
-  
-    # train_df = pd.read_csv(arquivo + '_train.csv')
-    # del train_df['Unnamed: 0']
-  
-    # val_df = pd.read_csv(arquivo + '_val.csv')
-    # del val_df['Unnamed: 0']
+def generate_windowed(df: pd.DataFrame, target_idx: int):
+    """
+    This function applies the sliding window preprocessing technique to generate data an response matrices 
+    from an input time series represented as a pandas DataFrame. This DataFrame is supposed to have
+    a datetime index that corresponds to the timestamps in the time series.
+    
+    @see: https://stackoverflow.com/questions/8269916/what-is-sliding-window-algorithm-examples
 
-    # test_df = pd.read_csv(arquivo + '_test.csv')
-    # del test_df['Unnamed: 0']
+    Note that this function takes the eventual existence of gaps in the input time series 
+    into account. In particular, the windowing operation is performed in each separate 
+    contiguous block of observations.
+    """
+    contiguous_observation_blocks = list(find_contiguous_observation_blocks(df))
 
-    train_arr = np.array(train_df)
-    val_arr = np.array(val_df)
-    test_arr = np.array(test_df)
+    is_first_block = True
 
-    idx_target = train_df.columns.get_loc(target_name)
-    print(f"Position (index) of target variable {target_name}: {idx_target}")
+    for block in contiguous_observation_blocks:
+        start = block[0]
+        end = block[1]
 
-    TIME_WINDOW_SIZE = window_size
-    IDX_TARGET = target_name
-      
-    X_train, y_train = apply_windowing(train_arr, 
-                                    initial_time_step=0, 
-                                    max_time_step=len(train_arr)-TIME_WINDOW_SIZE-1, 
-                                    window_size = TIME_WINDOW_SIZE, 
-                                    idx_target = idx_target)
-    y_train = y_train.reshape(-1,1)
+        print(df[start:end].shape)
+        if df[start:end].shape[0] < TIME_WINDOW_SIZE + 1:
+            continue
 
-    X_val, y_val = apply_windowing(val_arr, 
-                                initial_time_step=0, 
-                                max_time_step=len(val_arr)-TIME_WINDOW_SIZE-1, 
-                                window_size = TIME_WINDOW_SIZE, 
-                                idx_target = idx_target)
-    y_val = y_val.reshape(-1,1)
+        arr = np.array(df[start:end])
+        X_block, y_block = apply_windowing(arr,
+                        initial_time_step=0, 
+                        max_time_step=len(arr)-TIME_WINDOW_SIZE-1, 
+                        window_size = TIME_WINDOW_SIZE, 
+                        target_idx = target_idx)
+        y_block = y_block.reshape(-1,1)
+        if is_first_block:
+            X = X_block
+            y = y_block
+            is_first_block = False
+        else:
+            X = np.concatenate((X, X_block), axis=0)
+            y = np.concatenate((y, y_block), axis=0)
 
-    X_test, y_test = apply_windowing(test_arr, 
-                                  initial_time_step=0, 
-                                  max_time_step=len(test_arr)-TIME_WINDOW_SIZE-1, 
-                                  window_size = TIME_WINDOW_SIZE, 
-                                  idx_target = idx_target)
-    y_test = y_test.reshape(-1,1)
+    return X, y
 
+def generate_windowed_split(train_df, val_df, test_df, target_name):
+    target_idx = train_df.columns.get_loc(target_name)
+    print(f"Position (index) of target variable {target_name}: {target_idx}")
+    X_train, y_train = generate_windowed(train_df, target_idx)
+    X_val, y_val = generate_windowed(val_df, target_idx)
+    X_test, y_test = generate_windowed(test_df, target_idx)
     return X_train, y_train, X_val, y_val, X_test, y_test
 
 def project_to_relevant_variables(df_a652):
@@ -106,11 +111,15 @@ def pre_proc(station_id, use_sounding_as_data_source, use_numerical_model_as_dat
 
     if use_sounding_as_data_source:
         df_sounding = pd.read_parquet('../data/sounding_stations/SBGL_indices_1997-01-01_2022-12-31_preprocessed.parquet.gzip')
-        merged_df = pd.merge(df_ws, df_sounding, on = 'Datetime', how = 'left')
+        merged_df = pd.merge(merged_df, df_sounding, on = 'Datetime', how = 'left')
         # TODO: implement interpolation
 
     if num_neighbors != 0:
         pass
+
+    ####
+    # TODO: add a data filtering step (e.g., to disregard all observations made between May and September.).
+    ####
 
     #
     # Data normalization
@@ -118,7 +127,7 @@ def pre_proc(station_id, use_sounding_as_data_source, use_numerical_model_as_dat
     target_col = merged_df[target_name].copy()
     merged_df = ((merged_df - merged_df.min()) / (merged_df.max() - merged_df.min()))
     merged_df[target_name] = target_col
-        
+
     # 
     # Data splitting (train/val/test)
     #
@@ -132,9 +141,8 @@ def pre_proc(station_id, use_sounding_as_data_source, use_numerical_model_as_dat
     val_df.to_parquet('../data/datasets/' + arq_pre_proc + '_val.parquet.gzip', compression = 'gzip')  
     test_df.to_parquet('../data/datasets/' + arq_pre_proc + '_test.parquet.gzip', compression = 'gzip')
 
-    #
     # Data windowing
-    X_train, y_train, X_val, y_val, X_test, y_test = generate_windowed_split(train_df, val_df, test_df, target_name = target_name, window_size = 6)
+    X_train, y_train, X_val, y_val, X_test, y_test = generate_windowed_split(train_df, val_df, test_df, target_name = target_name)
 
     #
     # Subsampling

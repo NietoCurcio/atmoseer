@@ -1,9 +1,10 @@
 import pytz
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from metpy.calc import wind_components
 from metpy.units import units
 import numpy as np
+import pandas as pd
 
 def is_posintstring(s):
     try:
@@ -95,3 +96,44 @@ def get_filename_and_extension(filename):
     basename = os.path.basename(filename)
     filename_parts = os.path.splitext(basename)
     return filename_parts
+
+def find_contiguous_observation_blocks(df: pd.DataFrame):
+    """
+    Given a list of timestamps, finds contiguous blocks of timestamps that are exactly one hour apart of each other.
+
+    Args:
+    - timestamp_range: A list-like object of pandas Timestamps.
+
+    Yields:
+    - A tuple representing a contiguous block of timestamps: (start, end).
+
+    Usage example:
+    >>> period_under_study = df['2007-05-18':'2007-05-31']
+    >>> contiguous_observations = list(find_contiguous_observation_blocks(period_under_study))
+    >>> print(len(contiguous_observations))
+    >>> print(contiguous_observations)
+    5
+    [(Timestamp('2007-05-18 18:00:00'), Timestamp('2007-05-18 19:00:00')), 
+     (Timestamp('2007-05-19 11:00:00'), Timestamp('2007-05-19 13:00:00')), 
+     (Timestamp('2007-05-20 12:00:00'), Timestamp('2007-05-21 00:00:00')), 
+     (Timestamp('2007-05-21 02:00:00'), Timestamp('2007-05-21 08:00:00')), 
+     (Timestamp('2007-05-21 10:00:00'), Timestamp('2007-05-31 23:00:00'))]
+
+    In this example, `timestamp_range` is a list of pandas Timestamps extracted from a DataFrame's 'Datetime' index.
+    The function finds contiguous blocks of timestamps that are exactly one hour apart, and yields tuples representing these blocks.
+    The `yield` statement produces a generator object, which can be converted to a list using the `list()` function.
+
+    Returns:
+    - None
+    """
+    timestamp_range = df.index
+    assert (len(timestamp_range) > 1)
+    first = last = timestamp_range[0]
+    for n in timestamp_range[1:]:
+        previous = n - timedelta(hours=1, minutes=0)
+        if previous == last: # Part of the current block, bump the end
+            last = n
+        else: # Not part of the current block; yield current block and start a new one
+            yield first, last
+            first = last = n
+    yield first, last # Yield the last block
