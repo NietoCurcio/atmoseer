@@ -10,8 +10,8 @@ import random
 import torch.nn.functional as F
 from typing import List 
 from sklearn.metrics import confusion_matrix
-from Utils.training import DeviceDataLoader, get_default_device
-from Utils.evaluation import export_confusion_matrix_to_latex, mean_bias_error,export_results_to_latex, get_events_per_precipitation_level 
+from utils.training import DeviceDataLoader, get_default_device
+from utils.evaluation import export_confusion_matrix_to_latex, mean_bias_error,export_results_to_latex, get_events_per_precipitation_level 
 
 NO_RAIN = 0
 WEAK_RAIN = 1
@@ -318,8 +318,26 @@ class NetOrdinalClassification(nn.Module):
     def epoch_end(self, epoch, result):
         print("Epoch [{}], val_loss: {:.4f}, val_acc: {:.4f}".format(epoch, result['val_loss'], result['val_acc']))
 
+    def predict(self, X):
+      print('Evaluating ordinal classification model...')
+      self.eval()
+
+      test_x_tensor = torch.from_numpy(X.astype('float64'))
+      test_x_tensor = torch.permute(test_x_tensor, (0, 2, 1))
+
+      outputs = []
+      with torch.no_grad():
+          output = self(test_x_tensor.float())
+          yb_pred_encoded = output.detach().cpu().numpy()
+          yb_pred_decoded = ordinalencoding2labels(yb_pred_encoded)
+          outputs.append(yb_pred_decoded.reshape(-1,1))
+
+      y_pred = np.vstack(outputs)
+
+      return y_pred
+       
     def evaluate(self, X_test, y_test):
-      print('Evaluating ordinal regression model...')
+      print('Evaluating ordinal classification model...')
       self.eval()
 
       test_x_tensor = torch.from_numpy(X_test.astype('float64'))

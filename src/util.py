@@ -69,6 +69,7 @@ def transform_wind(wind_speed, wind_direction, comp_idx):
     This function calculates either the U or V wind vector component from the speed and direction.
     comp_idx = 0 --> computes the U component
     comp_idx = 1 --> computes the V component
+    (see https://unidata.github.io/MetPy/latest/api/generated/metpy.calc.wind_components.html)
     """
     assert(comp_idx == 0 or comp_idx == 1)
     return wind_components(wind_speed * units('m/s'), wind_direction * units.deg)[comp_idx].magnitude
@@ -76,6 +77,7 @@ def transform_wind(wind_speed, wind_direction, comp_idx):
 def transform_hour(df):
     """
     Transforms a DataFrame's datetime index into two new columns representing the hour in sin and cosine form.
+    (see https://datascience.stackexchange.com/questions/5990/what-is-a-good-way-to-transform-cyclic-ordinal-attributes)
 
     Args:
     - df: A pandas DataFrame with a datetime index.
