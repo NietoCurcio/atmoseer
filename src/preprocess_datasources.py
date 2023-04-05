@@ -4,7 +4,9 @@ from pathlib import Path
 import sys
 import getopt
 from globals import *
-from util import transform_wind, format_time, get_filename_and_extension, utc_to_local
+from util import *
+import util as util
+from sklearn.impute import KNNImputer
 
 def preprocess_sounding_data(sounding_data_source):
     df = pd.read_csv(sounding_data_source)
@@ -22,9 +24,8 @@ def preprocess_sounding_data(sounding_data_source):
     df = df.drop(['time', 'Datetime'], axis = 1)
 
     #
-    # Save preprocessed data source file
+    # Save preprocessed data.
     filename_and_extension = get_filename_and_extension(sounding_data_source)
-    preprocessed_filename = filename_and_extension[0] + '_preprocessed' + filename_and_extension[1]
     df.to_parquet(filename_and_extension[0] + '_preprocessed.parquet.gzip', compression='gzip')
 
 def preprocess_numerical_model_data(numerical_model_data_source):
@@ -40,15 +41,22 @@ def preprocess_numerical_model_data(numerical_model_data_source):
     df = df.drop(['time', 'Datetime', 'Unnamed: 0'], axis = 1)
     print(f"Range of timestamps after preprocessing {numerical_model_data_source}: [{min(df.index)}, {max(df.index)}]")
 
+    df = min_max_normalize(df)
+
     #
-    # Save preprocessed data source file
+    # Save preprocessed data.
     filename_and_extension = get_filename_and_extension(numerical_model_data_source)
-    preprocessed_filename = filename_and_extension[0] + '_preprocessed' + filename_and_extension[1]
-    df.to_parquet(filename_and_extension[0] + '_preprocessed.parquet.gzip', compression='gzip')
+    filename = filename_and_extension[0] + '_preprocessed.parquet.gzip'
+    print(f"Saving preprocessed data to {filename}")
+    df.to_parquet(filename, compression='gzip')
 
 def preprocess_ws_datasource(station_id):
     ws_datasource = '../data/weather_stations/A652_1997_2022.csv'
     df = pd.read_csv(ws_datasource)
+
+    #
+    # Add index to dataframe using the timestamps.
+    df = add_index(station_id, df)
 
     #
     # Drop observations in which the target variable is not defined.
@@ -56,32 +64,46 @@ def preprocess_ws_datasource(station_id):
     df = df[df['CHUVA'].notna()]
     n_obser_after_drop = len(df)
     print(f"Number of observations before/after dropping null target entries: {n_obser_before_drop}/{n_obser_after_drop}.")
+    print(f"Range of timestamps after dropping null target entries: {ws_datasource}: [{min(df.index)}, {max(df.index)}]")
 
     #
-    # Create U and V components of wind observations.
-    df['wind_u'] = df.apply(lambda x: transform_wind(x.VEN_VEL, x.VEN_DIR, 0),axis=1)
-    df['wind_v'] = df.apply(lambda x: transform_wind(x.VEN_VEL, x.VEN_DIR, 1),axis=1)
-
-    ###############################
-    # TODO: create temporal features
-    ###############################
+    # Create wind-related features (U and V components of wind observations).
+    df = add_wind_related_features(station_id, df)
 
     #
-    # Add index to dataframe using the timestamps.
-    df.HR_MEDICAO = df.HR_MEDICAO.apply(format_time) # e.g., 1800 --> 18:00
-    df['Datetime'] = pd.to_datetime(df.DT_MEDICAO + ' ' + df.HR_MEDICAO)
-    df = df.set_index(pd.DatetimeIndex(df['Datetime']))
-    print(f"Range of timestamps after preprocessing {ws_datasource}: [{min(df.index)}, {max(df.index)}]")
+    # Create hour-related features (sin and cos components)
+    df = add_hour_related_features(df)
+
+    predictor_names, target_name = get_relevant_variables(station_id)
+    print(f"Chosen predictors: {predictor_names}")
+    print(f"Chosen target: {target_name}")
+    df = df[predictor_names + [target_name]]
 
     #
-    # Remove irrelevant columns
-    df = df.drop(['HR_MEDICAO','DT_MEDICAO','Unnamed: 0', 'DC_NOME', 'CD_ESTACAO', 'UF', 'Datetime'], axis=1)
+    # Normalize the weather station data
+    # (see https://stats.stackexchange.com/questions/214728/should-data-be-normalized-before-or-after-imputation-of-missing-data)
+    print("Normalizing data...", end='')
+    df = min_max_normalize(df)
+    print("Done!")
+
+    # 
+    # Imput missing values on some features.
+    print(f"There are {df.isnull().sum().sum()} missing values in the weather station data. Going to fill them...", end = '')
+    imputer = KNNImputer(n_neighbors=2)
+    df[:] = imputer.fit_transform(df)
+    assert (not df.isnull().values.any().any())
+    print("Done dealing with missing values!")
+
+    # #
+    # # Remove irrelevant columns
+    # df = df.drop(['HR_MEDICAO','DT_MEDICAO','Unnamed: 0', 'DC_NOME', 'CD_ESTACAO', 'UF', 'Datetime'], axis=1)
 
     #
-    # Save preprocessed data source file
+    # Save preprocessed data.
     filename_and_extension = get_filename_and_extension(ws_datasource)
-    preprocessed_filename = filename_and_extension[0] + '_preprocessed' + filename_and_extension[1]
-    df.to_parquet(filename_and_extension[0] + '_preprocessed.parquet.gzip', compression='gzip')
+    filename = filename_and_extension[0] + '_preprocessed.parquet.gzip'
+    print(f"Saving preprocessed data to {filename}")
+    df.to_parquet(filename, compression='gzip')
 
 def main(argv):
     arg_file = ""
@@ -119,15 +141,19 @@ def main(argv):
 
     print('Going to preprocess the specified data sources...')
 
+    print('Preprocessing weather station data...')
     preprocess_ws_datasource(station_id)
     
     if sounding_data_source is not None:
+        print('Preprocessing sounding data...')
         preprocess_sounding_data(sounding_data_source)
 
     if numerical_model_data_source is not None:
+        print('Preprocessing NWP data...')
         preprocess_numerical_model_data(numerical_model_data_source)
 
     print('Done!')
 
+# python preprocess_datasources.py -s A652 -d N
 if __name__ == "__main__":
     main(sys.argv)

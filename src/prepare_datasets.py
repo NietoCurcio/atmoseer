@@ -5,30 +5,29 @@ import getopt
 import pickle
 from utils.near_stations import prox
 from globals import *
-from util import transform_hour, find_contiguous_observation_blocks
+from util import find_contiguous_observation_blocks
 from utils.windowing import apply_windowing
-from sklearn.preprocessing import MinMaxScaler
+import util as util
 
-def apply_subsampling(X, y, percentage=0.1):
-    print('*BEGIN*')
-    print(X.shape)
-    print(y.shape)
+def apply_subsampling(X, y, keep_percentage=0.1):
     y_eq_zero_idxs = np.where(y == 0)[0]
-    print('# original samples with target eq zero:', y_eq_zero_idxs.shape)
     y_gt_zero_idxs = np.where(y > 0)[0]
-    print('# original samples with target gt zero:', y_gt_zero_idxs.shape)
+    print(f' - Original sizes (target=0)/(target>0): ({y_eq_zero_idxs.shape[0]})/({y_gt_zero_idxs.shape[0]})')
+
     mask = np.random.choice([True, False], size=y.shape[0], p=[
-                            percentage, 1.0-percentage])
+                            keep_percentage, 1.0-keep_percentage])
     y_train_subsample_idxs = np.where(mask == True)[0]
-    print('# subsample shape:', y_train_subsample_idxs.shape)
+
+    print(f" - Subsample (total) size: {y_train_subsample_idxs.shape[0]}")
     idxs = np.intersect1d(y_eq_zero_idxs, y_train_subsample_idxs)
-    print('# subsample that are eq zero:', idxs.shape)
+    print(f" - Subsample (target=0) size: {idxs.shape[0]}")
+
     idxs = np.union1d(idxs, y_gt_zero_idxs)
-    print('# subsample final:', idxs.shape)
     X, y = X[idxs], y[idxs]
-    print(X.shape)
-    print(y.shape)
-    print('*END*')
+    y_eq_zero_idxs = np.where(y == 0)[0]
+    y_gt_zero_idxs = np.where(y > 0)[0]
+    print(f' - Resulting sizes (target=0)/(target>0): ({y_eq_zero_idxs.shape[0]})/({y_gt_zero_idxs.shape[0]})')
+
     return X, y
 
 
@@ -85,49 +84,51 @@ def generate_windowed_split(train_df, val_df, test_df, target_name):
     return X_train, y_train, X_val, y_val, X_test, y_test
 
 
-def project_to_relevant_variables(df_a652):
-    return ['TEM_MAX', 'PRE_MAX', 'UMD_MAX', 'wind_u', 'wind_v', 'hour_sin', 'hour_cos'], 'CHUVA'
+def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_model_as_data_source, num_neighbors=0):
 
-
-def normalize(df: pd.DataFrame):
-    df = (df - df.min()) / (df.max() - df.min())
-    return df
-
-
-def pre_proc(station_id, use_sounding_as_data_source, use_numerical_model_as_data_source, num_neighbors=0):
-
-    arq_pre_proc = station_id + '_E'
+    pipeline_id = station_id + '_E'
     if use_numerical_model_as_data_source:
-        arq_pre_proc = arq_pre_proc + '-N'
+        pipeline_id = pipeline_id + '-N'
     if use_sounding_as_data_source:
-        arq_pre_proc = arq_pre_proc + '-R'
+        pipeline_id = pipeline_id + '-R'
     if num_neighbors > 0:
-        arq_pre_proc = arq_pre_proc + '_EI+' + str(num_neighbors) + 'NN'
+        pipeline_id = pipeline_id + '_EI+' + str(num_neighbors) + 'NN'
     else:
-        arq_pre_proc = arq_pre_proc + '_EI'
+        pipeline_id = pipeline_id + '_EI'
 
-    df_a652 = pd.read_parquet(
+    df_ws = pd.read_parquet(
         '../data/weather_stations/A652_1997_2022_preprocessed.parquet.gzip')
-
-    df_a652 = transform_hour(df_a652)
-
-    predictor_names, target_name = project_to_relevant_variables(df_a652)
-    df_a652 = df_a652[predictor_names + [target_name]]
+    print(f"Weather station data loaded. Shape = {df_ws.shape}.")
 
     #
     # Merge datasources
     #
-    merged_df = df_a652
+    merged_df = df_ws
 
     if use_numerical_model_as_data_source:
-        df_era5 = pd.read_parquet(
+        df_nwp_era5 = pd.read_parquet(
             '../data/numerical_models/ERA5_A652_1997-01-01_2021-12-31_preprocessed.parquet.gzip')
-        merged_df = pd.merge(merged_df, df_era5, on='Datetime', how='left')
+        assert (not df_nwp_era5.isnull().values.any().any())
+        print(f"NWP data loaded. Shape = {df_nwp_era5.shape}.")
+        merged_df = pd.merge(df_ws, df_nwp_era5, how='left', left_index=True, right_index=True)
+        # merged_df = merged_df.join(df_nwp_era5)
+
+        print(f"NWP successfully joined; resulting shape = {merged_df.shape}.")
+        print(df_ws.index.difference(merged_df.index).shape)
+        print(merged_df.index.difference(df_ws.index).shape)
+
+        print(df_nwp_era5.index.intersection(df_ws.index).shape)
+        print(df_nwp_era5.index.difference(df_ws.index).shape)
+        print(df_ws.index.difference(df_nwp_era5.index).shape)
+        print(df_ws.index.difference(df_nwp_era5.index))
+
+        assert(merged_df.shape[0] == df_ws.shape[0])
 
     if use_sounding_as_data_source:
         df_sounding = pd.read_parquet(
             '../data/sounding_stations/SBGL_indices_1997-01-01_2022-12-31_preprocessed.parquet.gzip')
         merged_df = pd.merge(merged_df, df_sounding, on='Datetime', how='left')
+        # TODO: data normalization 
         # TODO: implement interpolation
         # TODO: deal with missing values (see https://youtu.be/DKmDJJzayZw)
 
@@ -141,38 +142,23 @@ def pre_proc(station_id, use_sounding_as_data_source, use_numerical_model_as_dat
     #
     # Data splitting (train/val/test)
     #
+    # TODO: parameterize splitting proportions.
     n = len(merged_df)
     train_df = merged_df[0:int(n*0.7)]
     val_df = merged_df[int(n*0.7):int(n*0.9)]
     test_df = merged_df[int(n*0.9):]
-    print(f'Saving train/val/test datasets ({arq_pre_proc}).')
+    print(f'Saving train/val/test datasets ({pipeline_id}).')
     print(
         f'Number of examples (train/val/test): {len(train_df)}/{len(val_df)}/{len(test_df)}.')
-    train_df.to_parquet('../data/datasets/' + arq_pre_proc +
+    train_df.to_parquet('../data/datasets/' + pipeline_id +
                         '_train.parquet.gzip', compression='gzip')
-    val_df.to_parquet('../data/datasets/' + arq_pre_proc +
+    val_df.to_parquet('../data/datasets/' + pipeline_id +
                       '_val.parquet.gzip', compression='gzip')
-    test_df.to_parquet('../data/datasets/' + arq_pre_proc +
+    test_df.to_parquet('../data/datasets/' + pipeline_id +
                        '_test.parquet.gzip', compression='gzip')
 
-    #
-    # Data normalization
-    #
-    # print('**********\n***Before normalization***')
-    # print(f"Min precipitation values (train/val/test): {min(train_df[target_name])},{min(val_df[target_name])},{min(test_df[target_name])}")
-    # print(f"Max precipitation values (train/val/test): {max(train_df[target_name])},{max(val_df[target_name])},{max(test_df[target_name])}")
-    # min_y_train, max_y_train = min(
-    #     train_df[target_name]), max(train_df[target_name])
-    # min_y_val, max_y_val = min(val_df[target_name]), max(val_df[target_name])
-    # min_y_test, max_y_test = min(test_df[target_name]), max(test_df[target_name])
-    # train_df = normalize(train_df)
-    # val_df = normalize(val_df)
-    # test_df = normalize(test_df)
-    # print('**********\n***After normalization***')
-    # print(f"Min precipitation values (train/val/test): {min(train_df[target_name])},{min(val_df[target_name])},{min(test_df[target_name])}")
-    # print(f"Max precipitation values (train/val/test): {max(train_df[target_name])},{max(val_df[target_name])},{max(test_df[target_name])}")
-
     # Data windowing
+    _, target_name = util.get_relevant_variables(station_id)
     print('**********Data windowing**********')
     print('***Before')
     print(f'Shapes (train/val/test): {train_df.shape}, {val_df.shape}, {test_df.shape}')
@@ -180,8 +166,6 @@ def pre_proc(station_id, use_sounding_as_data_source, use_numerical_model_as_dat
         train_df, val_df, test_df, target_name=target_name)
     print('***After')
     print(f'Shapes (train/val/test): {X_train.shape}, {X_val.shape}, {X_test.shape}')
-
-    return
 
     #
     # Subsampling
@@ -194,8 +178,11 @@ def pre_proc(station_id, use_sounding_as_data_source, use_numerical_model_as_dat
           (np.max(y_train), np.max(y_val), np.max(y_test)))
     print(f'Shapes (train/val/test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
 
+    print("Subsampling train data.")
     X_train, y_train = apply_subsampling(X_train, y_train)
+    print("Subsampling val data.")
     X_val, y_val = apply_subsampling(X_val, y_val)
+    print("Subsampling test data.")
     X_test, y_test = apply_subsampling(X_test, y_test)
 
     print('***After')
@@ -205,23 +192,23 @@ def pre_proc(station_id, use_sounding_as_data_source, use_numerical_model_as_dat
           (np.max(y_train), np.max(y_val), np.max(y_test)))
     print(f'Shapes (train/val/test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
 
-    #
-    # Data normalization
-    #
-    scaler = MinMaxScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_val = scaler.transform(X_val)
-    X_test = scaler.transform(X_test)
+    # #
+    # # Data normalization
+    # #
+    # scaler = MinMaxScaler()
+    # X_train = scaler.fit_transform(X_train)
+    # X_val = scaler.transform(X_val)
+    # X_test = scaler.transform(X_test)
 
     #
     # Write numpy arrays to a parquet file
-    print(f'Saving train/val/test np arrays ({arq_pre_proc}).')
+    print(f'Saving train/val/test np arrays ({pipeline_id}).')
     print(
         f'Number of examples (train/val/test): {len(X_train)}/{len(X_val)}/{len(X_test)}.')
-    file = open('../data/datasets/' + arq_pre_proc + ".pickle", 'wb')
-    ndarrays = (X_train, y_train, min_y_train, max_y_train,
-                X_val, y_val, min_y_val, max_y_val,
-                X_test, y_test, min_y_test, max_y_test)
+    file = open('../data/datasets/' + pipeline_id + ".pickle", 'wb')
+    ndarrays = (X_train, y_train, #min_y_train, max_y_train,
+                X_val, y_val, #min_y_val, max_y_val,
+                X_test, y_test)#, min_y_test, max_y_test)
     pickle.dump(ndarrays, file)
 
     print('Done!')
@@ -265,7 +252,7 @@ def main(argv):
             num_neighbors = arg
 
     assert(station_id is not None) and (station_id != "")
-    pre_proc(station_id, use_sounding_as_data_source,
+    prepare_datasets(station_id, use_sounding_as_data_source,
              use_numerical_model_as_data_source, num_neighbors=num_neighbors)
 
 

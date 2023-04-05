@@ -30,8 +30,8 @@ def apply_windowing(X,
     x_train_is_nan_idx = np.unique(np.where(np.isnan(X_temp)))
     # assert len(x_train_is_nan_idx) == len(y_temp)
 
-    print(f'X.shape: {X.shape}')
-    print(f'Shapes before filtering: {X_temp.shape}, {y_temp.shape}')
+    # print(f'X.shape: {X.shape}')
+    # print(f'Shapes before filtering: {X_temp.shape}, {y_temp.shape}')
 
     idx_y_train_gt_zero = np.where(y_temp > 0)[0]
     
@@ -41,10 +41,10 @@ def apply_windowing(X,
     #     idxs = np.setdiff1d(idxs, x_train_is_nan_idx)
     #     X_temp, y_temp = X_temp[idxs], y_temp[idxs]
 
-    print(f'y_train_not_nan_idx.shape: {idx_y_train_not_nan.shape}')
-    print(f'y_train_gt_zero_idx.shape: {idx_y_train_gt_zero.shape}')
-    print(f'x_train_is_nan_idx.shape: {idx_y_train_not_nan.shape}')
-    print(f'Shapes after filtering: {X_temp.shape}, {y_temp.shape}')
-    print()
+    # print(f'y_train_not_nan_idx.shape: {idx_y_train_not_nan.shape}')
+    # print(f'y_train_gt_zero_idx.shape: {idx_y_train_gt_zero.shape}')
+    # print(f'x_train_is_nan_idx.shape: {idx_y_train_not_nan.shape}')
+    # print(f'Shapes after filtering: {X_temp.shape}, {y_temp.shape}')
+    # print()
 
     return X_temp, y_temp

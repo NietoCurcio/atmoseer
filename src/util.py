@@ -5,6 +5,11 @@ from metpy.calc import wind_components
 from metpy.units import units
 import numpy as np
 import pandas as pd
+from globals import *
+
+def min_max_normalize(df: pd.DataFrame):
+    df = (df - df.min()) / (df.max() - df.min())
+    return df
 
 def is_posintstring(s):
     try:
@@ -74,7 +79,27 @@ def transform_wind(wind_speed, wind_direction, comp_idx):
     assert(comp_idx == 0 or comp_idx == 1)
     return wind_components(wind_speed * units('m/s'), wind_direction * units.deg)[comp_idx].magnitude
 
-def transform_hour(df):
+def add_index(station_id, df):
+    timestamp = None
+    if station_id in INMET_STATION_CODES_RJ:
+        df.HR_MEDICAO = df.HR_MEDICAO.apply(format_time) # e.g., 1800 --> 18:00
+        timestamp = pd.to_datetime(df.DT_MEDICAO + ' ' + df.HR_MEDICAO)
+    elif station_id in COR_STATION_NAMES_RJ:
+        timestamp = pd.to_datetime(df.Dia + ' ' + df.Hora)
+    assert timestamp is not None
+    df = df.set_index(pd.DatetimeIndex(timestamp))
+    return df
+
+def add_wind_related_features(station_id, df):
+    if station_id in INMET_STATION_CODES_RJ:
+        df['wind_u'] = df.apply(lambda x: transform_wind(x.VEN_VEL, x.VEN_DIR, 0),axis=1)
+        df['wind_v'] = df.apply(lambda x: transform_wind(x.VEN_VEL, x.VEN_DIR, 1),axis=1)
+    elif station_id in COR_STATION_NAMES_RJ:
+        df['wind_u'] = df.apply(lambda x: transform_wind(x.VelVento, x.DirVento, 0),axis=1)
+        df['wind_v'] = df.apply(lambda x: transform_wind(x.VelVento, x.DirVento, 1),axis=1)
+    return df
+
+def add_hour_related_features(df):
     """
     Transforms a DataFrame's datetime index into two new columns representing the hour in sin and cosine form.
     (see https://datascience.stackexchange.com/questions/5990/what-is-a-good-way-to-transform-cyclic-ordinal-attributes)
@@ -139,3 +164,10 @@ def find_contiguous_observation_blocks(df: pd.DataFrame):
             yield first, last
             first = last = n
     yield first, last # Yield the last block
+
+def get_relevant_variables(station_id):
+    if station_id in INMET_STATION_CODES_RJ:
+        return ['TEM_MAX', 'PRE_MAX', 'UMD_MAX', 'wind_u', 'wind_v', 'hour_sin', 'hour_cos'], 'CHUVA'
+    elif station_id in COR_STATION_NAMES_RJ:
+        return ['Temperatura', 'Pressao', 'Umidade', 'wind_u', 'wind_v', 'hour_sin', 'hour_cos'], 'Chuva'
+    return None
