@@ -96,9 +96,9 @@ def main(argv):
     # Load np arrays (stored in a pickle file) from disk
     #
     file = open("../data/datasets/" + pipeline_id + ".pickle", 'rb')
-    (X_train, y_train, min_y_train, max_y_train,
-        X_val, y_val, min_y_val, max_y_val,
-        X_test, y_test, min_y_test, max_y_test) = pickle.load(file)
+    (X_train, y_train, #min_y_train, max_y_train,
+        X_val, y_val, #min_y_val, max_y_val,
+        X_test, y_test) = pickle.load(file)
 
     #
     # Build model

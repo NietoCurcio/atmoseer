@@ -43,7 +43,7 @@ def format_time(input_str):
     
     return output_str
 
-def utc_to_local(utc_string, local_tz, format_string):
+def utc_to_local_DEPRECATED(utc_string, local_tz, format_string):
     '''
     This function first converts the UTC string to a datetime object with timezone information 
     using strptime() and replace(). Then it converts the datetime object to the local timezone 

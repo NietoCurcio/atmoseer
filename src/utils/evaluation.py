@@ -42,7 +42,7 @@ def export_confusion_matrix_to_latex(y_true, y_pred):
   y_true_class[extreme_rain_true] = EXTREME_RAIN
   y_pred_class[extreme_rain_pred] = EXTREME_RAIN
   
-  print('Resultado classification_report : ')
+  print('Classification_report: ')
   print(skl.classification_report(y_true_class, y_pred_class))
   # target_names = ['No Rain', 'Weak Rain', 'Moderate Rain', 'Strong Rain']
   df = pd.DataFrame(

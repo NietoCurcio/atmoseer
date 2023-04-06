@@ -4,27 +4,38 @@ from datetime import datetime
 from util import is_posintstring
 from globals import *
 
-def import_from_station(station_code, initial_year, final_year, api_token):
+def import_from_station(station_id, beginning_year, end_year, api_token):
 
-    current_year = datetime.now().year
-    final_year = min(final_year, current_year)
+    current_date = datetime.now()
+    current_year = current_date.year
+    end_year = min(end_year, current_year)
 
-    years = list(range(initial_year, final_year + 1))
+    years = list(range(beginning_year, end_year + 1))
     df_inmet_stations = pd.read_json(API_BASE_URL + '/estacoes/T')
-    station_row = df_inmet_stations[df_inmet_stations['CD_ESTACAO'] == station_code]
+    station_row = df_inmet_stations[df_inmet_stations['CD_ESTACAO'] == station_id]
     df_observations_for_all_years = None
-    print(f"Downloading observations from weather station {station_code}...")
+    print(f"Downloading observations from weather station {station_id}...")
     for year in years:
         print(f"Downloading observations for year {year}...")
-        query_str = API_BASE_URL + '/token/estacao/' + str(year) + '-01-01/' + str(year) + '-12-31/' + station_code + "/" + api_token
-        print(query_str)
+
+        if year == end_year:
+            datetime_str = str(end_year) + '-12-31'
+            last_date_of_the_end_year = datetime.strptime(datetime_str, '%Y-%m-%d')
+            end_date = min(last_date_of_the_end_year, current_date)
+            end_date_str = end_date.strftime("%Y-%m-%d")
+            query_str = API_BASE_URL + '/token/estacao/' + str(year) + '-01-01/' + end_date_str + '/' + station_id + "/" + api_token
+        else:
+            query_str = API_BASE_URL + '/token/estacao/' + str(year) + '-01-01/' + str(year) + '-12-31/' + station_id + "/" + api_token
+
+        print(f"Query to be sent to server: {query_str}")
+
         df_observations_for_a_year = pd.read_json(query_str)
         if df_observations_for_all_years is None:
             temp = [df_observations_for_a_year]
         else:
             temp = [df_observations_for_all_years, df_observations_for_a_year]
         df_observations_for_all_years = pd.concat(temp)
-    filename = '../data/weather_stations/' + station_row['CD_ESTACAO'].iloc[0] + '_'+ str(initial_year) +'_'+ str(final_year) +'.csv'
+    filename = '../data/weather_stations/' + station_row['CD_ESTACAO'].iloc[0] + '_'+ str(beginning_year) +'_'+ str(end_year) +'.csv'
     print(f"Done! Saving dowloaded content to '{filename}'.")
     df_observations_for_all_years.to_csv(filename)
 

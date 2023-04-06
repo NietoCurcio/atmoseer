@@ -11,7 +11,7 @@ from sklearn.impute import KNNImputer
 def preprocess_sounding_data(sounding_data_source):
     df = pd.read_csv(sounding_data_source)
     format_string = '%Y-%m-%d %H:%M:%S'
-    df['time'] = df['time'].apply(lambda x: utc_to_local(x, "America/Sao_paulo", format_string))
+    # df['time'] = df['time'].apply(lambda x: utc_to_local(x, "America/Sao_paulo", format_string))
 
     #
     # Add index to dataframe using the timestamps.
@@ -31,7 +31,7 @@ def preprocess_sounding_data(sounding_data_source):
 def preprocess_numerical_model_data(numerical_model_data_source):
     df = pd.read_csv(numerical_model_data_source)
     format_string = '%Y-%m-%d %H:%M:%S'
-    df['time'] = df['time'].apply(lambda x: utc_to_local(x, "America/Sao_paulo", format_string))
+    # df['time'] = df['time'].apply(lambda x: utc_to_local(x, "America/Sao_paulo", format_string))
 
     df['Datetime'] = pd.to_datetime(df['time'], format=format_string)
 
@@ -41,7 +41,7 @@ def preprocess_numerical_model_data(numerical_model_data_source):
     df = df.drop(['time', 'Datetime', 'Unnamed: 0'], axis = 1)
     print(f"Range of timestamps after preprocessing {numerical_model_data_source}: [{min(df.index)}, {max(df.index)}]")
 
-    df = min_max_normalize(df)
+    df = util.min_max_normalize(df)
 
     #
     # Save preprocessed data.
@@ -50,8 +50,8 @@ def preprocess_numerical_model_data(numerical_model_data_source):
     print(f"Saving preprocessed data to {filename}")
     df.to_parquet(filename, compression='gzip')
 
-def preprocess_ws_datasource(station_id):
-    ws_datasource = '../data/weather_stations/A652_1997_2022.csv'
+def preprocess_ws_datasource(station_id, ws_datasource):
+    print(f"Loading datasource file ({{ws_datasource}}).")
     df = pd.read_csv(ws_datasource)
 
     #
@@ -60,11 +60,12 @@ def preprocess_ws_datasource(station_id):
 
     #
     # Drop observations in which the target variable is not defined.
+    print(f"Dropping entries with null target.")
     n_obser_before_drop = len(df)
     df = df[df['CHUVA'].notna()]
     n_obser_after_drop = len(df)
-    print(f"Number of observations before/after dropping null target entries: {n_obser_before_drop}/{n_obser_after_drop}.")
-    print(f"Range of timestamps after dropping null target entries: {ws_datasource}: [{min(df.index)}, {max(df.index)}]")
+    print(f"Number of observations before/after dropping entries with null target: {n_obser_before_drop}/{n_obser_after_drop}.")
+    print(f"Range of timestamps after dropping entries with null target: [{min(df.index)}, {max(df.index)}]")
 
     #
     # Create wind-related features (U and V components of wind observations).
@@ -80,9 +81,12 @@ def preprocess_ws_datasource(station_id):
     df = df[predictor_names + [target_name]]
 
     #
-    # Normalize the weather station data
+    # Normalize the weather station data. This step is necessary here due to the next step, which deals with missing values.
+    # Notice that we drop the target column before normalizing, to avoid some kind of data leakage.
     # (see https://stats.stackexchange.com/questions/214728/should-data-be-normalized-before-or-after-imputation-of-missing-data)
-    print("Normalizing data...", end='')
+    print("Normalizing data before applying KNN-based imputer...", end='')
+    target_column = df[target_name]
+    df = df.drop(columns=[target_name], axis=1)
     df = min_max_normalize(df)
     print("Done!")
 
@@ -94,12 +98,12 @@ def preprocess_ws_datasource(station_id):
     assert (not df.isnull().values.any().any())
     print("Done dealing with missing values!")
 
-    # #
-    # # Remove irrelevant columns
-    # df = df.drop(['HR_MEDICAO','DT_MEDICAO','Unnamed: 0', 'DC_NOME', 'CD_ESTACAO', 'UF', 'Datetime'], axis=1)
+    #
+    # Add the target column back to the DataFrame.
+    df[target_name] = target_column
 
     #
-    # Save preprocessed data.
+    # Save preprocessed data to a parquet file.
     filename_and_extension = get_filename_and_extension(ws_datasource)
     filename = filename_and_extension[0] + '_preprocessed.parquet.gzip'
     print(f"Saving preprocessed data to {filename}")
@@ -142,7 +146,8 @@ def main(argv):
     print('Going to preprocess the specified data sources...')
 
     print('Preprocessing weather station data...')
-    preprocess_ws_datasource(station_id)
+    ws_datasource = '../data/weather_stations/A652_2007_2023.csv'
+    preprocess_ws_datasource(station_id, ws_datasource)
     
     if sounding_data_source is not None:
         print('Preprocessing sounding data...')

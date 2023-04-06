@@ -97,8 +97,8 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
         pipeline_id = pipeline_id + '_EI'
 
     df_ws = pd.read_parquet(
-        '../data/weather_stations/A652_1997_2022_preprocessed.parquet.gzip')
-    print(f"Weather station data loaded. Shape = {df_ws.shape}.")
+        '../data/weather_stations/A652_2007_2023_preprocessed.parquet.gzip')
+    print(f"Observations for weather station {station_id} loaded. Shape = {df_ws.shape}.")
 
     #
     # Merge datasources
@@ -141,42 +141,65 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
 
     #
     # Data splitting (train/val/test)
-    #
-    # TODO: parameterize splitting proportions.
+    # TODO: parameterize with user-defined splitting proportions.
+    dict_splitting_proportions = {"train": 0.7, "val": 0.2, "test": 0.1}
+    print(f"Splitting train/val/test examples according to proportion {dict_splitting_proportions}.")
+    p_train = dict_splitting_proportions["train"]
+    p_val = dict_splitting_proportions["val"]
     n = len(merged_df)
-    train_df = merged_df[0:int(n*0.7)]
-    val_df = merged_df[int(n*0.7):int(n*0.9)]
-    test_df = merged_df[int(n*0.9):]
+    df_train = merged_df[0:int(n*p_train)]
+    df_val = merged_df[int(n*p_train):int(n*(p_train+p_val))]
+    df_test = merged_df[int(n*(p_train+p_val)):]
+    print(f'Done! Number of examples in each part (train/val/test): {len(df_train)}/{len(df_val)}/{len(df_test)}.')
+
+    #
+    # Save train/val/test DataFrames for future error analisys.
     print(f'Saving train/val/test datasets ({pipeline_id}).')
-    print(
-        f'Number of examples (train/val/test): {len(train_df)}/{len(val_df)}/{len(test_df)}.')
-    train_df.to_parquet('../data/datasets/' + pipeline_id +
+    df_train.to_parquet('../data/datasets/' + pipeline_id +
                         '_train.parquet.gzip', compression='gzip')
-    val_df.to_parquet('../data/datasets/' + pipeline_id +
+    df_val.to_parquet('../data/datasets/' + pipeline_id +
                       '_val.parquet.gzip', compression='gzip')
-    test_df.to_parquet('../data/datasets/' + pipeline_id +
+    df_test.to_parquet('../data/datasets/' + pipeline_id +
                        '_test.parquet.gzip', compression='gzip')
 
-    # Data windowing
+    #
+    # Apply sliding windowing method to build train/val/test datasets 
+    print('Applying sliding window to build train/val/test datasets.')
     _, target_name = util.get_relevant_variables(station_id)
-    print('**********Data windowing**********')
-    print('***Before')
-    print(f'Shapes (train/val/test): {train_df.shape}, {val_df.shape}, {test_df.shape}')
+    # target_column_train = df_train[target_name]
+    # target_column_val = df_val[target_name]
+    # target_column_test = df_test[target_name]
+
+    min_y_train, max_y_train = min(df_train[target_name]), max(df_train[target_name])
+    df_train = util.min_max_normalize(df_train)
+
+    min_y_val, max_y_val = min(df_val[target_name]), max(df_val[target_name])
+    df_val = util.min_max_normalize(df_val)
+
+    min_y_test, max_y_test = min(df_test[target_name]), max(df_test[target_name])
+    df_test = util.min_max_normalize(df_test)
+
     X_train, y_train, X_val, y_val, X_test, y_test = generate_windowed_split(
-        train_df, val_df, test_df, target_name=target_name)
-    print('***After')
-    print(f'Shapes (train/val/test): {X_train.shape}, {X_val.shape}, {X_test.shape}')
+        df_train, df_val, df_test, target_name=target_name)
+    print("Done! Resulting shapes:")
+    print(f' - (X_train/X_val/X_test): ({X_train.shape}/{X_val.shape}/{X_test.shape})')
+    print(f' - (y_train/y_val/y_test): ({y_train.shape}/{y_val.shape}/{y_test.shape})')
+
+    y_train = (y_train + min_y_train) * (max_y_train - min_y_train)
+    y_val = (y_val + min_y_val) * (max_y_val - min_y_val)
+    y_test = (y_test + min_y_test) * (max_y_test - min_y_test)
+
+    print('Min precipitation values (train/val/test): %.5f, %.5f, %.5f' %
+          (np.min(y_train), np.min(y_val), np.min(y_test)))
+    print('Max precipitation values (train/val/test): %.5f, %.5f, %.5f' %
+          (np.max(y_train), np.max(y_val), np.max(y_test)))
 
     #
     # Subsampling
     #
     print('**********Subsampling************')
     print('***Before')
-    print('Min precipitation values (train/val/test): %.5f, %.5f, %.5f' %
-          (np.min(y_train), np.min(y_val), np.min(y_test)))
-    print('Max precipitation values (train/val/test): %.5f, %.5f, %.5f' %
-          (np.max(y_train), np.max(y_val), np.max(y_test)))
-    print(f'Shapes (train/val/test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
+    print(f'Shapes (Y_train/y_val/y_test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
 
     print("Subsampling train data.")
     X_train, y_train = apply_subsampling(X_train, y_train)
@@ -190,15 +213,7 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
           (np.min(y_train), np.min(y_val), np.min(y_test)))
     print('Max precipitation values (train/val/test): %.5f, %.5f, %.5f' %
           (np.max(y_train), np.max(y_val), np.max(y_test)))
-    print(f'Shapes (train/val/test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
-
-    # #
-    # # Data normalization
-    # #
-    # scaler = MinMaxScaler()
-    # X_train = scaler.fit_transform(X_train)
-    # X_val = scaler.transform(X_val)
-    # X_test = scaler.transform(X_test)
+    print(f'Shapes (y_train/val/test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
 
     #
     # Write numpy arrays to a parquet file
