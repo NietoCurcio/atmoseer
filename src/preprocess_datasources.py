@@ -139,7 +139,7 @@ def main(argv):
             if arg.find('R') != -1:
                 sounding_data_source = '../data/sounding_stations/SBGL_indices_1997-01-01_2022-12-31.csv'
             if arg.find('N') != -1:
-                numerical_model_data_source = '../data/numerical_models/ERA5_A652_1997-01-01_2021-12-31.csv'
+                numerical_model_data_source = '../data/numerical_models/ERA5_A652_1997_2023.csv'
         elif opt in ("-n", "--neighbors"):
             num_neighbors = arg
 

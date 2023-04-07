@@ -18,6 +18,7 @@ def mean_bias_error(y_true, y_pred):
   return MBE
 
 def get_events_per_precipitation_level(y):
+  # see http://alertario.rio.rj.gov.br/previsao-do-tempo/termosmet/
   no_rain = np.where(np.any(y<=0., axis=1))
   weak_rain = np.where(np.any((y>0.) & (y<=5.), axis=1))
   moderate_rain = np.where(np.any((y>5.) & (y<=25.), axis=1))

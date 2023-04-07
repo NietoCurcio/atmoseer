@@ -8,6 +8,7 @@ from globals import *
 from util import find_contiguous_observation_blocks
 from utils.windowing import apply_windowing
 import util as util
+import math
 
 def apply_subsampling(X, y, keep_percentage=0.1):
     y_eq_zero_idxs = np.where(y == 0)[0]
@@ -100,6 +101,15 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
         '../data/weather_stations/A652_2007_2023_preprocessed.parquet.gzip')
     print(f"Observations for weather station {station_id} loaded. Shape = {df_ws.shape}.")
 
+    ####
+    # Apply a filtering step (e.g., to disregard all observations made between June and September.).
+    ####
+    print(f"Applying filtering...", end=' ')
+    df_ws = df_ws[df_ws.index.month.isin([9, 10, 11, 12, 1, 2, 3, 4, 5])].sort_index(ascending=True)
+    print(f"Done! New shape = {df_ws.shape}")
+
+    assert (not df_ws.isnull().values.any().any())
+
     #
     # Merge datasources
     #
@@ -107,7 +117,7 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
 
     if use_numerical_model_as_data_source:
         df_nwp_era5 = pd.read_parquet(
-            '../data/numerical_models/ERA5_A652_1997-01-01_2021-12-31_preprocessed.parquet.gzip')
+            '../data/numerical_models/ERA5_A652_1997_2023_preprocessed.parquet.gzip')
         assert (not df_nwp_era5.isnull().values.any().any())
         print(f"NWP data loaded. Shape = {df_nwp_era5.shape}.")
         merged_df = pd.merge(df_ws, df_nwp_era5, how='left', left_index=True, right_index=True)
@@ -122,7 +132,9 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
         print(df_ws.index.difference(df_nwp_era5.index).shape)
         print(df_ws.index.difference(df_nwp_era5.index))
 
-        assert(merged_df.shape[0] == df_ws.shape[0])
+        merged_df = merged_df.dropna()
+        print(f"Removed NaN rows in merge data; resulting shape = {merged_df.shape}.")
+        # assert(merged_df.shape[0] == df_ws.shape[0])
 
     if use_sounding_as_data_source:
         df_sounding = pd.read_parquet(
@@ -131,25 +143,35 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
         # TODO: data normalization 
         # TODO: implement interpolation
         # TODO: deal with missing values (see https://youtu.be/DKmDJJzayZw)
+        # TODO: Imputing with MICE (see https://towardsdatascience.com/imputing-missing-data-with-simple-and-advanced-techniques-f5c7b157fb87)
+        # TODO: use other sounding stations (?) (see tempo.inmet.gov.br/Sondagem/)
 
     if num_neighbors != 0:
         pass
 
-    ####
-    # TODO: add a data filtering step (e.g., to disregard all observations made between May and September.).
-    ####
+    assert (not merged_df.isnull().values.any().any())
 
     #
     # Data splitting (train/val/test)
     # TODO: parameterize with user-defined splitting proportions.
     dict_splitting_proportions = {"train": 0.7, "val": 0.2, "test": 0.1}
     print(f"Splitting train/val/test examples according to proportion {dict_splitting_proportions}.")
-    p_train = dict_splitting_proportions["train"]
-    p_val = dict_splitting_proportions["val"]
+    assert (math.isclose(sum(dict_splitting_proportions.values()),1.0, abs_tol=1e-8))
+
+    train_prob = dict_splitting_proportions["train"]
+    val_prob = dict_splitting_proportions["val"]
     n = len(merged_df)
-    df_train = merged_df[0:int(n*p_train)]
-    df_val = merged_df[int(n*p_train):int(n*(p_train+p_val))]
-    df_test = merged_df[int(n*(p_train+p_val)):]
+    
+    train_upper_limit = int(n*train_prob)
+    val_upper_limit = int(n*(train_prob+val_prob))
+    print(f"Ranges (train/val/test): ({0},{train_upper_limit})/({train_upper_limit},{val_upper_limit})/({val_upper_limit},{n})")
+
+    df_train = merged_df[0:train_upper_limit]
+    df_val = merged_df[train_upper_limit:val_upper_limit]
+    df_test = merged_df[val_upper_limit:]
+    assert (not df_train.isnull().values.any().any())
+    assert (not df_val.isnull().values.any().any())
+    assert (not df_test.isnull().values.any().any())
     print(f'Done! Number of examples in each part (train/val/test): {len(df_train)}/{len(df_val)}/{len(df_test)}.')
 
     #
