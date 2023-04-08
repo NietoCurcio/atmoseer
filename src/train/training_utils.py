@@ -1,26 +1,23 @@
-import pandas as pd
-import numpy as np
 import torch
-import os
-import seaborn as sns
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import TensorDataset
+import numpy as np
+import os
 import random
 import matplotlib.pyplot as plt
-from torch.utils.data import TensorDataset
-
+from train.early_stopping import *
 
 def initialize_weights(m):
-  if isinstance(m, nn.Conv1d):
-      nn.init.kaiming_uniform_(m.weight.data, nonlinearity='relu')
-      if m.bias is not None:
-          nn.init.constant_(m.bias.data, 0)
-  elif isinstance(m, nn.BatchNorm2d):
-      nn.init.constant_(m.weight.data, 1)
-      nn.init.constant_(m.bias.data, 0)
-  elif isinstance(m, nn.Linear):
-      nn.init.kaiming_uniform_(m.weight.data)
-      nn.init.constant_(m.bias.data, 0)
+    if isinstance(m, nn.Conv1d):
+        nn.init.kaiming_uniform_(m.weight.data, nonlinearity='relu')
+        if m.bias is not None:
+            nn.init.constant_(m.bias.data, 0)
+    elif isinstance(m, nn.BatchNorm2d):
+        nn.init.constant_(m.weight.data, 1)
+        nn.init.constant_(m.bias.data, 0)
+    elif isinstance(m, nn.Linear):
+        nn.init.kaiming_uniform_(m.weight.data)
+        nn.init.constant_(m.bias.data, 0)
 
 
 def seed_everything(seed=1234):
@@ -64,53 +61,6 @@ class DeviceDataLoader():
         return len(self.dl)
 
 
-class EarlyStopping:
-    """Early stops the training if validation loss doesn't improve after a given patience."""
-
-    def __init__(self, patience=7, verbose=False, delta=0):
-        """
-        Args:
-            patience (int): How long to wait after last time validation loss improved.
-                            Default: 7
-            verbose (bool): If True, prints a message for each validation loss improvement. 
-                            Default: False
-            delta (float): Minimum change in the monitored quantity to qualify as an improvement.
-                            Default: 0
-        """
-        self.patience = patience
-        self.verbose = verbose
-        self.counter = 0
-        self.best_score = None
-        self.early_stop = False
-        self.val_loss_min = np.Inf
-        self.delta = delta
-
-    def __call__(self, val_loss, model, pipeline_id):
-
-        score = -val_loss
-
-        if self.best_score is None:
-            self.best_score = score
-            self.save_checkpoint(val_loss, model, pipeline_id)
-        elif score < self.best_score + self.delta:
-            self.counter += 1
-            print(
-                f'EarlyStopping counter: {self.counter} out of {self.patience}')
-            if self.counter >= self.patience:
-                self.early_stop = True
-        else:
-            self.best_score = score
-            self.save_checkpoint(val_loss, model, pipeline_id)
-            self.counter = 0
-
-    def save_checkpoint(self, val_loss, model, pipeline_id):
-        '''Saves model when validation loss decrease.'''
-        if self.verbose:
-            print(
-                f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
-        torch.save(model.state_dict(), '../models/best_' + pipeline_id + '.pt')
-        self.val_loss_min = val_loss
-
 
 def fit(model, n_epochs, optimizer, train_loader, val_loader, patience, criterion, pipeline_id):
     # to track the training loss as the model trains
@@ -131,7 +81,7 @@ def fit(model, n_epochs, optimizer, train_loader, val_loader, patience, criterio
         # train the model #
         ###################
         model.train()  # prep model for training
-        for data, target in train_loader:
+        for data, target, w in train_loader:
             # clear the gradients of all optimized variables
             optimizer.zero_grad()
 
@@ -139,7 +89,7 @@ def fit(model, n_epochs, optimizer, train_loader, val_loader, patience, criterio
             output = model(data.float())
 
             # calculate the loss
-            loss = criterion(output, target.float())
+            loss = criterion(output, target.float(), w)
             assert not (np.isnan(loss.item()) or loss.item() >
                         1e6), f"Loss explosion: {loss.item()}"
 
@@ -155,11 +105,11 @@ def fit(model, n_epochs, optimizer, train_loader, val_loader, patience, criterio
         # validate the model #
         ######################
         model.eval()  # prep model for evaluation
-        for data, target in val_loader:
+        for data, target, w in val_loader:
             # forward pass: compute predicted outputs by passing inputs to the model
             output = model(data.float())
             # calculate the loss
-            loss = criterion(output, target.float())
+            loss = criterion(output, target.float(), w)
             # record validation loss
             valid_losses.append(loss.item())
 
@@ -191,7 +141,7 @@ def fit(model, n_epochs, optimizer, train_loader, val_loader, patience, criterio
     return avg_train_losses, avg_valid_losses
 
 
-def create_train_n_val_loaders(train_x, train_y, val_x, val_y, batch_size):
+def create_train_n_val_loaders(train_x, train_y, val_x, val_y, batch_size, train_weights, val_weights):
     train_x = torch.from_numpy(train_x.astype('float64'))
     train_x = torch.permute(train_x, (0, 2, 1))
     train_y = torch.from_numpy(train_y.astype('float64'))
@@ -200,8 +150,8 @@ def create_train_n_val_loaders(train_x, train_y, val_x, val_y, batch_size):
     val_x = torch.permute(val_x, (0, 2, 1))
     val_y = torch.from_numpy(val_y.astype('float64'))
 
-    train_ds = TensorDataset(train_x, train_y)
-    val_ds = TensorDataset(val_x, val_y)
+    train_ds = TensorDataset(train_x, train_y, train_weights)
+    val_ds = TensorDataset(val_x, val_y, val_weights)
 
     train_loader = torch.utils.data.DataLoader(
         train_ds, batch_size=batch_size, shuffle=True)
@@ -212,13 +162,14 @@ def create_train_n_val_loaders(train_x, train_y, val_x, val_y, batch_size):
 
 
 def gen_learning_curve(train_loss, val_loss, pipeline_id):
-  fig = plt.figure(figsize=(10, 8))
-  plt.plot(range(1, len(train_loss)+1), train_loss, label='Training Loss')
-  plt.plot(range(1, len(val_loss)+1), val_loss, label='Validation Loss')
-  plt.xlabel('epochs')
-  plt.ylabel('loss')
-  plt.xlim(0, len(train_loss)+1)
-  plt.grid(True)
-  plt.legend()
-  plt.tight_layout()
-  fig.savefig('../models/loss_plot_' + pipeline_id + '.png', bbox_inches='tight')
+    fig = plt.figure(figsize=(10, 8))
+    plt.plot(range(1, len(train_loss)+1), train_loss, label='Training Loss')
+    plt.plot(range(1, len(val_loss)+1), val_loss, label='Validation Loss')
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.xlim(0, len(train_loss)+1)
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    fig.savefig('../models/loss_plot_' + pipeline_id +
+                '.png', bbox_inches='tight')

@@ -10,13 +10,15 @@ from utils.windowing import apply_windowing
 import util as util
 import math
 
-def apply_subsampling(X, y, keep_percentage=0.1):
+def apply_subsampling(X, y):
     y_eq_zero_idxs = np.where(y == 0)[0]
     y_gt_zero_idxs = np.where(y > 0)[0]
     print(f' - Original sizes (target=0)/(target>0): ({y_eq_zero_idxs.shape[0]})/({y_gt_zero_idxs.shape[0]})')
 
+    print(f" - Going to use subsampling keep ratio = {SUBSAMPLING_KEEP_RATIO}.")
+
     mask = np.random.choice([True, False], size=y.shape[0], p=[
-                            keep_percentage, 1.0-keep_percentage])
+                            SUBSAMPLING_KEEP_RATIO, 1.0-SUBSAMPLING_KEEP_RATIO])
     y_train_subsample_idxs = np.where(mask == True)[0]
 
     print(f" - Subsample (total) size: {y_train_subsample_idxs.shape[0]}")
