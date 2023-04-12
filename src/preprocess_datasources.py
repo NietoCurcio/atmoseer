@@ -8,10 +8,11 @@ from util import *
 import util as util
 from sklearn.impute import KNNImputer
 
+list_valid_datasource_combinations = ("R", "N", "R+N")
+
 def preprocess_sounding_data(sounding_data_source):
     df = pd.read_csv(sounding_data_source)
     format_string = '%Y-%m-%d %H:%M:%S'
-    # df['time'] = df['time'].apply(lambda x: utc_to_local(x, "America/Sao_paulo", format_string))
 
     #
     # Add index to dataframe using the timestamps.
@@ -136,17 +137,20 @@ def main(argv):
         elif opt in ("-f", "--file"):
             ws_data = arg
         elif opt in ("-d", "--datasources"):
+            if opt not in list_valid_datasource_combinations:
+                print(help_message)  # print the help message
+                sys.exit(2)
             if arg.find('R') != -1:
-                sounding_data_source = '../data/sounding_stations/SBGL_indices_1997-01-01_2022-12-31.csv'
+                sounding_data_source = '../data/sounding/SBGL_indices_1997-01-01_2022-12-31.csv'
             if arg.find('N') != -1:
-                numerical_model_data_source = '../data/numerical_models/ERA5_A652_1997_2023.csv'
+                numerical_model_data_source = '../data/NWP/ERA5_A652_1997_2023.csv'
         elif opt in ("-n", "--neighbors"):
             num_neighbors = arg
 
     print('Going to preprocess the specified data sources...')
 
     print('Preprocessing weather station data...')
-    ws_datasource = '../data/weather_stations/A652_2007_2023.csv'
+    ws_datasource = '../data/gauge/A652_2007_2023.csv'
     preprocess_ws_datasource(station_id, ws_datasource)
     
     if sounding_data_source is not None:
@@ -160,5 +164,6 @@ def main(argv):
     print('Done!')
 
 # python preprocess_datasources.py -s A652 -d N
+# python preprocess_datasources.py -s A652 -d R
 if __name__ == "__main__":
     main(sys.argv)

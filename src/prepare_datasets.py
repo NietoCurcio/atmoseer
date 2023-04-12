@@ -9,6 +9,20 @@ from util import find_contiguous_observation_blocks
 from utils.windowing import apply_windowing
 import util as util
 import math
+# from rainfall_prediction import map_to_precipitation_levels, map_to_binary_precipitation_levels
+import rainfall_prediction as rp
+
+# def format_for_binary_classification(y_train, y_val, y_test):
+#     y_train_oc = map_to_binary_precipitation_levels(y_train)
+#     y_val_oc = map_to_binary_precipitation_levels(y_val)
+#     y_test_oc = map_to_binary_precipitation_levels(y_test)
+#     return y_train_oc, y_val_oc, y_test_oc
+
+# def format_for_ordinal_classification(y_train, y_val, y_test):
+#     y_train_oc = map_to_precipitation_levels(y_train)
+#     y_val_oc = map_to_precipitation_levels(y_val)
+#     y_test_oc = map_to_precipitation_levels(y_test)
+#     return y_train_oc, y_val_oc, y_test_oc
 
 def apply_subsampling(X, y):
     y_eq_zero_idxs = np.where(y == 0)[0]
@@ -87,20 +101,19 @@ def generate_windowed_split(train_df, val_df, test_df, target_name):
     return X_train, y_train, X_val, y_val, X_test, y_test
 
 
-def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_model_as_data_source, num_neighbors=0):
+def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_model_as_data_source, prediction_task_id, num_neighbors=0):
 
-    pipeline_id = station_id + '_E'
+    pipeline_id = station_id
     if use_numerical_model_as_data_source:
-        pipeline_id = pipeline_id + '-N'
+        pipeline_id = pipeline_id + '_N'
     if use_sounding_as_data_source:
-        pipeline_id = pipeline_id + '-R'
+        pipeline_id = pipeline_id + '_R'
+
     if num_neighbors > 0:
-        pipeline_id = pipeline_id + '_EI+' + str(num_neighbors) + 'NN'
-    else:
-        pipeline_id = pipeline_id + '_EI'
+        pipeline_id = pipeline_id + '_NN' + str(num_neighbors)
 
     df_ws = pd.read_parquet(
-        '../data/weather_stations/A652_2007_2023_preprocessed.parquet.gzip')
+        '../data/gauge/A652_2007_2023_preprocessed.parquet.gzip')
     print(f"Observations for weather station {station_id} loaded. Shape = {df_ws.shape}.")
 
     ####
@@ -119,7 +132,7 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
 
     if use_numerical_model_as_data_source:
         df_nwp_era5 = pd.read_parquet(
-            '../data/numerical_models/ERA5_A652_1997_2023_preprocessed.parquet.gzip')
+            '../data/NWP/ERA5_A652_1997_2023_preprocessed.parquet.gzip')
         assert (not df_nwp_era5.isnull().values.any().any())
         print(f"NWP data loaded. Shape = {df_nwp_era5.shape}.")
         merged_df = pd.merge(df_ws, df_nwp_era5, how='left', left_index=True, right_index=True)
@@ -140,7 +153,7 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
 
     if use_sounding_as_data_source:
         df_sounding = pd.read_parquet(
-            '../data/sounding_stations/SBGL_indices_1997-01-01_2022-12-31_preprocessed.parquet.gzip')
+            '../data/sounding/SBGL_indices_1997-01-01_2022-12-31_preprocessed.parquet.gzip')
         merged_df = pd.merge(merged_df, df_sounding, on='Datetime', how='left')
         # TODO: data normalization 
         # TODO: implement interpolation
@@ -220,7 +233,6 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
 
     #
     # Subsampling
-    #
     print('**********Subsampling************')
     print('***Before')
     print(f'Shapes (Y_train/y_val/y_test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
@@ -239,15 +251,34 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
           (np.max(y_train), np.max(y_val), np.max(y_test)))
     print(f'Shapes (y_train/val/test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
 
+    # #
+    # # By default, the target variable is formatted assuming that a regression task will be 
+    # # performed downstream in the pipeline. However, if the user of this script states otherwise,
+    # # format this variable accordingly. The alternative tasks are "OC" (for ordinal multiclass 
+    # # classification) and "BC" (for binary classification, NO_RAIN vs RAIN).
+    # print(f"Target variable is formatted for {prediction_task_id.name} task.")
+    # if prediction_task_id == rp.PredictionTask.ORDINAL_CLASSIFICATION:
+    #     y_train, y_val, y_test = format_for_ordinal_classification(y_train, y_val, y_test)
+    #     pipeline_id += "_OC"
+    # elif prediction_task_id == rp.PredictionTask.BINARY_CLASSIFICATION:
+    #     y_train, y_val, y_test = format_for_binary_classification(y_train, y_val, y_test)
+    #     pipeline_id += "_BC"
+    # else:
+    #     pipeline_id += "_REG"
+    # if (prediction_task_id == rp.PredictionTask.BINARY_CLASSIFICATION) or prediction_task_id == rp.PredictionTask.ORDINAL_CLASSIFICATION:
+    #     print(f"- Unique target values (train/val/test): {np.unique(y_train)}/{np.unique(y_val)}/{np.unique(y_test)}")
+    # else:
+    #     print(f"- Ranges of target values (train/val/test): ({min(y_train)}, {max(y_train)})/({min(y_val)}, {max(y_val)})/({min(y_test)}, {max(y_test)})")
+    
     #
     # Write numpy arrays to a parquet file
     print(f'Saving train/val/test np arrays ({pipeline_id}).')
     print(
         f'Number of examples (train/val/test): {len(X_train)}/{len(X_val)}/{len(X_test)}.')
     file = open('../data/datasets/' + pipeline_id + ".pickle", 'wb')
-    ndarrays = (X_train, y_train, #min_y_train, max_y_train,
-                X_val, y_val, #min_y_val, max_y_val,
-                X_test, y_test)#, min_y_test, max_y_test)
+    ndarrays = (X_train, y_train, 
+                X_val, y_val, 
+                X_test, y_test)
     pickle.dump(ndarrays, file)
 
     print('Done!')
@@ -256,7 +287,7 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
 def main(argv):
     station_id = ""
     use_sounding_as_data_source = 0
-    use_numerical_model_as_data_source = 0
+    use_NWP_model_as_data_source = 0
     num_neighbors = 0
     help_message = "Usage: {0} -s <station_id> -d <data_source_spec> -n <num_neighbors>".format(
         argv[0])
@@ -270,7 +301,9 @@ def main(argv):
 
     num_neighbors = 0
     use_sounding_as_data_source = False
-    use_numerical_model_as_data_source = False
+    use_NWP_model_as_data_source = False
+
+    prediction_task_id = None
 
     for opt, arg in opts:
         if opt in ("-h", "--help"):
@@ -282,19 +315,28 @@ def main(argv):
                 print(f"Invalid station identifier: {station_id}")
                 print(help_message)
                 sys.exit(2)
+        # elif opt in ("-t", "--task"):
+        #     prediction_task_id_str = arg
+        #     if prediction_task_id_str == "ORDINAL_CLASSIFICATION":
+        #         prediction_task_id = PredictionTask.ORDINAL_CLASSIFICATION
+        #     elif prediction_task_id_str == "BINARY_CLASSIFICATION":
+        #         prediction_task_id = PredictionTask.BINARY_CLASSIFICATION
         elif opt in ("-d", "--datasources"):
             if arg.find('R') != -1:
                 use_sounding_as_data_source = True
             if arg.find('N') != -1:
-                use_numerical_model_as_data_source = True
+                use_NWP_model_as_data_source = True
         elif opt in ("-n", "--neighbors"):
             num_neighbors = arg
 
+    # if prediction_task_id is None:
+    #     prediction_task_id = PredictionTask.REGRESSION
+
     assert(station_id is not None) and (station_id != "")
     prepare_datasets(station_id, use_sounding_as_data_source,
-             use_numerical_model_as_data_source, num_neighbors=num_neighbors)
+             use_NWP_model_as_data_source, prediction_task_id=prediction_task_id, num_neighbors=num_neighbors)
 
 
-# python prepare_datasets.py -s A652 -d N
+# python prepare_datasets.py -s A652 -d N -t ORDINAL_CLASSIFICATION
 if __name__ == "__main__":
     main(sys.argv)

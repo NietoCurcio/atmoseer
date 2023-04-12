@@ -21,66 +21,8 @@ import torch.nn as nn
 from torch.utils.data import TensorDataset
 import torch.nn.functional as F
 from train.training_utils import *
-from train.evaluation import *
-
-NO_RAIN = 0
-WEAK_RAIN = 1
-MODERATE_RAIN = 2
-STRONG_RAIN = 3
-EXTREME_RAIN = 4
-
-import numpy as np
-def f(x):
-  if x == NO_RAIN:
-    return np.array([1,0,0,0,0])
-  elif x == WEAK_RAIN:
-    return np.array([1,1,0,0,0])
-  elif x == MODERATE_RAIN:
-    return np.array([1,1,1,0,0])
-  elif x == STRONG_RAIN:
-    return np.array([1,1,1,1,0])
-  elif x == EXTREME_RAIN:
-    return np.array([1,1,1,1,1])
-
-def accuracy(outputs, labels):
-    _, preds = torch.max(outputs, dim=1)
-    return torch.tensor(torch.sum(preds == labels).item() / len(preds))
-
-def ordinalencoding2labels(pred: np.ndarray):
-    """
-    Convert ordinal predictions to class labels, e.g.
-    
-    [0.9, 0.1, 0.1, 0.1] -> 0
-    [0.9, 0.9, 0.1, 0.1] -> 1
-    [0.9, 0.9, 0.9, 0.1] -> 2
-    etc.
-    """
-    return (pred > 0.5).cumprod(axis=1).sum(axis=1) - 1
-
-def label2ordinalencoding(y_train, y_val):
-  no_rain_train, weak_rain_train, moderate_rain_train, strong_rain_train, extreme_rain_train = get_events_per_precipitation_level(y_train)
-  no_rain_val, weak_rain_val, moderate_rain_val, strong_rain_val, extreme_rain_val = get_events_per_precipitation_level(y_val)
-
-  y_train_class = np.zeros_like(y_train)
-  y_val_class = np.zeros_like(y_val)
-
-  y_train_class[no_rain_train] = NO_RAIN
-  y_train_class[weak_rain_train] = WEAK_RAIN
-  y_train_class[moderate_rain_train] = MODERATE_RAIN
-  y_train_class[strong_rain_train] = STRONG_RAIN
-  y_train_class[extreme_rain_train] = EXTREME_RAIN
-
-  y_val_class[no_rain_val] = NO_RAIN
-  y_val_class[weak_rain_val] = WEAK_RAIN
-  y_val_class[moderate_rain_val] = MODERATE_RAIN
-  y_val_class[strong_rain_val] = STRONG_RAIN
-  y_val_class[extreme_rain_val] = EXTREME_RAIN
-
-  y_train = np.array(list(map(f, y_train_class)))
-  y_val = np.array(list(map(f, y_val_class)))
-
-  return y_train, y_val
-
+from train.evaluate import *
+from rainfall_prediction import ordinalencoding_to_multiclasslabels
 
 class OrdinalClassificationNet(nn.Module):
     def __init__(self, in_channels, num_classes):
@@ -126,15 +68,15 @@ class OrdinalClassificationNet(nn.Module):
 
         return x
 
-    def prediction2label(pred: np.ndarray):
-      """Convert ordinal predictions to class labels, e.g.
+    # def prediction2label(pred: np.ndarray):
+    #   """Convert ordinal predictions to class labels, e.g.
       
-      [0.9, 0.1, 0.1, 0.1] -> 0
-      [0.9, 0.9, 0.1, 0.1] -> 1
-      [0.9, 0.9, 0.9, 0.1] -> 2
-      etc.
-      """
-      return (pred > 0.5).cumprod(axis=1).sum(axis=1) - 1
+    #   [0.9, 0.1, 0.1, 0.1] -> 0
+    #   [0.9, 0.9, 0.1, 0.1] -> 1
+    #   [0.9, 0.9, 0.9, 0.1] -> 2
+    #   etc.
+    #   """
+    #   return (pred > 0.5).cumprod(axis=1).sum(axis=1) - 1
 
     def training_step(self, batch):
         X_train, y_train = batch 
@@ -160,7 +102,7 @@ class OrdinalClassificationNet(nn.Module):
         print("Epoch [{}], val_loss: {:.4f}, val_acc: {:.4f}".format(epoch, result['val_loss'], result['val_acc']))
 
     def predict(self, X):
-      print('Evaluating ordinal classification model...')
+      print('Making predictions with ordinal classification model...')
       self.eval()
 
       test_x_tensor = torch.from_numpy(X.astype('float64'))
@@ -170,7 +112,7 @@ class OrdinalClassificationNet(nn.Module):
       with torch.no_grad():
           output = self(test_x_tensor.float())
           yb_pred_encoded = output.detach().cpu().numpy()
-          yb_pred_decoded = ordinalencoding2labels(yb_pred_encoded)
+          yb_pred_decoded = ordinalencoding_to_multiclasslabels(yb_pred_encoded)
           outputs.append(yb_pred_decoded.reshape(-1,1))
 
       y_pred = np.vstack(outputs)
@@ -195,7 +137,7 @@ class OrdinalClassificationNet(nn.Module):
         for xb, yb in test_loader:
           output = self(xb.float())
           yb_pred_encoded = output.detach().cpu().numpy()
-          yb_pred_decoded = ordinalencoding2labels(yb_pred_encoded)
+          yb_pred_decoded = ordinalencoding_to_multiclasslabels(yb_pred_encoded)
           outputs.append(yb_pred_decoded.reshape(-1,1))
 
       y_pred = np.vstack(outputs)

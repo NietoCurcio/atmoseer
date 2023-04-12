@@ -135,13 +135,13 @@ def fit(model, n_epochs, optimizer, train_loader, val_loader, patience, criterio
         early_stopping(valid_loss, model, pipeline_id)
 
         if early_stopping.early_stop:
-            print("Early stopping")
+            print("Early stopping activated!")
             break
 
     return avg_train_losses, avg_valid_losses
 
 
-def create_train_n_val_loaders(train_x, train_y, val_x, val_y, batch_size, train_weights, val_weights):
+def create_train_and_val_loaders(train_x, train_y, val_x, val_y, batch_size, train_weights, val_weights):
     train_x = torch.from_numpy(train_x.astype('float64'))
     train_x = torch.permute(train_x, (0, 2, 1))
     train_y = torch.from_numpy(train_y.astype('float64'))

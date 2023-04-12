@@ -35,7 +35,7 @@ def import_from_station(station_id, beginning_year, end_year, api_token):
         else:
             temp = [df_observations_for_all_years, df_observations_for_a_year]
         df_observations_for_all_years = pd.concat(temp)
-    filename = '../data/weather_stations/' + station_row['CD_ESTACAO'].iloc[0] + '_'+ str(beginning_year) +'_'+ str(end_year) +'.csv'
+    filename = '../data/gauge/' + station_row['CD_ESTACAO'].iloc[0] + '_'+ str(beginning_year) +'_'+ str(end_year) +'.csv'
     print(f"Done! Saving dowloaded content to '{filename}'.")
     df_observations_for_all_years.to_csv(filename)
 

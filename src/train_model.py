@@ -1,13 +1,19 @@
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 import numpy as np
 import sys
 import getopt
 import time
 import pickle
 
-from train.ordinal_classification_net import OrdinalClassificationNet, label2ordinalencoding
+from train.ordinal_classification_net import OrdinalClassificationNet
+from train.binary_classification_net import BinaryClassificationNet
 from train.regression_net import RegressionNet
-from train.training_utils import fit, create_train_n_val_loaders, DeviceDataLoader, to_device, gen_learning_curve, seed_everything
+from train.training_utils import fit, create_train_and_val_loaders, DeviceDataLoader, to_device, gen_learning_curve, seed_everything
+
+import rainfall_prediction as rp
 
 def compute_weights(input_array):
     output_array = np.zeros_like(input_array)
@@ -29,39 +35,44 @@ def compute_weights(input_array):
 def weighted_mse_loss(input, target, weight):
     return (weight * (input - target) ** 2).sum()
 
-def train(X_train, y_train, X_val, y_val, ordinal_regression, pipeline_id):
-    N_EPOCHS = 20000
-    PATIENCE = 500
+def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id):
+    N_EPOCHS = 30000
+    PATIENCE = 1000
     LEARNING_RATE = .3e-6
     NUM_FEATURES = X_train.shape[2]
     BATCH_SIZE = 1024
     weight_decay = 1e-6
-
-    # model.apply(initialize_weights)
-    train_weights = compute_weights(y_train)
-    val_weights = compute_weights(y_val)
-    train_weights = torch.FloatTensor(train_weights)
-    val_weights = torch.FloatTensor(val_weights)
-    # print(weights.shape)
-    # print(weights[:5])
-    # criterion = nn.MSELoss()
-    criterion = weighted_mse_loss
-
-    if ordinal_regression:
+    
+    if prediction_task_id == rp.PredictionTask.ORDINAL_CLASSIFICATION:
+        train_weights = compute_weights(y_train)
+        val_weights = compute_weights(y_val)
+        train_weights = torch.FloatTensor(train_weights)
+        val_weights = torch.FloatTensor(val_weights)
+        # print(weights.shape)
+        # print(weights[:5])
+        # criterion = nn.MSELoss()
+        loss = weighted_mse_loss
+        # model.apply(initialize_weights)
         NUM_CLASSES = 5
-        model = OrdinalClassificationNet(in_channels=NUM_FEATURES,
-                                         num_classes=NUM_CLASSES)
-        y_train, y_val = label2ordinalencoding(y_train, y_val)
-    else:
+        model = OrdinalClassificationNet(in_channels=NUM_FEATURES, num_classes=NUM_CLASSES)
+        y_train = rp.precipitationvalues_to_ordinalencoding(y_train)
+        y_val = rp.precipitationvalues_to_ordinalencoding(y_val)
+    elif prediction_task_id == rp.PredictionTask.BINARY_CLASSIFICATION:
+        loss = F.cross_entropy
+        NUM_CLASSES = 2
+        model = BinaryClassificationNet(in_channels=NUM_FEATURES, num_classes=NUM_CLASSES)
+        y_train = rp.precipitationvalues_to_binaryonehotencoding(y_train)
+        y_val = rp.precipitationvalues_to_binaryonehotencoding(y_val)
+    elif prediction_task_id == rp.PredictionTask.REGRESSION:
+        loss = nn.MSELoss()
         global y_mean_value
         y_mean_value = np.mean(y_train)
         print(y_mean_value)
-        model = RegressionNet(in_channels=NUM_FEATURES,
-                              y_mean_value=y_mean_value)
+        model = RegressionNet(in_channels=NUM_FEATURES, y_mean_value=y_mean_value)
 
     print(model)
 
-    train_loader, val_loader = create_train_n_val_loaders(
+    train_loader, val_loader = create_train_and_val_loaders(
         X_train, y_train, X_val, y_val, batch_size=BATCH_SIZE, train_weights=train_weights, val_weights=val_weights)
 
     optimizer = torch.optim.Adam(model.parameters(),
@@ -79,7 +90,7 @@ def train(X_train, y_train, X_val, y_val, ordinal_regression, pipeline_id):
                                train_loader=train_loader,
                                val_loader=val_loader,
                                patience=PATIENCE,
-                               criterion=criterion,
+                               criterion=loss,
                                pipeline_id=pipeline_id)
 
     gen_learning_curve(train_loss, val_loss, pipeline_id)
@@ -122,14 +133,16 @@ def main(argv):
 
     if ordinal_classification:
         pipeline_id += "_OC" 
+        prediction_task_id = rp.PredictionTask.ORDINAL_CLASSIFICATION
     else:
         pipeline_id += "_Reg" 
+        prediction_task_id = rp.PredictionTask.REGRESSION
 
     #
     # Build model
     #
     model = train(X_train, y_train, X_val, y_val,
-                  ordinal_classification, pipeline_id)
+                  prediction_task_id, pipeline_id)
 
     # Load the best model
     model.load_state_dict(torch.load(
@@ -140,6 +153,6 @@ def main(argv):
     print("--- %s seconds ---" % (time.time() - start_time))
 
 
-# python train_model.py -p A652_E-N_EI
+# python train_model.py -p A652_N
 if __name__ == "__main__":
     main(sys.argv)

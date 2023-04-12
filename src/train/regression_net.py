@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.utils.data import TensorDataset
 import torch.nn.functional as F
 from train.training_utils import *
-from train.evaluation import *
+from train.evaluate import *
 
 class RegressionNet(nn.Module):
     def __init__(self, in_channels, y_mean_value):
