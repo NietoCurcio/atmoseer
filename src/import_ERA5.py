@@ -1,7 +1,6 @@
 import pandas as pd
 import sys, getopt
-from datetime import datetime, timedelta
-from util import is_posintstring
+from datetime import datetime
 import time
 import cdsapi
 from pathlib import Path
@@ -12,9 +11,9 @@ import requests
     For using the CDS API to download ERA-5 data consult: https://cds.climate.copernicus.eu/api-how-to
 '''
 
-def get_data(station_name, start_date, end_date):
+def get_data(station_id, start_date, end_date):
 
-    print(f"Downloading data from radiosonde {station_name}...")
+    print(f"Downloading ERA5 data in the neighborhood of station {station_id}...")
 
     today = datetime.today()
     end_date = min([end_date, today.strftime("%Y")])
@@ -31,7 +30,7 @@ def get_data(station_name, start_date, end_date):
 
         unsuccesfully_downloaded_probes = 0
 
-        year = list(map(str,range(start_date,end_date)))
+        year = list(map(str,range(int(start_date),int(end_date) + 1)))
         for i in year:
             try:
                 c.retrieve(
@@ -82,7 +81,7 @@ def get_data(station_name, start_date, end_date):
                             -42,
                         ],
                     },
-                    '../data/ERA-5/RJ_'+ i +'.nc')
+                    '../data/NWP/ERA5/RJ_'+ i +'.nc')
                 first_probe = 'RJ_'+ i 
                 print(f"Data successfully downloaded for {first_probe}.")
             except IndexError as e:
@@ -101,14 +100,7 @@ def get_data(station_name, start_date, end_date):
                 print(f'Unexpected error! {repr(e)}')
                 sys.exit(2)
         
-        ano = list(range(start_date,end_date,2))
-        ano2 = list(range(start_date,end_date,2))
-
-        year2 = []
-        for i in range(0,len(ano2)):
-            year2 = year2 + [[str(ano[i]),str(ano2[i])]]
-
-        for i in year2:
+        for i in year:
             try:
                 c.retrieve(
                     'reanalysis-era5-pressure-levels',
@@ -122,7 +114,7 @@ def get_data(station_name, start_date, end_date):
                             '200',
                         ],
                         'year': [
-                        i[0],i[1],
+                            i,
                         ],
                         'month': [
                             '01', '02', '03',
@@ -158,8 +150,8 @@ def get_data(station_name, start_date, end_date):
                             -42,
                         ],
                     },
-                    '../data/ERA-5/RJ_'+ i[0]+'_'+i[1] +'_200.nc')
-                second_probe = 'RJ_'+ i[0]+'_'+i[1] +'_200'
+                    '../data/NWP/ERA5/RJ_'+ i +'_200.nc')
+                second_probe = 'RJ_'+ i +'_200'
                 print(f"Data successfully downloaded for {second_probe}.")
             except IndexError as e:
                 print(f'{repr(e)}')
@@ -179,16 +171,16 @@ def get_data(station_name, start_date, end_date):
 
         for i in year:
             if i == str(start_date):
-                ds = xr.open_dataset('../data/ERA-5/RJ_'+ i +'.nc')
+                ds = xr.open_dataset('../data/NWP/ERA5/RJ_'+ i +'.nc')
             else:
-                ds_aux = xr.open_dataset('../data/ERA-5/RJ_'+ i +'.nc')
+                ds_aux = xr.open_dataset('../data/NWP/ERA5/RJ_'+ i +'.nc')
                 ds = ds.merge(ds_aux) 
         
-        for i in year2:
-            if i[0] == str(start_date):
-                ds2 = xr.open_dataset('../data/ERA-5/RJ_'+ i[0]+'_'+i[1] +'_200.nc')
+        for i in year:
+            if i == str(start_date):
+                ds2 = xr.open_dataset('../data/NWP/ERA5/RJ_'+ i +'_200.nc')
             else:
-                ds_aux2 = xr.open_dataset('../data/ERA-5/RJ_'+ i[0]+'_'+i[1] +'_200.nc')
+                ds_aux2 = xr.open_dataset('../data/NWP/ERA5/RJ_'+ i +'_200.nc')
                 ds2 = ds2.merge(ds_aux2)
 
         print(f"Done! Number of unsuccesfully downloaded probes: {unsuccesfully_downloaded_probes}.")
@@ -196,71 +188,59 @@ def get_data(station_name, start_date, end_date):
         ds2.to_netcdf('../data/'+file+'_200.nc')
     
     df_stations = pd.read_csv('../data/estacoes_local.csv')
-    df_stations = df_stations[df_stations['files'] == station_name]
+    df_stations = df_stations[df_stations['files'] == station_id]
     latitude_aux = df_stations['VL_LATITUDE'].iloc[0]
     longitude_aux = df_stations['VL_LONGITUDE'].iloc[0]
+
+    min_time = min(ds.time.max(),ds2.time.max())   
+
+    ds = ds.sel(time = slice(ds.time.min(),min_time))
+    ds2 = ds2.sel(time = slice(ds2.time.min(),min_time))
 
     era5_data = ds.sel(level = 1000, longitude = longitude_aux, latitude = latitude_aux, method = 'nearest')
     era5_data2 = ds.sel(level = 700, longitude = longitude_aux, latitude = latitude_aux, method = 'nearest')
     era5_data3 = ds2.sel(longitude = longitude_aux, latitude = latitude_aux, method = 'nearest')
     
-    df_era = pd.DataFrame({'time': era5_data.time,
-                           'Geopotential_1000': era5_data.z, 
-                           'Humidity_1000': era5_data.r,
-                           'Temperature_1000': era5_data.t, 
-                           'WindU_1000': era5_data.u, 
-                           'WindV_1000': era5_data.v,
-                           'Geopotential_700': era5_data2.z, 
-                           'Humidity_700': era5_data2.r,
-                           'Temperature_700': era5_data2.t, 
-                           'WindU_700': era5_data2.u, 
-                           'WindV_700': era5_data2.v,
-                           'Geopotential_200': era5_data3.z, 
-                           'Humidity_200': era5_data3.r,
-                           'Temperature_200': era5_data3.t, 
-                           'WindU_200': era5_data3.u, 
-                           'WindV_200': era5_data3.v})
+    df_era = pd.DataFrame({'time': era5_data.time,'Geopotential_1000': era5_data.z, 'Humidity_1000': era5_data.r,'Temperature_1000': era5_data.t, 'WindU_1000': era5_data.u, 'WindV_1000': era5_data.v,'Geopotential_700': era5_data2.z, 'Humidity_700': era5_data2.r,'Temperature_700': era5_data2.t, 'WindU_700': era5_data2.u, 'WindV_700': era5_data2.v,'Geopotential_200': era5_data3.z, 'Humidity_200': era5_data3.r,'Temperature_200': era5_data3.t, 'WindU_200': era5_data3.u, 'WindV_200': era5_data3.v})
     
-    filename = '../data/ERA5_' + station_name + '_'+ start_date + '_' + end_date + '.csv'
+    filename = '../data/NWP/ERA5_' + station_id + '_'+ start_date + '_' + end_date + '.csv'
     print(f"Saving dowloaded content to file {filename}.")
     df_era.to_csv(filename, index = False)
 
 def main(argv):
     help_message = "Usage: {0} -s <station_name> -b <start_year> -e <end_year>".format(argv[0])
 
-    station_name = 'SBGL'
-
-    date_format_str = '%Y-%m-%d'
-    
     try:
-        opts, args = getopt.getopt(argv[1:], "hs:b:e:", ["help","station_name=","start_year=","end_year="])
+        opts, args = getopt.getopt(argv[1:], "hs:b:e:", ["help","station_id=","start_year=","end_year="])
     except:
         print("Invalid arguments. Use -h or --help for more information.")
         sys.exit(2)
     
+    station_id = None
+
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             print(help_message)
             sys.exit(2)
-        elif opt in ("-s", "--station_name"):
-            station_name = arg
+        elif opt in ("-s", "--station_id"):
+            station_id = arg
         elif opt in ("-b", "--start_date"):
             try:
-                start_date = datetime.strptime(arg, date_format_str)
+                start_date = arg
             except ValueError:
                 print("Invalid date format. Use -h or --help for more information.")
                 sys.exit(2)
         elif opt in ("-e", "--end_date"):
             try:
-                end_date = datetime.strptime(arg, date_format_str)
+                end_date = arg
             except ValueError:
                 print("Invalid date format. Use -h or --help for more information.")
                 sys.exit(2)
 
-    assert (station_name is not None) and (station_name != '')
+    assert (station_id is not None) and (station_id != '')
     assert (start_date <= end_date)
 
-    get_data(station_name, start_date, end_date)
+    get_data(station_id, start_date, end_date)
 
 
 if __name__ == "__main__":

@@ -101,7 +101,7 @@ def generate_windowed_split(train_df, val_df, test_df, target_name):
     return X_train, y_train, X_val, y_val, X_test, y_test
 
 
-def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_model_as_data_source, prediction_task_id, num_neighbors=0):
+def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_model_as_data_source, num_neighbors=0):
 
     pipeline_id = station_id
     if use_numerical_model_as_data_source:
@@ -272,15 +272,15 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
     
     #
     # Write numpy arrays to a parquet file
-    print(f'Saving train/val/test np arrays ({pipeline_id}).')
     print(
         f'Number of examples (train/val/test): {len(X_train)}/{len(X_val)}/{len(X_test)}.')
-    file = open('../data/datasets/' + pipeline_id + ".pickle", 'wb')
+    filename = '../data/datasets/' + pipeline_id + ".pickle"
+    print(f'Dumping train/val/test np arrays to a pickle file ({filename}).', end = " ")
+    file = open(filename, 'wb')
     ndarrays = (X_train, y_train, 
                 X_val, y_val, 
                 X_test, y_test)
     pickle.dump(ndarrays, file)
-
     print('Done!')
 
 
@@ -303,8 +303,6 @@ def main(argv):
     use_sounding_as_data_source = False
     use_NWP_model_as_data_source = False
 
-    prediction_task_id = None
-
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             print(help_message)  # print the help message
@@ -315,12 +313,6 @@ def main(argv):
                 print(f"Invalid station identifier: {station_id}")
                 print(help_message)
                 sys.exit(2)
-        # elif opt in ("-t", "--task"):
-        #     prediction_task_id_str = arg
-        #     if prediction_task_id_str == "ORDINAL_CLASSIFICATION":
-        #         prediction_task_id = PredictionTask.ORDINAL_CLASSIFICATION
-        #     elif prediction_task_id_str == "BINARY_CLASSIFICATION":
-        #         prediction_task_id = PredictionTask.BINARY_CLASSIFICATION
         elif opt in ("-d", "--datasources"):
             if arg.find('R') != -1:
                 use_sounding_as_data_source = True
@@ -329,14 +321,11 @@ def main(argv):
         elif opt in ("-n", "--neighbors"):
             num_neighbors = arg
 
-    # if prediction_task_id is None:
-    #     prediction_task_id = PredictionTask.REGRESSION
-
     assert(station_id is not None) and (station_id != "")
     prepare_datasets(station_id, use_sounding_as_data_source,
-             use_NWP_model_as_data_source, prediction_task_id=prediction_task_id, num_neighbors=num_neighbors)
+             use_NWP_model_as_data_source, num_neighbors=num_neighbors)
 
 
-# python prepare_datasets.py -s A652 -d N -t ORDINAL_CLASSIFICATION
+# python prepare_datasets.py -s A652 -d N
 if __name__ == "__main__":
     main(sys.argv)

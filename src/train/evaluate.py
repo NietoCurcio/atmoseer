@@ -18,32 +18,10 @@ def mean_bias_error(y_true, y_pred):
 
 
 def export_confusion_matrix_to_latex(y_true, y_pred):
-    # no_rain_true, weak_rain_true, moderate_rain_true, strong_rain_true, extreme_rain_true = get_events_per_precipitation_level(
-    #     y_true)
-    # no_rain_pred, weak_rain_pred, moderate_rain_pred, strong_rain_pred, extreme_rain_pred = get_events_per_precipitation_level(
-    #     y_pred)
-
-    # y_true_class = np.zeros_like(y_true)
-    # y_true_class[no_rain_true] = NONE
-    # y_true_class[weak_rain_true] = WEAK
-    # y_true_class[strong_rain_true] = STRONG
-    # y_true_class[moderate_rain_true] = MODERATE
-    # y_true_class[extreme_rain_true] = EXTREME
-
-    # y_pred_class = np.zeros_like(y_pred)
-    # y_pred_class[no_rain_pred] = NONE
-    # y_pred_class[weak_rain_pred] = WEAK
-    # y_pred_class[moderate_rain_pred] = MODERATE
-    # y_pred_class[strong_rain_pred] = STRONG
-    # y_pred_class[extreme_rain_pred] = EXTREME
-
-    y_true_class = map_to_precipitation_levels(y_true)
-    y_pred_class = map_to_precipitation_levels(y_pred)
-
-    print('Classification_report: ')
-    print(skl.classification_report(y_true_class, y_pred_class))
+    print('***Classification_report***')
+    print(skl.classification_report(y_true, y_pred))
     df = pd.DataFrame(
-        confusion_matrix(y_true_class, y_pred_class, labels=[0, 1, 2, 3, 4]),
+        confusion_matrix(y_true, y_pred, labels=[0, 1, 2, 3, 4]),
         index=['None', 'Weak', 'Moderate', 'Strong', 'Extreme'],
         columns=['None', 'Weak', 'Moderate', 'Strong', 'Extreme'],
     )
