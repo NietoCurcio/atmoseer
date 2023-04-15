@@ -4,6 +4,7 @@ from sklearn.metrics import confusion_matrix
 import pandas as pd
 import sklearn.metrics as skl
 from rainfall_prediction import get_events_per_precipitation_level, map_to_precipitation_levels
+import rainfall_prediction as rp
 
 def accuracy(outputs, labels):
     _, preds = torch.max(outputs, dim=1)
@@ -17,14 +18,21 @@ def mean_bias_error(y_true, y_pred):
     return MBE
 
 
-def export_confusion_matrix_to_latex(y_true, y_pred):
+def export_confusion_matrix_to_latex(y_true, y_pred, prediction_task):
     print('***Classification_report***')
     print(skl.classification_report(y_true, y_pred))
-    df = pd.DataFrame(
-        confusion_matrix(y_true, y_pred, labels=[0, 1, 2, 3, 4]),
-        index=['None', 'Weak', 'Moderate', 'Strong', 'Extreme'],
-        columns=['None', 'Weak', 'Moderate', 'Strong', 'Extreme'],
-    )
+    if prediction_task == rp.PredictionTask.BINARY_CLASSIFICATION:
+        df = pd.DataFrame(
+            confusion_matrix(y_true, y_pred, labels=[0, 1]),
+            index=['NO_RAIN', 'RAIN'],
+            columns=['NO_RAIN', 'RAIN'],
+        )
+    elif prediction_task == rp.PredictionTask.ORDINAL_CLASSIFICATION:
+        df = pd.DataFrame(
+            confusion_matrix(y_true, y_pred, labels=[0, 1, 2, 3, 4]),
+            index=['None', 'Weak', 'Moderate', 'Strong', 'Extreme'],
+            columns=['None', 'Weak', 'Moderate', 'Strong', 'Extreme'],
+        )
     df.index.name = 'true($\\downarrow$)/pred($\\rightarrow$)'
     print(df.style.to_latex(hrules=True))
 

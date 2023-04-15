@@ -24,6 +24,7 @@ from train.training_utils import *
 from train.evaluate import *
 from rainfall_prediction import ordinalencoding_to_multiclasslabels
 from train.early_stopping import *
+import rainfall_prediction as rp
 
 class OrdinalClassificationNet(nn.Module):
     def __init__(self, in_channels, num_classes):
@@ -143,7 +144,7 @@ class OrdinalClassificationNet(nn.Module):
 
       y_pred = np.vstack(outputs)
 
-      export_confusion_matrix_to_latex(y_test, y_pred)
+      export_confusion_matrix_to_latex(y_test, y_pred, rp.PredictionTask.ORDINAL_CLASSIFICATION)
 
     def fit(self, n_epochs, optimizer, train_loader, val_loader, patience, criterion, pipeline_id):
         # to track the training loss as the model trains

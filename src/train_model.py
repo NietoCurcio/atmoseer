@@ -101,15 +101,17 @@ def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id):
 
     print(model)
 
-    print(f" - Create data loaders.")
-    train_loader, val_loader = create_train_and_val_loaders(
-        X_train, y_train, X_val, y_val, batch_size=BATCH_SIZE, train_weights=train_weights, val_weights=val_weights)
-
+    print(f" - Setting up optimizer.")
     optimizer = torch.optim.Adam(model.parameters(),
                                  lr=LEARNING_RATE,
                                  weight_decay=weight_decay)
 
+    print(f" - Creating data loaders.")
+    train_loader, val_loader = create_train_and_val_loaders(
+        X_train, y_train, X_val, y_val, batch_size=BATCH_SIZE, train_weights=train_weights, val_weights=val_weights)
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print(f" - Moving data and parameters to {device}.")
     train_loader = DeviceDataLoader(train_loader, device)
     val_loader = DeviceDataLoader(val_loader, device)
     to_device(model, device)

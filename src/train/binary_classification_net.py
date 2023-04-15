@@ -7,7 +7,7 @@ from train.evaluate import *
 from rainfall_prediction import onehotencoding_to_binarylabels
 from rainfall_classification_base import RainfallClassificationBase
 from train.early_stopping import *
-
+import rainfall_prediction as rp
 
 class BinaryClassificationNet(RainfallClassificationBase):
     def __init__(self, in_channels, num_classes):
@@ -102,7 +102,7 @@ class BinaryClassificationNet(RainfallClassificationBase):
         print(y_test)
         print(y_pred.shape)
 
-        export_confusion_matrix_to_latex(y_test, y_pred)
+        export_confusion_matrix_to_latex(y_test, y_pred, rp.PredictionTask.BINARY_CLASSIFICATION)
 
     def fit(self, n_epochs, optimizer, train_loader, val_loader, patience, criterion, pipeline_id):
         # to track the training loss as the model trains
