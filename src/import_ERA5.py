@@ -30,267 +30,143 @@ def get_data(station_id, start_date, end_date):
 
         unsuccesfully_downloaded_probes = 0
 
-        year = list(map(str, range(int(start_date), int(end_date) + 1)))
-        for i in year:
-            try:
-                c.retrieve(
-                    "reanalysis-era5-pressure-levels",
-                    {
-                        "product_type": "reanalysis",
-                        "format": "netcdf",
-                        "variable": [
-                            "geopotential",
-                            "relative_humidity",
-                            "temperature",
-                            "u_component_of_wind",
-                            "v_component_of_wind",
-                        ],
-                        "pressure_level": [
-                            "1000",
-                            "700",
-                        ],
-                        "year": [
-                            i,
-                        ],
-                        "month": [
-                            "01",
-                            "02",
-                            "03",
-                            "04",
-                            "05",
-                            "06",
-                            "07",
-                            "08",
-                            "09",
-                            "10",
-                            "11",
-                            "12",
-                        ],
-                        "day": [
-                            "01",
-                            "02",
-                            "03",
-                            "04",
-                            "05",
-                            "06",
-                            "07",
-                            "08",
-                            "09",
-                            "10",
-                            "11",
-                            "12",
-                            "13",
-                            "14",
-                            "15",
-                            "16",
-                            "17",
-                            "18",
-                            "19",
-                            "20",
-                            "21",
-                            "22",
-                            "23",
-                            "24",
-                            "25",
-                            "26",
-                            "27",
-                            "28",
-                            "29",
-                            "30",
-                            "31",
-                        ],
-                        "time": [
-                            "00:00",
-                            "01:00",
-                            "02:00",
-                            "03:00",
-                            "04:00",
-                            "05:00",
-                            "06:00",
-                            "07:00",
-                            "08:00",
-                            "09:00",
-                            "10:00",
-                            "11:00",
-                            "12:00",
-                            "13:00",
-                            "14:00",
-                            "15:00",
-                            "16:00",
-                            "17:00",
-                            "18:00",
-                            "19:00",
-                            "20:00",
-                            "21:00",
-                            "22:00",
-                            "23:00",
-                        ],
-                        "area": [
-                            -22,
-                            -44,
-                            -23,
-                            -42,
-                        ],
-                    },
-                    "../data/NWP/ERA5/RJ_" + i + ".nc",
-                )
-                first_probe = "RJ_" + i
-                print(f"Data successfully downloaded for {first_probe}.")
-            except IndexError as e:
-                print(f"{repr(e)}")
-                unsuccesfully_downloaded_probes += 1
-            except ValueError as e:
-                print(f"{str(e)}")
-                unsuccesfully_downloaded_probes += 1
-            except requests.HTTPError as e:
-                print(f"{repr(e)}")
-                print("Server seems to be busy. Going to sleep for a while...")
-                time.sleep(10)  # Sleep for a moment
-                print("Back to work!")
-                continue
-            except Exception as e:
-                print(f"Unexpected error! {repr(e)}")
-                sys.exit(2)
+        years = list(map(str, range(int(start_date), int(end_date) + 1)))
+        for year in years:
+            for pressure_level in ['200', '700', '1000']:
+                print(f"Downloading pressure data at level {pressure_level}hPa for year {year}...", end="")
+                try:
+                    c.retrieve(
+                        "reanalysis-era5-pressure-levels",
+                        {
+                            "product_type": "reanalysis",
+                            "format": "netcdf",
+                            "variable": [
+                                "geopotential",
+                                "relative_humidity",
+                                "temperature",
+                                "u_component_of_wind",
+                                "v_component_of_wind",
+                            ],
+                            "pressure_level": [
+                                pressure_level
+                            ],
+                            "year": [
+                                year,
+                            ],
+                            "month": [
+                                "01",
+                                "02",
+                                "03",
+                                "04",
+                                "05",
+                                "06",
+                                "07",
+                                "08",
+                                "09",
+                                "10",
+                                "11",
+                                "12",
+                            ],
+                            "day": [
+                                "01",
+                                "02",
+                                "03",
+                                "04",
+                                "05",
+                                "06",
+                                "07",
+                                "08",
+                                "09",
+                                "10",
+                                "11",
+                                "12",
+                                "13",
+                                "14",
+                                "15",
+                                "16",
+                                "17",
+                                "18",
+                                "19",
+                                "20",
+                                "21",
+                                "22",
+                                "23",
+                                "24",
+                                "25",
+                                "26",
+                                "27",
+                                "28",
+                                "29",
+                                "30",
+                                "31",
+                            ],
+                            "time": [
+                                "00:00",
+                                "01:00",
+                                "02:00",
+                                "03:00",
+                                "04:00",
+                                "05:00",
+                                "06:00",
+                                "07:00",
+                                "08:00",
+                                "09:00",
+                                "10:00",
+                                "11:00",
+                                "12:00",
+                                "13:00",
+                                "14:00",
+                                "15:00",
+                                "16:00",
+                                "17:00",
+                                "18:00",
+                                "19:00",
+                                "20:00",
+                                "21:00",
+                                "22:00",
+                                "23:00",
+                            ],
+                            "area": [
+                                -22,
+                                -44,
+                                -23,
+                                -42,
+                            ],
+                        },
+                        "../data/NWP/ERA5/RJ_" + year + "_" + pressure_level + ".nc",
+                    )
+                    print("Done!")
+                except IndexError as e:
+                    print(f"{repr(e)}")
+                    unsuccesfully_downloaded_probes += 1
+                except ValueError as e:
+                    print(f"{str(e)}")
+                    unsuccesfully_downloaded_probes += 1
+                except requests.HTTPError as e:
+                    print(f"{repr(e)}")
+                    print("Server seems to be busy. Going to sleep for a while...")
+                    time.sleep(10)  # Sleep for a moment
+                    print("Back to work!")
+                    continue
+                except Exception as e:
+                    print(f"Unexpected error! {repr(e)}")
+                    sys.exit(2)
 
-        for i in year:
-            try:
-                c.retrieve(
-                    "reanalysis-era5-pressure-levels",
-                    {
-                        "product_type": "reanalysis",
-                        "format": "netcdf",
-                        "variable": [
-                            "geopotential",
-                            "relative_humidity",
-                            "temperature",
-                            "u_component_of_wind",
-                            "v_component_of_wind",
-                        ],
-                        "pressure_level": [
-                            "200",
-                        ],
-                        "year": [
-                            i,
-                        ],
-                        "month": [
-                            "01",
-                            "02",
-                            "03",
-                            "04",
-                            "05",
-                            "06",
-                            "07",
-                            "08",
-                            "09",
-                            "10",
-                            "11",
-                            "12",
-                        ],
-                        "day": [
-                            "01",
-                            "02",
-                            "03",
-                            "04",
-                            "05",
-                            "06",
-                            "07",
-                            "08",
-                            "09",
-                            "10",
-                            "11",
-                            "12",
-                            "13",
-                            "14",
-                            "15",
-                            "16",
-                            "17",
-                            "18",
-                            "19",
-                            "20",
-                            "21",
-                            "22",
-                            "23",
-                            "24",
-                            "25",
-                            "26",
-                            "27",
-                            "28",
-                            "29",
-                            "30",
-                            "31",
-                        ],
-                        "time": [
-                            "00:00",
-                            "01:00",
-                            "02:00",
-                            "03:00",
-                            "04:00",
-                            "05:00",
-                            "06:00",
-                            "07:00",
-                            "08:00",
-                            "09:00",
-                            "10:00",
-                            "11:00",
-                            "12:00",
-                            "13:00",
-                            "14:00",
-                            "15:00",
-                            "16:00",
-                            "17:00",
-                            "18:00",
-                            "19:00",
-                            "20:00",
-                            "21:00",
-                            "22:00",
-                            "23:00",
-                        ],
-                        "area": [
-                            -22,
-                            -44,
-                            -23,
-                            -42,
-                        ],
-                    },
-                    "../data/NWP/ERA5/RJ_" + i + "_200.nc",
-                )
-                second_probe = "RJ_" + i + "_200"
-                print(f"Data successfully downloaded for {second_probe}.")
-            except IndexError as e:
-                print(f"{repr(e)}")
-                unsuccesfully_downloaded_probes += 1
-            except ValueError as e:
-                print(f"{str(e)}")
-                unsuccesfully_downloaded_probes += 1
-            except requests.HTTPError as e:
-                print(f"{repr(e)}")
-                print("Server seems to be busy. Going to sleep for a while...")
-                time.sleep(10)  # Sleep for a moment
-                print("Back to work!")
-                continue
-            except Exception as e:
-                print(f"Unexpected error! {repr(e)}")
-                sys.exit(2)
-
-        for i in year:
-            if i == str(start_date):
-                ds = xr.open_dataset("../data/NWP/ERA5/RJ_" + i + ".nc")
-            else:
-                ds_aux = xr.open_dataset("../data/NWP/ERA5/RJ_" + i + ".nc")
-                ds = ds.merge(ds_aux)
-
-        for i in year:
-            if i == str(start_date):
-                ds2 = xr.open_dataset("../data/NWP/ERA5/RJ_" + i + "_200.nc")
-            else:
-                ds_aux2 = xr.open_dataset("../data/NWP/ERA5/RJ_" + i + "_200.nc")
-                ds2 = ds2.merge(ds_aux2)
+        ds = None
+        for year in years:
+            for pressure_level in ['200', '700', '1000']:
+                if ds == None:
+                    ds = xr.open_dataset("../data/NWP/ERA5/RJ_" + year + "_" + pressure_level + ".nc")
+                else:
+                    ds_aux = xr.open_dataset("../data/NWP/ERA5/RJ_" + year + "_" + pressure_level +  + ".nc")
+                    ds = ds.merge(ds_aux)
 
         print(
             f"Done! Number of unsuccesfully downloaded probes: {unsuccesfully_downloaded_probes}."
         )
-        ds.to_netcdf("../data/" + file + ".nc")
-        ds2.to_netcdf("../data/" + file + "_200.nc")
+        filename = "../data/NWP/" + file + ".nc"
+        print(f"Saving dowloaded data to {filename}")
+        ds.to_netcdf(filename)
 
     df_stations = pd.read_csv("../data/estacoes_local.csv")
     df_stations = df_stations[df_stations["files"] == station_id]
@@ -302,34 +178,36 @@ def get_data(station_id, start_date, end_date):
     ds = ds.sel(time=slice(ds.time.min(), min_time))
     ds2 = ds2.sel(time=slice(ds2.time.min(), min_time))
 
-    era5_data = ds.sel(
+    era5_data_at_1000hPa = ds.sel(
         level=1000, longitude=longitude_aux, latitude=latitude_aux, method="nearest"
     )
-    era5_data2 = ds.sel(
+    era5_data_at_700hPa = ds.sel(
         level=700, longitude=longitude_aux, latitude=latitude_aux, method="nearest"
     )
-    era5_data3 = ds2.sel(
-        longitude=longitude_aux, latitude=latitude_aux, method="nearest"
+    era5_data_at_200hPa = ds2.sel(
+        level=200, longitude=longitude_aux, latitude=latitude_aux, method="nearest"
     )
 
     df_era = pd.DataFrame(
         {
-            "time": era5_data.time,
-            "Geopotential_1000": era5_data.z,
-            "Humidity_1000": era5_data.r,
-            "Temperature_1000": era5_data.t,
-            "WindU_1000": era5_data.u,
-            "WindV_1000": era5_data.v,
-            "Geopotential_700": era5_data2.z,
-            "Humidity_700": era5_data2.r,
-            "Temperature_700": era5_data2.t,
-            "WindU_700": era5_data2.u,
-            "WindV_700": era5_data2.v,
-            "Geopotential_200": era5_data3.z,
-            "Humidity_200": era5_data3.r,
-            "Temperature_200": era5_data3.t,
-            "WindU_200": era5_data3.u,
-            "WindV_200": era5_data3.v,
+            "time": era5_data_at_1000hPa.time,
+            "Geopotential_1000": era5_data_at_1000hPa.z,
+            "Humidity_1000": era5_data_at_1000hPa.r,
+            "Temperature_1000": era5_data_at_1000hPa.t,
+            "WindU_1000": era5_data_at_1000hPa.u,
+            "WindV_1000": era5_data_at_1000hPa.v,
+            
+            "Geopotential_700": era5_data_at_700hPa.z,
+            "Humidity_700": era5_data_at_700hPa.r,
+            "Temperature_700": era5_data_at_700hPa.t,
+            "WindU_700": era5_data_at_700hPa.u,
+            "WindV_700": era5_data_at_700hPa.v,
+
+            "Geopotential_200": era5_data_at_200hPa.z,
+            "Humidity_200": era5_data_at_200hPa.r,
+            "Temperature_200": era5_data_at_200hPa.t,
+            "WindU_200": era5_data_at_200hPa.u,
+            "WindV_200": era5_data_at_200hPa.v,
         }
     )
 

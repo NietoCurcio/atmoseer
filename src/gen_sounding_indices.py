@@ -40,11 +40,11 @@ def compute_indices(df_probe_original):
     return indices
     
 def main():
-    input_file = '../data/radiosonde/SBGL_1997-01-01_2022-12-31.csv'
-    output_file = '../data/radiosonde/SBGL_indices_1997-01-01_2022-12-31.csv'
+    input_file = '../data/sounding/SBGL_1997-01-01_2022-12-31.csv'
+    output_file = '../data/sounding/SBGL_indices_1997-01-01_2022-12-31.csv'
     
-    # input_file = '../data/radiosonde/2012-02-02.csv'
-    # output_file = '../data/radiosonde/2012-02-02_indices.csv'
+    # input_file = '../data/sounding/2012-02-02.csv'
+    # output_file = '../data/sounding/2012-02-02_indices.csv'
     
     dtype_dict = {'pressure': 'float',
                   'height': 'float',
