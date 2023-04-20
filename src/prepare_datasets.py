@@ -29,7 +29,10 @@ def apply_subsampling(X, y):
     y_gt_zero_idxs = np.where(y > 0)[0]
     print(f' - Original sizes (target=0)/(target>0): ({y_eq_zero_idxs.shape[0]})/({y_gt_zero_idxs.shape[0]})')
 
-    print(f" - Going to use subsampling keep ratio = {SUBSAMPLING_KEEP_RATIO}.")
+    print(f" - Using keep ratio = {SUBSAMPLING_KEEP_RATIO}.")
+
+    # Setting numpy seed value
+    np.random.seed(0)
 
     mask = np.random.choice([True, False], size=y.shape[0], p=[
                             SUBSAMPLING_KEEP_RATIO, 1.0-SUBSAMPLING_KEEP_RATIO])
@@ -138,7 +141,7 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
         merged_df = pd.merge(df_ws, df_nwp_era5, how='left', left_index=True, right_index=True)
         # merged_df = merged_df.join(df_nwp_era5)
 
-        print(f"NWP successfully joined; resulting shape = {merged_df.shape}.")
+        print(f"NWP data successfully joined; resulting shape = {merged_df.shape}.")
         print(df_ws.index.difference(merged_df.index).shape)
         print(merged_df.index.difference(df_ws.index).shape)
 
@@ -191,7 +194,7 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
 
     #
     # Save train/val/test DataFrames for future error analisys.
-    print(f'Saving train/val/test datasets ({pipeline_id}).')
+    print(f'Saving train/val/test datasets for pipeline {pipeline_id} as parquet files.')
     df_train.to_parquet('../data/datasets/' + pipeline_id +
                         '_train.parquet.gzip', compression='gzip')
     df_val.to_parquet('../data/datasets/' + pipeline_id +
@@ -200,42 +203,44 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
                        '_test.parquet.gzip', compression='gzip')
 
     #
-    # Apply sliding windowing method to build train/val/test datasets 
-    print('Applying sliding window to build train/val/test datasets.')
+    # Normalize the columns in train/val/test dataframes. This is done im preparation for appllying
+    # the sliding window technique, since the target variable is going to be used as lag feature.
+    # (see, e.g., https://www.mikulskibartosz.name/forecasting-time-series-using-lag-features/)
+    # (see also https://datascience.stackexchange.com/questions/72480/what-is-lag-in-time-series-forecasting)
+    print('Normalizing the features in train/val/test dataframes.')
     _, target_name = util.get_relevant_variables(station_id)
-    # target_column_train = df_train[target_name]
-    # target_column_val = df_val[target_name]
-    # target_column_test = df_test[target_name]
-
-    min_y_train, max_y_train = min(df_train[target_name]), max(df_train[target_name])
+    min_target_value_in_train, max_target_value_in_train = min(df_train[target_name]), max(df_train[target_name])
+    min_target_value_in_val, max_target_value_in_val = min(df_val[target_name]), max(df_val[target_name])
+    min_target_value_in_test, max_target_value_in_test = min(df_test[target_name]), max(df_test[target_name])
     df_train = util.min_max_normalize(df_train)
-
-    min_y_val, max_y_val = min(df_val[target_name]), max(df_val[target_name])
     df_val = util.min_max_normalize(df_val)
-
-    min_y_test, max_y_test = min(df_test[target_name]), max(df_test[target_name])
     df_test = util.min_max_normalize(df_test)
 
+    #
+    # Apply sliding windowing method to build tabular versions of train/val/test datasets 
+    print('Applying sliding window to build train/val/test datasets.')
     X_train, y_train, X_val, y_val, X_test, y_test = generate_windowed_split(
         df_train, df_val, df_test, target_name=target_name)
     print("Done! Resulting shapes:")
     print(f' - (X_train/X_val/X_test): ({X_train.shape}/{X_val.shape}/{X_test.shape})')
     print(f' - (y_train/y_val/y_test): ({y_train.shape}/{y_val.shape}/{y_test.shape})')
 
-    y_train = (y_train + min_y_train) * (max_y_train - min_y_train)
-    y_val = (y_val + min_y_val) * (max_y_val - min_y_val)
-    y_test = (y_test + min_y_test) * (max_y_test - min_y_test)
-
+    #
+    # Now, we restore the target variable to their original values. This is needed in case a multiclass
+    # classification task is defined down the pipeline.
+    print('Restoring the target variable to their original values.')
+    y_train = (y_train + min_target_value_in_train) * (max_target_value_in_train - min_target_value_in_train)
+    y_val = (y_val + min_target_value_in_val) * (max_target_value_in_val - min_target_value_in_val)
+    y_test = (y_test + min_target_value_in_test) * (max_target_value_in_test - min_target_value_in_test)
     print('Min precipitation values (train/val/test): %.5f, %.5f, %.5f' %
           (np.min(y_train), np.min(y_val), np.min(y_test)))
     print('Max precipitation values (train/val/test): %.5f, %.5f, %.5f' %
           (np.max(y_train), np.max(y_val), np.max(y_test)))
 
     #
-    # Subsampling
+    # Subsampling: we keep all the positive instances and significantly subsample the negative instances.
     print('**********Subsampling************')
-    print('***Before')
-    print(f'Shapes (Y_train/y_val/y_test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
+    print(f'- Shapes before subsampling (Y_train/y_val/y_test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
 
     print("Subsampling train data.")
     X_train, y_train = apply_subsampling(X_train, y_train)
@@ -244,38 +249,18 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
     print("Subsampling test data.")
     X_test, y_test = apply_subsampling(X_test, y_test)
 
-    print('***After')
-    print('Min precipitation values (train/val/test): %.5f, %.5f, %.5f' %
+    print('- Min precipitation values (train/val/test) after subsampling: %.5f, %.5f, %.5f' %
           (np.min(y_train), np.min(y_val), np.min(y_test)))
-    print('Max precipitation values (train/val/test): %.5f, %.5f, %.5f' %
+    print('- Max precipitation values (train/val/test) after subsampling: %.5f, %.5f, %.5f' %
           (np.max(y_train), np.max(y_val), np.max(y_test)))
-    print(f'Shapes (y_train/val/test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
+    print(f'- Shapes (y_train/val/test) after subsampling: {y_train.shape}, {y_val.shape}, {y_test.shape}')
 
-    # #
-    # # By default, the target variable is formatted assuming that a regression task will be 
-    # # performed downstream in the pipeline. However, if the user of this script states otherwise,
-    # # format this variable accordingly. The alternative tasks are "OC" (for ordinal multiclass 
-    # # classification) and "BC" (for binary classification, NO_RAIN vs RAIN).
-    # print(f"Target variable is formatted for {prediction_task_id.name} task.")
-    # if prediction_task_id == rp.PredictionTask.ORDINAL_CLASSIFICATION:
-    #     y_train, y_val, y_test = format_for_ordinal_classification(y_train, y_val, y_test)
-    #     pipeline_id += "_OC"
-    # elif prediction_task_id == rp.PredictionTask.BINARY_CLASSIFICATION:
-    #     y_train, y_val, y_test = format_for_binary_classification(y_train, y_val, y_test)
-    #     pipeline_id += "_BC"
-    # else:
-    #     pipeline_id += "_REG"
-    # if (prediction_task_id == rp.PredictionTask.BINARY_CLASSIFICATION) or prediction_task_id == rp.PredictionTask.ORDINAL_CLASSIFICATION:
-    #     print(f"- Unique target values (train/val/test): {np.unique(y_train)}/{np.unique(y_val)}/{np.unique(y_test)}")
-    # else:
-    #     print(f"- Ranges of target values (train/val/test): ({min(y_train)}, {max(y_train)})/({min(y_val)}, {max(y_val)})/({min(y_test)}, {max(y_test)})")
-    
     #
     # Write numpy arrays to a parquet file
     print(
         f'Number of examples (train/val/test): {len(X_train)}/{len(X_val)}/{len(X_test)}.')
     filename = '../data/datasets/' + pipeline_id + ".pickle"
-    print(f'Dumping train/val/test np arrays to a pickle file ({filename}).', end = " ")
+    print(f'Dumping train/val/test np arrays to pickle file {filename}.', end = " ")
     file = open(filename, 'wb')
     ndarrays = (X_train, y_train, 
                 X_val, y_val, 

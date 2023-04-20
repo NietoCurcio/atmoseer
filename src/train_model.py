@@ -54,12 +54,11 @@ def weighted_mse_loss(input, target, weight):
     return (weight * (input - target) ** 2).sum()
 
 def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id):
-    N_EPOCHS = 1
+    N_EPOCHS = 2000
     PATIENCE = 1000
-    LEARNING_RATE = .3e-6
     NUM_FEATURES = X_train.shape[2]
     BATCH_SIZE = 1024
-    weight_decay = 1e-6
+    WEIGHT_DECAY = 1e-6
     
     # model.apply(initialize_weights)
 
@@ -69,9 +68,13 @@ def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id):
         val_weights = compute_weights_for_ordinal_classification(y_val)
         train_weights = torch.FloatTensor(train_weights)
         val_weights = torch.FloatTensor(val_weights)
+
+        LEARNING_RATE = .3e-6
         loss = weighted_mse_loss
         NUM_CLASSES = 5
+
         model = OrdinalClassificationNet(in_channels=NUM_FEATURES, num_classes=NUM_CLASSES)
+
         print(f" - Shape of y_train before encoding: {y_train.shape}")
         y_train = rp.precipitationvalues_to_ordinalencoding(y_train)
         y_val = rp.precipitationvalues_to_ordinalencoding(y_val)
@@ -85,12 +88,25 @@ def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id):
         # train_weights = torch.FloatTensor(train_weights)
         # val_weights = torch.FloatTensor(val_weights)
         # loss = F.cross_entropy
-        loss = nn.CrossEntropyLoss()
-        NUM_CLASSES = 2
-        model = BinaryClassificationNet(in_channels=NUM_FEATURES, num_classes=NUM_CLASSES)
-        y_train = rp.precipitationvalues_to_binaryonehotencoding(y_train)
-        y_val = rp.precipitationvalues_to_binaryonehotencoding(y_val)
-        print(f"- Shapes of one-hot-encoded vectors (train/val): {y_train.shape}/{y_val.shape}")
+
+        LEARNING_RATE = .3e-3
+        loss = nn.BCELoss()
+
+        model = BinaryClassificationNet(in_channels=NUM_FEATURES)
+
+        print(f"(BEFORE) min/max of y_train: {min(y_train)}/{max(y_train)}")
+        print(f"(BEFORE) min/max of y_val: {min(y_val)}/{max(y_val)}")
+        print(f"(BEFORE) unique of y_train: {np.unique(y_train)}")
+        print(f"(BEFORE) unique of y_val: {np.unique(y_val)}")
+        
+        y_train = rp.precipitationvalues_to_intencoding(y_train)
+        y_val = rp.precipitationvalues_to_intencoding(y_val)
+        print(f"(AFTER) min/max of y_train: {min(y_train)}/{max(y_train)}")
+        print(f"(AFTER) min/max of y_val: {min(y_val)}/{max(y_val)}")
+        print(f"(AFTER) unique of y_train: {np.unique(y_train)}")
+        print(f"(AFTER) unique of y_val: {np.unique(y_val)}")
+        
+        print(f"- Shapes of (train/val) arrays: {y_train.shape}/{y_val.shape}")
     elif prediction_task_id == rp.PredictionTask.REGRESSION:
         print("- Prediction task: regression.")
         loss = nn.MSELoss()
@@ -104,7 +120,7 @@ def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id):
     print(f" - Setting up optimizer.")
     optimizer = torch.optim.Adam(model.parameters(),
                                  lr=LEARNING_RATE,
-                                 weight_decay=weight_decay)
+                                 weight_decay=WEIGHT_DECAY)
 
     print(f" - Creating data loaders.")
     train_loader, val_loader = create_train_and_val_loaders(
@@ -161,6 +177,19 @@ def main(argv):
     if prediction_task_id is None:
         prediction_task_id = rp.PredictionTask.REGRESSION
 
+    start_time = time.time()
+
+    seed_everything()
+
+    #
+    # Load numpy arrays (stored in a pickle file) from disk
+    filename = "../data/datasets/" + pipeline_id + ".pickle"
+    print(f"Loading train/val/test datasets from {filename}.")
+    file = open(filename, 'rb')
+    (X_train, y_train,  # min_y_train, max_y_train,
+        X_val, y_val,  # min_y_val, max_y_val,
+        X_test, y_test) = pickle.load(file)
+
     if prediction_task_id == rp.PredictionTask.ORDINAL_CLASSIFICATION:
         pipeline_id += "_OC" 
     if prediction_task_id == rp.PredictionTask.BINARY_CLASSIFICATION:
@@ -168,29 +197,15 @@ def main(argv):
     elif prediction_task_id == rp.PredictionTask.REGRESSION:
         pipeline_id += "_Reg"
 
-    start_time = time.time()
-
-    seed_everything()
-
-    #
-    # Load numpy arrays (stored in a pickle file) from disk
-    #
-    file = open("../data/datasets/" + pipeline_id + ".pickle", 'rb')
-    (X_train, y_train,  # min_y_train, max_y_train,
-        X_val, y_val,  # min_y_val, max_y_val,
-        X_test, y_test) = pickle.load(file)
-
     #
     # Build model
-    #
-    model = train(X_train, y_train, X_val, y_val,
-                  prediction_task_id, pipeline_id)
+    model = train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id)
 
+    # 
     # Load the best model
-    model.load_state_dict(torch.load(
-        '../models/best_' + pipeline_id + '.pt'))
+    model.load_state_dict(torch.load('../models/best_' + pipeline_id + '.pt'))
 
-    # y_test = rp.precipitationvalues_to_binaryonehotencoding(y_test)
+    y_test = rp.precipitationvalues_to_intencoding(y_test)
     # print(f"- Shape of one-hot-encoded vector (y_test): {y_test.shape}")
 
     model.evaluate(X_test, y_test)

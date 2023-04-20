@@ -32,7 +32,6 @@ def preprocess_sounding_data(sounding_data_source):
 def preprocess_numerical_model_data(numerical_model_data_source):
     df = pd.read_csv(numerical_model_data_source)
     format_string = '%Y-%m-%d %H:%M:%S'
-    # df['time'] = df['time'].apply(lambda x: utc_to_local(x, "America/Sao_paulo", format_string))
 
     df['Datetime'] = pd.to_datetime(df['time'], format=format_string)
 

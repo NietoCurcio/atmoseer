@@ -60,21 +60,21 @@ class DeviceDataLoader():
         return len(self.dl)
 
 
-def create_train_and_val_loaders(train_x, train_y, val_x, val_y, batch_size, train_weights, val_weights):
-    train_x = torch.from_numpy(train_x.astype('float64'))
-    train_x = torch.permute(train_x, (0, 2, 1))
-    train_y = torch.from_numpy(train_y.astype('float64'))
+def create_train_and_val_loaders(X_train, y_train, X_val, y_val, batch_size, train_weights, val_weights):
+    X_train = torch.from_numpy(X_train.astype('float64'))
+    X_train = torch.permute(X_train, (0, 2, 1))
+    y_train = torch.from_numpy(y_train.astype('float64'))
 
-    val_x = torch.from_numpy(val_x.astype('float64'))
-    val_x = torch.permute(val_x, (0, 2, 1))
-    val_y = torch.from_numpy(val_y.astype('float64'))
+    X_val = torch.from_numpy(X_val.astype('float64'))
+    X_val = torch.permute(X_val, (0, 2, 1))
+    y_val = torch.from_numpy(y_val.astype('float64'))
 
-    if train_weights is None and val_weights is None:
-        train_ds = TensorDataset(train_x, train_y)
-        val_ds = TensorDataset(val_x, val_y)
+    if (train_weights is None) and (val_weights is None):
+        train_ds = TensorDataset(X_train, y_train)
+        val_ds = TensorDataset(X_val, y_val)
     else:
-        train_ds = TensorDataset(train_x, train_y, train_weights)
-        val_ds = TensorDataset(val_x, val_y, val_weights)
+        train_ds = TensorDataset(X_train, y_train, train_weights)
+        val_ds = TensorDataset(X_val, y_val, val_weights)
 
     train_loader = torch.utils.data.DataLoader(
         train_ds, batch_size=batch_size, shuffle=True)
