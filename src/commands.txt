@@ -1,0 +1,3 @@
+python import_sounding.py --station_name SBGL --start_year 2023 --end_year 2023 
+
+python gen_sounding_indices.py --input_file ../data/sounding/SBGL_1997_2023.parquet.gzip --output_file ../data/sounding/SBGL_indices_1997_2023.parquet.gzip

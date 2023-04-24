@@ -104,60 +104,81 @@ def generate_windowed_split(train_df, val_df, test_df, target_name):
     return X_train, y_train, X_val, y_val, X_test, y_test
 
 
-def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_model_as_data_source, num_neighbors=0):
+def prepare_datasets(station_id: str, join_sounding_data_source: bool, join_numerical_model_data_source: bool, num_neighbors: int =0):
+    '''
+    This function joins a set of datasources to build datasets. These resulting datasets are used to fit the parameters of
+    precipitation models down the AtmoSeer pipeline. Each datasource contributes with a group of features to build the datasets 
+    that are going to be used for training and validating the predictions models.
+    
+    Notice that, when joining the user-specified data sources, there is always a station of interest, that is, a weather 
+    station that will provide the values of the target variable (in our case, precipitation). It can even be the case that 
+    the only user-specified data source is this weather station. 
+    '''
 
     pipeline_id = station_id
-    if use_numerical_model_as_data_source:
+    if join_numerical_model_data_source:
         pipeline_id = pipeline_id + '_N'
-    if use_sounding_as_data_source:
+    if join_sounding_data_source:
         pipeline_id = pipeline_id + '_R'
 
     if num_neighbors > 0:
         pipeline_id = pipeline_id + '_NN' + str(num_neighbors)
 
-    df_ws = pd.read_parquet(
-        '../data/gauge/A652_2007_2023_preprocessed.parquet.gzip')
-    print(f"Observations for weather station {station_id} loaded. Shape = {df_ws.shape}.")
+    print(f"Loading observations for weather station {station_id}...", end= "")
+    df_ws = pd.read_parquet("../data/gauge/" + station_id + "_2007_2023_preprocessed.parquet.gzip")
+    print(f"Done! Shape = {df_ws.shape}.")
+    # df_ws = pd.read_parquet(
+    #     '../data/gauge/A652_2007_2023_preprocessed.parquet.gzip')
 
     ####
-    # Apply a filtering step (e.g., to disregard all observations made between June and September.).
+    # Apply a filtering step (e.g., to disregard all observations made between what we 
+    # consider to be the drought period (months of June, July, and August).
     ####
-    print(f"Applying filtering...", end=' ')
+    print(f"Applying month filtering...", end=' ')
+    shape_before_month_filtering = df_ws.shape
     df_ws = df_ws[df_ws.index.month.isin([9, 10, 11, 12, 1, 2, 3, 4, 5])].sort_index(ascending=True)
-    print(f"Done! New shape = {df_ws.shape}")
+    shape_after_month_filtering = df_ws.shape
+    print(f"Done! Shapes before/after: {shape_before_month_filtering}/{shape_after_month_filtering}")
 
     assert (not df_ws.isnull().values.any().any())
 
-    #
-    # Merge datasources
-    #
-    merged_df = df_ws
+    #####
+    # Start with the mandatory datasource (i.e., the one represented by the chosen weather station) 
+    # and sequentially join the other user-specified datasources.
+    #####
+    joined_df = df_ws
 
-    if use_numerical_model_as_data_source:
+    if join_numerical_model_data_source:
         df_nwp_era5 = pd.read_parquet(
             '../data/NWP/ERA5_A652_1997_2023_preprocessed.parquet.gzip')
         assert (not df_nwp_era5.isnull().values.any().any())
         print(f"NWP data loaded. Shape = {df_nwp_era5.shape}.")
-        merged_df = pd.merge(df_ws, df_nwp_era5, how='left', left_index=True, right_index=True)
+        joined_df = pd.merge(df_ws, df_nwp_era5, how='left', left_index=True, right_index=True)
         # merged_df = merged_df.join(df_nwp_era5)
 
-        print(f"NWP data successfully joined; resulting shape = {merged_df.shape}.")
-        print(df_ws.index.difference(merged_df.index).shape)
-        print(merged_df.index.difference(df_ws.index).shape)
+        print(f"NWP data successfully joined; resulting shape = {joined_df.shape}.")
+        print(df_ws.index.difference(joined_df.index).shape)
+        print(joined_df.index.difference(df_ws.index).shape)
 
         print(df_nwp_era5.index.intersection(df_ws.index).shape)
         print(df_nwp_era5.index.difference(df_ws.index).shape)
         print(df_ws.index.difference(df_nwp_era5.index).shape)
         print(df_ws.index.difference(df_nwp_era5.index))
 
-        merged_df = merged_df.dropna()
-        print(f"Removed NaN rows in merge data; resulting shape = {merged_df.shape}.")
+        shape_before_dropna = joined_df.shape
+        joined_df = joined_df.dropna()
+        shape_after_dropna = joined_df.shape
+        print(f"Removed NaN rows in merge data; Shapes before/after dropna: {shape_before_dropna}/{shape_after_dropna}.")
         # assert(merged_df.shape[0] == df_ws.shape[0])
 
-    if use_sounding_as_data_source:
-        df_sounding = pd.read_parquet(
-            '../data/sounding/SBGL_indices_1997-01-01_2022-12-31_preprocessed.parquet.gzip')
-        merged_df = pd.merge(merged_df, df_sounding, on='Datetime', how='left')
+    if join_sounding_data_source:
+        print(f"Loading sounding datasource...", end= "")
+        df_sounding = pd.read_parquet('../data/sounding/SBGL_indices_1997-01-01_2022-12-31_preprocessed.parquet.gzip')
+        print(f"Done! Shape = {df_sounding.shape}.")
+
+        joined_df = pd.merge(joined_df, df_sounding, how='left', left_index=True, right_index=True)
+        print(f"Sounding data successfully joined; resulting shape = {joined_df.shape}.")
+
         # TODO: data normalization 
         # TODO: implement interpolation
         # TODO: deal with missing values (see https://youtu.be/DKmDJJzayZw)
@@ -167,7 +188,7 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
     if num_neighbors != 0:
         pass
 
-    assert (not merged_df.isnull().values.any().any())
+    assert (not joined_df.isnull().values.any().any())
 
     #
     # Data splitting (train/val/test)
@@ -178,15 +199,15 @@ def prepare_datasets(station_id, use_sounding_as_data_source, use_numerical_mode
 
     train_prob = dict_splitting_proportions["train"]
     val_prob = dict_splitting_proportions["val"]
-    n = len(merged_df)
+    n = len(joined_df)
     
     train_upper_limit = int(n*train_prob)
     val_upper_limit = int(n*(train_prob+val_prob))
     print(f"Ranges (train/val/test): ({0},{train_upper_limit})/({train_upper_limit},{val_upper_limit})/({val_upper_limit},{n})")
 
-    df_train = merged_df[0:train_upper_limit]
-    df_val = merged_df[train_upper_limit:val_upper_limit]
-    df_test = merged_df[val_upper_limit:]
+    df_train = joined_df[0:train_upper_limit]
+    df_val = joined_df[train_upper_limit:val_upper_limit]
+    df_test = joined_df[val_upper_limit:]
     assert (not df_train.isnull().values.any().any())
     assert (not df_val.isnull().values.any().any())
     assert (not df_test.isnull().values.any().any())
