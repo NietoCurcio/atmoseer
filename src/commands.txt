@@ -1,4 +1,4 @@
-python rerieve_ws_inmet.py -s A652 -b 2007 -e 2021 --api_token <token>
+python retrieve_ws_inmet.py -s A652 -b 2007 -e 2021 --api_token <token>
 
 python rerieve_sounding.py --station_name SBGL --start_year 2023 --end_year 2023 
 
