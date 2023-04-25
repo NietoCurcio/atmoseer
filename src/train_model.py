@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import globals as globals
 
 import numpy as np
 import sys
@@ -56,10 +57,12 @@ def weighted_mse_loss(input, target, weight):
 def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id):
     N_EPOCHS = 2000
     PATIENCE = 1000
-    NUM_FEATURES = X_train.shape[2]
     BATCH_SIZE = 1024
     WEIGHT_DECAY = 1e-6
-    
+
+    NUM_FEATURES = X_train.shape[2]
+    print(f"Input dimensions of the data matrix: {NUM_FEATURES}")
+
     # model.apply(initialize_weights)
 
     if prediction_task_id == rp.PredictionTask.ORDINAL_CLASSIFICATION:
@@ -83,16 +86,11 @@ def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id):
         print("- Prediction task: binary classification.")
         train_weights = None
         val_weights = None
-        # train_weights = compute_weights_for_binary_classification(y_train)
-        # val_weights = compute_weights_for_binary_classification(y_val)
-        # train_weights = torch.FloatTensor(train_weights)
-        # val_weights = torch.FloatTensor(val_weights)
-        # loss = F.cross_entropy
-
         LEARNING_RATE = .3e-3
         loss = nn.BCELoss()
 
-        model = BinaryClassificationNet(in_channels=NUM_FEATURES)
+        input_dim = (NUM_FEATURES, globals.TIME_WINDOW_SIZE)
+        model = BinaryClassificationNet(in_channels=NUM_FEATURES, input_dim=input_dim)
 
         print(f"(BEFORE) min/max of y_train: {min(y_train)}/{max(y_train)}")
         print(f"(BEFORE) min/max of y_val: {min(y_val)}/{max(y_val)}")
@@ -118,9 +116,8 @@ def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id):
     print(model)
 
     print(f" - Setting up optimizer.")
-    optimizer = torch.optim.Adam(model.parameters(),
-                                 lr=LEARNING_RATE,
-                                 weight_decay=WEIGHT_DECAY)
+    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
+    # optimizer = torch.optim.SGD(model.parameters(), lr=1e-5, momentum=0.9)
 
     print(f" - Creating data loaders.")
     train_loader, val_loader = create_train_and_val_loaders(
@@ -186,9 +183,10 @@ def main(argv):
     filename = "../data/datasets/" + pipeline_id + ".pickle"
     print(f"Loading train/val/test datasets from {filename}.")
     file = open(filename, 'rb')
-    (X_train, y_train,  # min_y_train, max_y_train,
-        X_val, y_val,  # min_y_val, max_y_val,
-        X_test, y_test) = pickle.load(file)
+    (X_train, y_train, X_val, y_val, X_test, y_test) = pickle.load(file)
+    print(f"Shapes of train/val/test data matrices: {X_train.shape}/{X_val.shape}/{X_test.shape}")
+    print(f"Min values of train/val/test data matrices: {min(X_train.reshape(-1,1))}/{min(X_val.reshape(-1,1))}/{min(X_test.reshape(-1,1))}")
+    print(f"Max values of train/val/test data matrices: {max(X_train.reshape(-1,1))}/{max(X_val.reshape(-1,1))}/{max(X_test.reshape(-1,1))}")
 
     if prediction_task_id == rp.PredictionTask.ORDINAL_CLASSIFICATION:
         pipeline_id += "_OC" 
@@ -213,7 +211,5 @@ def main(argv):
     print("--- %s seconds ---" % (time.time() - start_time))
 
 
-# python train_model.py -p A652_N -t ORDINAL_CLASSIFICATION
-# python train_model.py -p A652_N -t BINARY_CLASSIFICATION
 if __name__ == "__main__":
     main(sys.argv)

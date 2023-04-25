@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import sys
-import getopt
 import pickle
 from utils.near_stations import prox
 from globals import *
@@ -9,7 +8,7 @@ from util import find_contiguous_observation_blocks
 from utils.windowing import apply_windowing
 import util as util
 import math
-# from rainfall_prediction import map_to_precipitation_levels, map_to_binary_precipitation_levels
+import argparse
 import rainfall_prediction as rp
 
 # def format_for_binary_classification(y_train, y_val, y_test):
@@ -104,7 +103,7 @@ def generate_windowed_split(train_df, val_df, test_df, target_name):
     return X_train, y_train, X_val, y_val, X_test, y_test
 
 
-def prepare_datasets(station_id: str, join_sounding_data_source: bool, join_numerical_model_data_source: bool, num_neighbors: int =0):
+def build_datasets(station_id: str, join_sounding_data_source: bool, join_numerical_model_data_source: bool, num_neighbors: int =0):
     '''
     This function joins a set of datasources to build datasets. These resulting datasets are used to fit the parameters of
     precipitation models down the AtmoSeer pipeline. Each datasource contributes with a group of features to build the datasets 
@@ -149,8 +148,9 @@ def prepare_datasets(station_id: str, join_sounding_data_source: bool, join_nume
     joined_df = df_ws
 
     if join_numerical_model_data_source:
-        df_nwp_era5 = pd.read_parquet(
-            '../data/NWP/ERA5_A652_1997_2023_preprocessed.parquet.gzip')
+        print(f"Loading NWP (ERA5) datasource...", end= "")
+        df_nwp_era5 = pd.read_parquet('../data/NWP/ERA5_A652_1997_2023_preprocessed.parquet.gzip')
+        print(f"Done! Shape = {df_nwp_era5.shape}.")
         assert (not df_nwp_era5.isnull().values.any().any())
         print(f"NWP data loaded. Shape = {df_nwp_era5.shape}.")
         joined_df = pd.merge(df_ws, df_nwp_era5, how='left', left_index=True, right_index=True)
@@ -171,13 +171,29 @@ def prepare_datasets(station_id: str, join_sounding_data_source: bool, join_nume
         print(f"Removed NaN rows in merge data; Shapes before/after dropna: {shape_before_dropna}/{shape_after_dropna}.")
         # assert(merged_df.shape[0] == df_ws.shape[0])
 
+    assert (not joined_df.isnull().values.any().any())
+
     if join_sounding_data_source:
         print(f"Loading sounding datasource...", end= "")
-        df_sounding = pd.read_parquet('../data/sounding/SBGL_indices_1997-01-01_2022-12-31_preprocessed.parquet.gzip')
+        df_sounding = pd.read_parquet('../data/sounding/SBGL_indices_1997_2023_preprocessed.parquet.gzip')
         print(f"Done! Shape = {df_sounding.shape}.")
 
         joined_df = pd.merge(joined_df, df_sounding, how='left', left_index=True, right_index=True)
         print(f"Sounding data successfully joined; resulting shape = {joined_df.shape}.")
+
+        print(f"Doing interpolation to imput missing values on the sounding indices...", end= "")
+        joined_df['cape'] = joined_df['cape'].interpolate(method='linear')
+        joined_df['cin'] = joined_df['cin'].interpolate(method='linear')
+        joined_df['lift'] = joined_df['lift'].interpolate(method='linear')
+        joined_df['k'] = joined_df['k'].interpolate(method='linear')
+        joined_df['total_totals'] = joined_df['total_totals'].interpolate(method='linear')
+        joined_df['showalter'] = joined_df['showalter'].interpolate(method='linear')
+        print("Done!")
+        
+        # At the beggining of the joined dataframe, a few entries may remain with NaN values. The code below
+        # gets rid of these entries.
+        # see https://stackoverflow.com/questions/27905295/how-to-replace-nans-by-preceding-or-next-values-in-pandas-dataframe
+        joined_df.fillna(method='bfill', inplace=True)
 
         # TODO: data normalization 
         # TODO: implement interpolation
@@ -187,6 +203,12 @@ def prepare_datasets(station_id: str, join_sounding_data_source: bool, join_nume
 
     if num_neighbors != 0:
         pass
+
+    #
+    # Save train/val/test DataFrames for future error analisys.
+    filename = '../data/datasets/' + pipeline_id + '.parquet.gzip'
+    print(f'Saving joined data source for pipeline {pipeline_id} to file {filename}.')
+    joined_df.to_parquet(filename, compression='gzip')
 
     assert (not joined_df.isnull().values.any().any())
 
@@ -216,15 +238,12 @@ def prepare_datasets(station_id: str, join_sounding_data_source: bool, join_nume
     #
     # Save train/val/test DataFrames for future error analisys.
     print(f'Saving train/val/test datasets for pipeline {pipeline_id} as parquet files.')
-    df_train.to_parquet('../data/datasets/' + pipeline_id +
-                        '_train.parquet.gzip', compression='gzip')
-    df_val.to_parquet('../data/datasets/' + pipeline_id +
-                      '_val.parquet.gzip', compression='gzip')
-    df_test.to_parquet('../data/datasets/' + pipeline_id +
-                       '_test.parquet.gzip', compression='gzip')
+    df_train.to_parquet('../data/datasets/' + pipeline_id + '_train.parquet.gzip', compression='gzip')
+    df_val.to_parquet('../data/datasets/' + pipeline_id + '_val.parquet.gzip', compression='gzip')
+    df_test.to_parquet('../data/datasets/' + pipeline_id + '_test.parquet.gzip', compression='gzip')
 
     #
-    # Normalize the columns in train/val/test dataframes. This is done im preparation for appllying
+    # Normalize the columns in train/val/test dataframes. This is done as a preparation step for appllying
     # the sliding window technique, since the target variable is going to be used as lag feature.
     # (see, e.g., https://www.mikulskibartosz.name/forecasting-time-series-using-lag-features/)
     # (see also https://datascience.stackexchange.com/questions/72480/what-is-lag-in-time-series-forecasting)
@@ -238,7 +257,7 @@ def prepare_datasets(station_id: str, join_sounding_data_source: bool, join_nume
     df_test = util.min_max_normalize(df_test)
 
     #
-    # Apply sliding windowing method to build tabular versions of train/val/test datasets 
+    # Apply sliding windowing method to build examples (instances) of train/val/test datasets 
     print('Applying sliding window to build train/val/test datasets.')
     X_train, y_train, X_val, y_val, X_test, y_test = generate_windowed_split(
         df_train, df_val, df_test, target_name=target_name)
@@ -258,23 +277,23 @@ def prepare_datasets(station_id: str, join_sounding_data_source: bool, join_nume
     print('Max precipitation values (train/val/test): %.5f, %.5f, %.5f' %
           (np.max(y_train), np.max(y_val), np.max(y_test)))
 
-    #
-    # Subsampling: we keep all the positive instances and significantly subsample the negative instances.
-    print('**********Subsampling************')
-    print(f'- Shapes before subsampling (Y_train/y_val/y_test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
+    # #
+    # # Subsampling: we keep all the positive instances and significantly subsample the negative instances.
+    # print('**********Subsampling************')
+    # print(f'- Shapes before subsampling (Y_train/y_val/y_test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
 
-    print("Subsampling train data.")
-    X_train, y_train = apply_subsampling(X_train, y_train)
-    print("Subsampling val data.")
-    X_val, y_val = apply_subsampling(X_val, y_val)
-    print("Subsampling test data.")
-    X_test, y_test = apply_subsampling(X_test, y_test)
+    # print("Subsampling train data.")
+    # X_train, y_train = apply_subsampling(X_train, y_train)
+    # print("Subsampling val data.")
+    # X_val, y_val = apply_subsampling(X_val, y_val)
+    # print("Subsampling test data.")
+    # X_test, y_test = apply_subsampling(X_test, y_test)
 
-    print('- Min precipitation values (train/val/test) after subsampling: %.5f, %.5f, %.5f' %
-          (np.min(y_train), np.min(y_val), np.min(y_test)))
-    print('- Max precipitation values (train/val/test) after subsampling: %.5f, %.5f, %.5f' %
-          (np.max(y_train), np.max(y_val), np.max(y_test)))
-    print(f'- Shapes (y_train/val/test) after subsampling: {y_train.shape}, {y_val.shape}, {y_test.shape}')
+    # print('- Min precipitation values (train/val/test) after subsampling: %.5f, %.5f, %.5f' %
+    #       (np.min(y_train), np.min(y_val), np.min(y_test)))
+    # print('- Max precipitation values (train/val/test) after subsampling: %.5f, %.5f, %.5f' %
+    #       (np.max(y_train), np.max(y_val), np.max(y_test)))
+    # print(f'- Shapes (y_train/y_val/y_test) after subsampling: {y_train.shape}, {y_val.shape}, {y_test.shape}')
 
     #
     # Write numpy arrays to a parquet file
@@ -289,49 +308,36 @@ def prepare_datasets(station_id: str, join_sounding_data_source: bool, join_nume
     pickle.dump(ndarrays, file)
     print('Done!')
 
-
 def main(argv):
-    station_id = ""
-    use_sounding_as_data_source = 0
-    use_NWP_model_as_data_source = 0
-    num_neighbors = 0
-    help_message = "Usage: {0} -s <station_id> -d <data_source_spec> -n <num_neighbors>".format(
-        argv[0])
+    parser = argparse.ArgumentParser(
+        description="""This script builds the train/val/test datasets from the user-specified data sources.""")
+    parser.add_argument('-s', '--station_id', type=str, required=True, help='station id')
+    parser.add_argument('-d', '--datasources', type=str, help='data source spec')
+    parser.add_argument('-n', '--num_neighbors', type=int, default = 0, help='number of neighbors')
+    args = parser.parse_args(argv[1:])
 
-    try:
-        opts, args = getopt.getopt(argv[1:], "hs:d:n:", [
-                                   "help", "station_id=", "datasources=", "neighbors="])
-    except:
+    station_id = args.station_id
+    datasources = args.datasources
+    num_neighbors = args.num_neighbors
+
+    help_message = "Usage: {0} -s <station_id> -d <data_source_spec> -n <num_neighbors>".format(__file__)
+
+    if not ((station_id in INMET_STATION_CODES_RJ) or (station_id in COR_STATION_NAMES_RJ)):
+        print(f"Invalid station identifier: {station_id}")
         print(help_message)
         sys.exit(2)
 
-    num_neighbors = 0
     use_sounding_as_data_source = False
     use_NWP_model_as_data_source = False
 
-    for opt, arg in opts:
-        if opt in ("-h", "--help"):
-            print(help_message)  # print the help message
-            sys.exit(2)
-        elif opt in ("-s", "--station_id"):
-            station_id = arg
-            if not ((station_id in INMET_STATION_CODES_RJ) or (station_id in COR_STATION_NAMES_RJ)):
-                print(f"Invalid station identifier: {station_id}")
-                print(help_message)
-                sys.exit(2)
-        elif opt in ("-d", "--datasources"):
-            if arg.find('R') != -1:
-                use_sounding_as_data_source = True
-            if arg.find('N') != -1:
-                use_NWP_model_as_data_source = True
-        elif opt in ("-n", "--neighbors"):
-            num_neighbors = arg
+    if datasources:
+        if 'R' in datasources:
+            use_sounding_as_data_source = True
+        if 'N' in datasources:
+            use_NWP_model_as_data_source = True
 
     assert(station_id is not None) and (station_id != "")
-    prepare_datasets(station_id, use_sounding_as_data_source,
-             use_NWP_model_as_data_source, num_neighbors=num_neighbors)
+    build_datasets(station_id, use_sounding_as_data_source, use_NWP_model_as_data_source, num_neighbors=num_neighbors)
 
-
-# python prepare_datasets.py -s A652 -d N
 if __name__ == "__main__":
     main(sys.argv)

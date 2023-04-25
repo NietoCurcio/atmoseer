@@ -7,6 +7,8 @@ from train.evaluate import *
 from rainfall_classification_base import RainfallClassificationBase
 from train.early_stopping import *
 import rainfall_prediction as rp
+import functools
+import operator
 
 # class ResidualBlock(nn.Module):
 #     def __init__(self, in_channels, out_channels, kernel_size=3, padding=1):
@@ -169,62 +171,77 @@ import rainfall_prediction as rp
 #         return avg_train_losses, avg_valid_losses
 
 class BinaryClassificationNet(RainfallClassificationBase):
-    def __init__(self, in_channels):
+    def __init__(self, in_channels, input_dim):
+
         super(BinaryClassificationNet, self).__init__()
-        self.conv1d_1 = nn.Conv1d(
-            in_channels=in_channels, out_channels=32, kernel_size=3, padding=2)
-        # self.bn1 = nn.BatchNorm1d(32)
-        # self.dropout1 = nn.Dropout(p=0.2)
 
-        self.conv1d_2 = nn.Conv1d(
-            in_channels=32, out_channels=32, kernel_size=3, padding=2)
-        # self.bn2 = nn.BatchNorm1d(32)
-        # self.dropout2 = nn.Dropout(p=0.2)
-        
-        self.conv1d_3 = nn.Conv1d(
-            in_channels=32, out_channels=32, kernel_size=3, padding=2)
-        # self.bn3 = nn.BatchNorm1d(32)
-        # self.dropout3 = nn.Dropout(p=0.2)
-        
-        self.conv1d_4 = nn.Conv1d(
-            in_channels=32, out_channels=64, kernel_size=3, padding=2)
-        # self.bn4 = nn.BatchNorm1d(64)
-        # self.dropout4 = nn.Dropout(p=0.2)
+        self.feature_extractor = nn.Sequential(
+            nn.Conv1d(in_channels=in_channels, out_channels=32, kernel_size=3, padding=3),
+            nn.ReLU(inplace=True),
+            # nn.Dropout(p=0.5),
+            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, padding=3),
+            nn.ReLU(inplace=True),
+            # nn.Dropout(p=0.5),
+            nn.Conv1d(in_channels=64, out_channels=32, kernel_size=3, padding=3),
+            nn.ReLU(inplace=True),
+            # nn.Dropout(p=0.5),
+            nn.Conv1d(in_channels=32, out_channels=16, kernel_size=3, padding=3),
+            nn.ReLU(inplace=True)
+            # nn.Dropout(p=0.5)
+            # self.bn4 = nn.BatchNorm1d(64)
+            # self.dropout4 = nn.Dropout(p=0.2)
+        )
 
-        self.gelu = nn.ReLU()
-        self.fc1 = nn.Linear(896, 50)
-        self.fc2 = nn.Linear(50, 1)
-        self.sigmoid = nn.Sigmoid()
+        # https://datascience.stackexchange.com/questions/40906/determining-size-of-fc-layer-after-conv-layer-in-pytorch
+        num_features_before_fcnn = functools.reduce(operator.mul, list(self.feature_extractor(torch.rand(1, *input_dim)).shape))
+
+        print(f"num_features_before_fcnn = {num_features_before_fcnn}")
+
+        self.classifier = nn.Sequential(
+            # nn.Linear(896, 50),
+            nn.Linear(in_features=num_features_before_fcnn, out_features=50),
+            nn.ReLU(inplace=True),
+            nn.Linear(50, 1),
+            nn.Sigmoid()
+        )
+        # self.fc1 = nn.Linear(num_features_before_fcnn, 50)
+        # self.fc2 = nn.Linear(50, 1)
+        # self.sigmoid = nn.Sigmoid()
 
 
     def forward(self, x):
-        x = self.conv1d_1(x)
-        # x = self.bn1(x)
-        x = self.gelu(x)
-        # x = self.dropout1(x)
+        out = self.feature_extractor(x)
+        # out = nn.Flatten(1, -1)(out)
+        out = out.view(out.shape[0], -1)
+        out = self.classifier(out)
+        return out
+        # x = self.conv1d_1(x)
+        # # x = self.bn1(x)
+        # x = self.gelu(x)
+        # # x = self.dropout1(x)
 
-        x = self.conv1d_2(x)
-        # x = self.bn2(x)
-        x = self.gelu(x)
-        # x = self.dropout2(x)
+        # x = self.conv1d_2(x)
+        # # x = self.bn2(x)
+        # x = self.gelu(x)
+        # # x = self.dropout2(x)
         
-        x = self.conv1d_3(x)
-        # x = self.bn3(x)
-        x = self.gelu(x)
-        # x = self.dropout3(x)
+        # x = self.conv1d_3(x)
+        # # x = self.bn3(x)
+        # x = self.gelu(x)
+        # # x = self.dropout3(x)
 
-        x = self.conv1d_4(x)
-        # x = self.bn4(x)
-        x = self.gelu(x)
-        # x = self.dropout4(x)
+        # x = self.conv1d_4(x)
+        # # x = self.bn4(x)
+        # x = self.gelu(x)
+        # # x = self.dropout4(x)
 
-        x = x.view(x.shape[0], -1)
-        x = self.fc1(x)
-        x = self.gelu(x)
-        x = self.fc2(x)
-        x = self.sigmoid(x)
+        # x = x.view(x.shape[0], -1)
+        # x = self.fc1(x)
+        # x = self.gelu(x)
+        # x = self.fc2(x)
+        # x = self.sigmoid(x)
 
-        return x
+        # return x
 
     def predict(self, X):
         print('Making predictions with binary classification model...')
