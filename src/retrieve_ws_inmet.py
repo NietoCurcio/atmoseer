@@ -50,9 +50,6 @@ def import_data(station_code, initial_year, final_year, api_token):
         import_from_station(station_code, initial_year, final_year, api_token)
 
 def main(argv):
-    '''
-        python import_ws_inmet.py -s A652 -b 2020 -e 2022 --api_token <token>
-    '''
     station_code = ""
 
     start_year = 1997
