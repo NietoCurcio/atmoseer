@@ -10,6 +10,7 @@ import util as util
 import math
 import argparse
 import rainfall_prediction as rp
+from subsampling import apply_subsampling
 
 # def format_for_binary_classification(y_train, y_val, y_test):
 #     y_train_oc = map_to_binary_precipitation_levels(y_train)
@@ -22,33 +23,6 @@ import rainfall_prediction as rp
 #     y_val_oc = map_to_precipitation_levels(y_val)
 #     y_test_oc = map_to_precipitation_levels(y_test)
 #     return y_train_oc, y_val_oc, y_test_oc
-
-def apply_subsampling(X, y):
-    y_eq_zero_idxs = np.where(y == 0)[0]
-    y_gt_zero_idxs = np.where(y > 0)[0]
-    print(f' - Original sizes (target=0)/(target>0): ({y_eq_zero_idxs.shape[0]})/({y_gt_zero_idxs.shape[0]})')
-
-    print(f" - Using keep ratio = {SUBSAMPLING_KEEP_RATIO}.")
-
-    # Setting numpy seed value
-    np.random.seed(0)
-
-    mask = np.random.choice([True, False], size=y.shape[0], p=[
-                            SUBSAMPLING_KEEP_RATIO, 1.0-SUBSAMPLING_KEEP_RATIO])
-    y_train_subsample_idxs = np.where(mask == True)[0]
-
-    print(f" - Subsample (total) size: {y_train_subsample_idxs.shape[0]}")
-    idxs = np.intersect1d(y_eq_zero_idxs, y_train_subsample_idxs)
-    print(f" - Subsample (target=0) size: {idxs.shape[0]}")
-
-    idxs = np.union1d(idxs, y_gt_zero_idxs)
-    X, y = X[idxs], y[idxs]
-    y_eq_zero_idxs = np.where(y == 0)[0]
-    y_gt_zero_idxs = np.where(y > 0)[0]
-    print(f' - Resulting sizes (target=0)/(target>0): ({y_eq_zero_idxs.shape[0]})/({y_gt_zero_idxs.shape[0]})')
-
-    return X, y
-
 
 def generate_windowed(df: pd.DataFrame, target_idx: int):
     """
@@ -237,7 +211,7 @@ def build_datasets(station_id: str, join_sounding_data_source: bool, join_numeri
 
     #
     # Save train/val/test DataFrames for future error analisys.
-    print(f'Saving train/val/test datasets for pipeline {pipeline_id} as parquet files.')
+    print(f'Saving each train/val/test dataset for pipeline {pipeline_id} as a parquet file.')
     df_train.to_parquet('../data/datasets/' + pipeline_id + '_train.parquet.gzip', compression='gzip')
     df_val.to_parquet('../data/datasets/' + pipeline_id + '_val.parquet.gzip', compression='gzip')
     df_test.to_parquet('../data/datasets/' + pipeline_id + '_test.parquet.gzip', compression='gzip')
@@ -277,23 +251,24 @@ def build_datasets(station_id: str, join_sounding_data_source: bool, join_numeri
     print('Max precipitation values (train/val/test): %.5f, %.5f, %.5f' %
           (np.max(y_train), np.max(y_val), np.max(y_test)))
 
-    # #
-    # # Subsampling: we keep all the positive instances and significantly subsample the negative instances.
-    # print('**********Subsampling************')
-    # print(f'- Shapes before subsampling (Y_train/y_val/y_test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
+    #
+    # Subsampling
 
-    # print("Subsampling train data.")
-    # X_train, y_train = apply_subsampling(X_train, y_train)
-    # print("Subsampling val data.")
-    # X_val, y_val = apply_subsampling(X_val, y_val)
+    print('**********Subsampling************')
+    print(f'- Shapes before subsampling (Y_train/y_val/y_test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
+
+    print("Subsampling train data.")
+    X_train, y_train = apply_subsampling(X_train, y_train, "NEGATIVE")
+    print("Subsampling val data.")
+    X_val, y_val = apply_subsampling(X_val, y_val, "NEGATIVE")
     # print("Subsampling test data.")
-    # X_test, y_test = apply_subsampling(X_test, y_test)
+    # X_test, y_test = apply_naive_subsampling(X_test, y_test)
 
-    # print('- Min precipitation values (train/val/test) after subsampling: %.5f, %.5f, %.5f' %
-    #       (np.min(y_train), np.min(y_val), np.min(y_test)))
-    # print('- Max precipitation values (train/val/test) after subsampling: %.5f, %.5f, %.5f' %
-    #       (np.max(y_train), np.max(y_val), np.max(y_test)))
-    # print(f'- Shapes (y_train/y_val/y_test) after subsampling: {y_train.shape}, {y_val.shape}, {y_test.shape}')
+    print('- Min precipitation values (train/val/test) after subsampling: %.5f, %.5f, %.5f' %
+          (np.min(y_train), np.min(y_val), np.min(y_test)))
+    print('- Max precipitation values (train/val/test) after subsampling: %.5f, %.5f, %.5f' %
+          (np.max(y_train), np.max(y_val), np.max(y_test)))
+    print(f'- Shapes (y_train/y_val/y_test) after subsampling: {y_train.shape}, {y_val.shape}, {y_test.shape}')
 
     #
     # Write numpy arrays to a parquet file

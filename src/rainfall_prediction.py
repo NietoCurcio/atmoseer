@@ -80,7 +80,7 @@ def ordinalencoding_to_multiclasslabels(pred: np.ndarray):
 
 #     return one_hot_encoded_y
 
-def precipitationvalues_to_intencoding(y):
+def precipitationvalues_to_binary_encoding(y):
     return map_to_binary_precipitation_levels(y)
 
 def precipitationvalues_to_ordinalencoding(y):

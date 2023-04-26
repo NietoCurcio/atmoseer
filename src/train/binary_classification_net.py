@@ -313,6 +313,8 @@ class BinaryClassificationNet(RainfallClassificationBase):
                 output = self(data.float())
 
                 # calculate the loss
+                # print(f"output.shape: {output.shape}")
+                # print(f"target.shape: {target.shape}")
                 loss = criterion(output, target.float())
                 assert not (np.isnan(loss.item()) or loss.item() >
                             1e6), f"Loss explosion: {loss.item()}"

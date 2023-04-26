@@ -54,6 +54,61 @@ def compute_weights_for_ordinal_classification(y):
 def weighted_mse_loss(input, target, weight):
     return (weight * (input - target) ** 2).sum()
 
+import torch.nn.functional as F
+
+class WeightedBCELoss(torch.nn.Module):
+    def __init__(self, pos_weight=None, neg_weight=None):
+        super(WeightedBCELoss, self).__init__()
+        self.pos_weight = pos_weight
+        self.neg_weight = neg_weight
+
+    def forward(self, inputs, targets):
+        inputs = torch.clamp(inputs,min=1e-7,max=1-1e-7)
+
+        # Apply class weights to positive and negative examples
+        if self.pos_weight is not None and self.neg_weight is not None:
+            loss = self.neg_weight * (1 - targets) * torch.log(1 - inputs) + self.pos_weight * targets * torch.log(inputs)
+        elif self.pos_weight is not None:
+            loss = self.pos_weight * targets * torch.log(inputs)
+        elif self.neg_weight is not None:
+            loss = self.neg_weight * (1 - targets) * torch.log(1 - inputs)
+        else:
+            loss = F.binary_cross_entropy(inputs, targets, reduction='mean')
+        
+        return -torch.mean(loss)
+
+    # def forward(self, inputs, targets):
+    #     # inputs: batch_size x 1
+    #     # targets: batch_size x 1
+        
+    #     print(f"inputs.shape: {inputs.shape}")
+    #     print(f"targets.shape: {targets.shape}")
+        
+    #     # Calculate the binary cross-entropy loss
+    #     loss = F.binary_cross_entropy(inputs, targets, reduction='none')
+        
+    #     print(f"loss.shape: {loss.shape}")
+
+    #     # Apply class weights to positive and negative examples
+    #     if self.pos_weight is not None:
+    #         pos_mask = targets.eq(1)
+    #         print(f"pos_mask.shape: {pos_mask.shape}")
+    #         pos_loss = torch.masked_select(loss, pos_mask)
+    #         print(f"pos_loss.shape: {pos_loss.shape}")
+    #         pos_loss = pos_loss * self.pos_weight
+    #         loss = torch.where(pos_mask, pos_loss, loss)
+        
+    #     if self.neg_weight is not None:
+    #         neg_mask = targets.eq(0)
+    #         print(f"neg_mask.shape: {neg_mask.shape}")
+    #         neg_loss = torch.masked_select(loss, neg_mask)
+    #         print(f"neg_loss.shape: {neg_loss.shape}")
+    #         neg_loss = neg_loss * self.neg_weight
+    #         print(f"neg_loss.shape: {neg_loss.shape}")
+    #         loss = torch.where(neg_mask, neg_loss, loss)
+        
+    #     return loss.mean()
+
 def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id):
     N_EPOCHS = 2000
     PATIENCE = 1000
@@ -87,7 +142,10 @@ def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id):
         train_weights = None
         val_weights = None
         LEARNING_RATE = .3e-3
+
+        # weights = torch.FloatTensor([1.0, 5.0]) 
         loss = nn.BCELoss()
+        # loss = WeightedBCELoss(pos_weight=2, neg_weight=1)
 
         input_dim = (NUM_FEATURES, globals.TIME_WINDOW_SIZE)
         model = BinaryClassificationNet(in_channels=NUM_FEATURES, input_dim=input_dim)
@@ -96,13 +154,12 @@ def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id):
         print(f"(BEFORE) min/max of y_val: {min(y_val)}/{max(y_val)}")
         print(f"(BEFORE) unique of y_train: {np.unique(y_train)}")
         print(f"(BEFORE) unique of y_val: {np.unique(y_val)}")
-        
-        y_train = rp.precipitationvalues_to_intencoding(y_train)
-        y_val = rp.precipitationvalues_to_intencoding(y_val)
-        print(f"(AFTER) min/max of y_train: {min(y_train)}/{max(y_train)}")
-        print(f"(AFTER) min/max of y_val: {min(y_val)}/{max(y_val)}")
-        print(f"(AFTER) unique of y_train: {np.unique(y_train)}")
-        print(f"(AFTER) unique of y_val: {np.unique(y_val)}")
+        # y_train = rp.precipitationvalues_to_binary_encoding(y_train)
+        # y_val = rp.precipitationvalues_to_binary_encoding(y_val)
+        # print(f"(AFTER) min/max of y_train: {min(y_train)}/{max(y_train)}")
+        # print(f"(AFTER) min/max of y_val: {min(y_val)}/{max(y_val)}")
+        # print(f"(AFTER) unique of y_train: {np.unique(y_train)}")
+        # print(f"(AFTER) unique of y_val: {np.unique(y_val)}")
         
         print(f"- Shapes of (train/val) arrays: {y_train.shape}/{y_val.shape}")
     elif prediction_task_id == rp.PredictionTask.REGRESSION:
@@ -203,7 +260,7 @@ def main(argv):
     # Load the best model
     model.load_state_dict(torch.load('../models/best_' + pipeline_id + '.pt'))
 
-    y_test = rp.precipitationvalues_to_intencoding(y_test)
+    y_test = rp.precipitationvalues_to_binary_encoding(y_test)
     # print(f"- Shape of one-hot-encoded vector (y_test): {y_test.shape}")
 
     model.evaluate(X_test, y_test)
