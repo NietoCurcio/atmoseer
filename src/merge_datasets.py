@@ -10,22 +10,22 @@ import numpy as np
 
 def main(argv):
     parser = argparse.ArgumentParser(
-        description="""This script builds the train/val/test datasets for a given weather station, by using the user-specified data sources.""")
-    parser.add_argument('-s', '--station_id', type=str, required=True, help='station id')
-    # Add an argument to accept one or more identifiers
-    parser.add_argument('identifiers', metavar='ID', type=str, nargs='+',
-                        help='one or more weather station identifiers')
+        description="""This script builds the train/val/test datasets for a given weather station, 
+        by using the user-specified data sources.""", prog=sys.argv[0])
+    # Add an argument to accept the station of interest
+    parser.add_argument('-s', '--station_id', type=str, required=True, help='id for station of interest')
     # Add an argument to accept the pipeline identifier
-    parser.add_argument('pipeline_id', type=str, required=True,
-                        help='one or more weather station identifiers')
+    parser.add_argument('-p', '--pipeline_id', type=str, required=True, help='one or more weather station identifiers')
+    # Add an argument to accept one or more identifiers
+    parser.add_argument('-i', '--identifiers', type=str, nargs='+', help='IDs of one or more weather stations to merge.')
 
     # Parse the arguments
-    args = parser.parse_args(argv[1:])
+    args = parser.parse_args()
 
     # Access the list of identifiers
-    identifiers = args.identifiers
     soi_pipeline_id = args.pipeline_id
     soi_id = args.station_id
+    identifiers = args.identifiers
 
     help_message = "Usage: {0} -s <station_id> -d <data_source_spec> -n <num_neighbors>".format(__file__)
 
@@ -76,3 +76,6 @@ def main(argv):
                 X_test, y_test)
     pickle.dump(ndarrays, file)
     print('Done!')
+
+if __name__ == "__main__":
+    main(sys.argv)
