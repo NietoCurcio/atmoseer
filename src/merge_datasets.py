@@ -69,7 +69,7 @@ def main(argv):
     print(f'Number of examples (train/val/test): {len(merged_X_train)}/{len(merged_X_val)}/{len(X_test)}.')
     merge_list = "_".join(identifiers)
     filename = '../data/datasets/' + soi_pipeline_id + "_" + merge_list + ".pickle"
-    print(f'Dumping train/val/test np arrays to pickle file {filename}.', end = " ")
+    print(f'Dumping merged train/val/test np arrays to pickle file {filename}.', end = " ")
     file = open(filename, 'wb')
     ndarrays = (merged_X_train, merged_y_train, 
                 merged_X_val, merged_y_val, 
