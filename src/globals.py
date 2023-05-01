@@ -1,5 +1,14 @@
 INMET_API_BASE_URL = "https://apitempo.inmet.gov.br"
 
+# Weather station datasource directory
+WS_DATA_DIR = "../data/ws/"
+
+# Atmospheric sounding datasource directory
+AS_DATA_DIR = "../data/as/"
+
+# Directory to store the train/val/test datasets for each weather station of interest
+DATASETS_DIR = '../data/datasets/'
+
 # see https://portal.inmet.gov.br/paginas/catalogoaut
 INMET_STATION_CODES_RJ = ('A636', 
                           'A621', 
