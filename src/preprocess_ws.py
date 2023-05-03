@@ -66,8 +66,8 @@ def preprocess_ws(station_id, ws_datasource):
     n_obser_before_drop = len(df)
     df = df[df['CHUVA'].notna()]
     n_obser_after_drop = len(df)
-    print(f"Number of observations before/after dropping entries with null target: {n_obser_before_drop}/{n_obser_after_drop}.")
-    print(f"Range of timestamps after dropping entries with null target: [{min(df.index)}, {max(df.index)}]")
+    print(f"Number of observations before/after dropping entries with undefined target value: {n_obser_before_drop}/{n_obser_after_drop}.")
+    print(f"Range of timestamps after dropping entries with undefined target value: [{min(df.index)}, {max(df.index)}]")
 
     #
     # Create wind-related features (U and V components of wind observations).
@@ -94,7 +94,8 @@ def preprocess_ws(station_id, ws_datasource):
 
     # 
     # Imput missing values on some features.
-    print(f"There are {df.isnull().sum().sum()} missing values in the weather station data. Going to fill them...", end = '')
+    percentage_missing = (df.isna().mean() * 100).mean() # Compute the percentage of missing values
+    print(f"There are {df.isnull().sum().sum()} missing values ({percentage_missing:.2f}%). Going to fill them...", end = '')
     imputer = KNNImputer(n_neighbors=2)
     df[:] = imputer.fit_transform(df)
     assert (not df.isnull().values.any().any())
@@ -107,7 +108,7 @@ def preprocess_ws(station_id, ws_datasource):
     #
     # Save preprocessed data to a parquet file.
     filename_and_extension = get_filename_and_extension(ws_datasource)
-    filename = WS_DATA_DIR + filename_and_extension[0] + '_preprocessed.parquet.gzip'
+    filename = WS_INMET_DATA_DIR + filename_and_extension[0] + '_preprocessed.parquet.gzip'
     print(f"Saving preprocessed data to {filename}")
     df.to_parquet(filename, compression='gzip')
 
@@ -129,7 +130,7 @@ def main(argv):
     # print(f'Going to preprocess data sources according to user specification ({args.datasources})...')
 
     print('\n***Preprocessing weather station data***')
-    ws_datasource = WS_DATA_DIR + args.station_id + ".csv"
+    ws_datasource = WS_INMET_DATA_DIR + args.station_id + ".csv"
     preprocess_ws(args.station_id, ws_datasource)
     
     # if sounding_indices_data_source is not None:

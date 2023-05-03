@@ -69,8 +69,8 @@ def generate_windowed(df: pd.DataFrame, target_idx: int):
     return X, y
 
 def get_NWP_data_for_weather_station(station_id, initial_datetime, final_datetime):
-    df_stations = pd.read_csv("../data/estacoes_local.csv")
-    row = df_stations[df_stations["files"] == station_id].iloc[0]
+    df_stations = pd.read_csv("../data/ws/INMET_WS_Stations.csv")
+    row = df_stations[df_stations["STATION_ID"] == station_id].iloc[0]
     station_latitude = row["VL_LATITUDE"]
     station_longitude = row["VL_LONGITUDE"]
 
@@ -199,7 +199,7 @@ def build_datasets(station_id: str, join_as_data_source: bool, join_nwp_data_sou
         pipeline_id = pipeline_id + '_NN' + str(num_neighbors)
 
     print(f"Loading observations for weather station {station_id}...", end= "")
-    df_ws = pd.read_parquet(WS_DATA_DIR + station_id + "_preprocessed.parquet.gzip")
+    df_ws = pd.read_parquet(WS_INMET_DATA_DIR + station_id + "_preprocessed.parquet.gzip")
     print(f"Done! Shape = {df_ws.shape}.")
 
     ####

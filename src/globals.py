@@ -1,7 +1,7 @@
 INMET_API_BASE_URL = "https://apitempo.inmet.gov.br"
 
 # Weather station datasource directory
-WS_DATA_DIR = "../data/ws/"
+WS_INMET_DATA_DIR = "../data/ws/inmet"
 
 # Atmospheric sounding datasource directory
 AS_DATA_DIR = "../data/as/"
@@ -13,7 +13,8 @@ DATASETS_DIR = '../data/datasets/'
 INMET_STATION_CODES_RJ = ('A636', 
                           'A621', 
                           'A602', 
-                          'A652')
+                          'A652',
+                          'A627')
 
 COR_STATION_NAMES_RJ = ('alto_da_boa_vista',
                         'guaratiba',
