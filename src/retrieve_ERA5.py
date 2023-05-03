@@ -22,14 +22,16 @@ def get_data(start_year, end_year):
 
     file_exist = Path("../data/NWP/ERA5/" + file + ".nc")
 
+    months = range(1, 12+1)
+
     if file_exist.is_file():
         ds = xr.open_dataset("../data/NWP/ERA5/" + file + ".nc")
     else:
         c = cdsapi.Client()
         years = list(map(str, range(int(start_year), int(end_year) + 1)))
         for year in years:
-            for pressure_level in ['200', '700', '1000']:
-                print(f"Downloading ERA5 data at pressure level {pressure_level}hPa for year {year}...", end="")
+            for month in months:
+                print(f"Downloading ERA5 data at month {month} of year {year}...", end="")
                 try:
                     c.retrieve(
                         "reanalysis-era5-pressure-levels",
@@ -44,24 +46,13 @@ def get_data(start_year, end_year):
                                 "v_component_of_wind"
                             ],
                             "pressure_level": [
-                                pressure_level
+                                '200', '700', '1000'
                             ],
                             "year": [
                                 year,
                             ],
                             "month": [
-                                "01",
-                                "02",
-                                "03",
-                                "04",
-                                "05",
-                                "06",
-                                "07",
-                                "08",
-                                "09",
-                                "10",
-                                "11",
-                                "12",
+                                str(month)
                             ],
                             "day": [
                                 "01",
@@ -124,7 +115,7 @@ def get_data(start_year, end_year):
                             ],
                             "area": REGION_OF_INTEREST,
                         },
-                        "../data/NWP/ERA5/RJ_" + year + "_" + pressure_level + ".nc",
+                        "../data/NWP/ERA5/RJ_" + year + "_" + str(month) + ".nc",
                     )
                     print("Done!")
                 except Exception as e:
@@ -133,11 +124,11 @@ def get_data(start_year, end_year):
 
         ds = None
         for year in years:
-            for pressure_level in ['200', '700', '1000']:
+            for month in months:
                 if ds is None:
-                    ds = xr.open_dataset("../data/NWP/ERA5/RJ_" + year + "_" + pressure_level + ".nc")
+                    ds = xr.open_dataset("../data/NWP/ERA5/RJ_" + year + "_" + str(month) + ".nc")
                 else:
-                    ds_aux = xr.open_dataset("../data/NWP/ERA5/RJ_" + year + "_" + pressure_level + ".nc")
+                    ds_aux = xr.open_dataset("../data/NWP/ERA5/RJ_" + year + "_" + str(month) + ".nc")
                     ds = ds.merge(ds_aux)
 
         print(f"Done!", end="")
