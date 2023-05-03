@@ -10,10 +10,10 @@ AS_DATA_DIR = "../data/as/"
 DATASETS_DIR = '../data/datasets/'
 
 # see https://portal.inmet.gov.br/paginas/catalogoaut
-INMET_STATION_CODES_RJ = ('A636', 
-                          'A621', 
-                          'A602', 
-                          'A652',
+INMET_STATION_CODES_RJ = ('A636', # Jacarepagua
+                          'A621', # Vila militar
+                          'A602', # Marambaia
+                          'A652', # Copacabana
                           'A627')
 
 COR_STATION_NAMES_RJ = ('alto_da_boa_vista',
