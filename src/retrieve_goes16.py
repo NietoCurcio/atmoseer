@@ -50,8 +50,9 @@ def processing_goes_16_file(ds, filename):
     Returns:
         xr.Dataset: A filtered xarray dataset object.
     """
+    df = pd.DataFrame()
     if ds.number_of_events.nbytes != 0:
-        print(f"Saving file: {filename}")
+        print(f"Adding file to parquet: {filename}")
         df = ds.to_dataframe()
         df.drop(df.columns[4:-1], axis=1, inplace=True)
         df.drop(df.columns[0], axis=1, inplace=True)
@@ -73,14 +74,17 @@ def download_file(files):
         file (str): A string representing the name of the file to be downloaded from an S3 bucket.
     """
     files_process = []
-    count = 0
+    count = 1
     for file in files:
         print(f"Reading file number {count}, remaining {len(files) - count} files")
         filename = file.split('/')[-1]
         fs.get(file, filename)
         ds = xr.open_dataset(filename)
         ds = filter_coordinates(ds)
-        files_process.append(processing_goes_16_file(ds, filename))
+        process_file = processing_goes_16_file(ds, filename)
+        if not process_file.empty:
+            files_process.append(process_file)
+        count += 1
     # concatenate dataframes along the rows
     merged_df = pd.concat(files_process, axis=0)
 
@@ -117,6 +121,7 @@ def import_data(station_code, initial_year, final_year):
     for date in dates:
         year = str(date.year)
         day_of_year = f'{date.dayofyear:03d}'
+        print(f'noaa-goes16/GLM-L2-LCFA/{year}/{day_of_year}')
         if day_of_year == '060':
             break
         for hour in hours:
