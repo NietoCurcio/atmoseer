@@ -3,6 +3,8 @@ INMET_API_BASE_URL = "https://apitempo.inmet.gov.br"
 # Weather station datasource directory
 WS_INMET_DATA_DIR = "../data/ws/inmet"
 
+WS_GOES_DATA_DIR = "atmoseer/data/ws/goes16"
+
 # Atmospheric sounding datasource directory
 AS_DATA_DIR = "../data/as/"
 

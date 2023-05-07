@@ -8,7 +8,6 @@ import numpy as np
 import xarray as xr
 import pandas as pd
 import os
-import concurrent.futures
 
 # Use the anonymous credentials to access public data
 fs = s3fs.S3FileSystem(anon=True)
@@ -37,34 +36,6 @@ def filter_coordinates(ds:xr.Dataset):
       (ds['event_lon'] >= -43.7958) & (ds['event_lon'] <= -43.0962),
       drop=True)
 
-def processing_goes_16_file(ds, filename):
-    """
-    Processes a GOES-16 data file, filters its coordinates, and returns a filtered xarray dataset.
-    This function reads a GOES-16 data file using xarray, applies a filter to its coordinates, drops unnecessary columns,
-    renames columns, sets the index to the 'time' column, and removes the original file. If the number of events in the
-    dataset is zero, the function returns an empty xarray dataset object.
-
-    Args:
-        filename (str): The path to the GOES-16 data file to process.
-
-    Returns:
-        xr.Dataset: A filtered xarray dataset object.
-    """
-    df = pd.DataFrame()
-    if ds.number_of_events.nbytes != 0:
-        print(f"Adding file to parquet: {filename}")
-        df = ds.to_dataframe()
-        df.drop(df.columns[4:-1], axis=1, inplace=True)
-        df.drop(df.columns[0], axis=1, inplace=True)
-        df.rename(columns={'event_time_offset': 'time',
-                            'event_lat': 'lat',
-                            'event_lon': 'lon',
-                            'event_energy': 'energy'},
-                inplace=True)
-        df.set_index('time', inplace=True)
-    os.remove(filename)
-    return df
-
 # Download all files in parallel, and rename them the same name (without the directory structure)
 def download_file(files):
     """
@@ -81,15 +52,24 @@ def download_file(files):
         fs.get(file, filename)
         ds = xr.open_dataset(filename)
         ds = filter_coordinates(ds)
-        process_file = processing_goes_16_file(ds, filename)
-        if not process_file.empty:
-            files_process.append(process_file)
+        if ds.number_of_events.nbytes != 0:
+            files_process.append(ds)
+            # Break for debugger
+            break
+        os.remove(filename)
         count += 1
-    # concatenate dataframes along the rows
-    merged_df = pd.concat(files_process, axis=0)
 
-    # save merged dataframe to a parquet file
-    merged_df.to_parquet("merged_file.parquet.gzip")
+    if len(files_process) > 0:
+        # concatenate datasets along the time dimension
+        merged_ds = xr.concat(files_process, dim='time')
+
+        # convert the merged dataset to a dataframe
+        merged_df = merged_ds.to_dataframe()
+
+        # save merged dataframe to a parquet file
+        merged_df.to_parquet("atmoseer/data/goes16/merged_file.parquet")
+    else:
+        print("No data found within the specified coordinates and Date.")
 
 def import_data(station_code, initial_year, final_year):
     """
@@ -123,6 +103,7 @@ def import_data(station_code, initial_year, final_year):
         day_of_year = f'{date.dayofyear:03d}'
         print(f'noaa-goes16/GLM-L2-LCFA/{year}/{day_of_year}')
         if day_of_year == '060':
+            # Break for debugger
             break
         for hour in hours:
             target = f'noaa-goes16/GLM-L2-LCFA/{year}/{day_of_year}/{hour}'

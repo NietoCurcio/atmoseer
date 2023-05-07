@@ -52,6 +52,28 @@ from sklearn.impute import KNNImputer
 #     print(f"Saving preprocessed data to {filename}")
 #     df.to_parquet(filename, compression='gzip')
 
+def preprocess_lightning_data(lightning_model_data_source):
+    print(f"Loading datasource file ({lightning_model_data_source}).")
+    df = pd.read_parquet(lightning_model_data_source)
+    format_string = '%Y-%m-%d %H:%M:%S'
+
+    #
+    # Add index to dataframe using the observation's timestamps.
+    df['Datetime'] = pd.to_datetime(df['event_time_offset'], format=format_string)
+    df = df.set_index(pd.DatetimeIndex(df['Datetime']))
+    print(f"Range of timestamps after preprocessing {lightning_model_data_source}: [{min(df.index)}, {max(df.index)}]")
+
+    #
+    # Remove time-related columns since now this information is in the index.
+    df = df.drop(['event_time_offset', 'Datetime'], axis = 1)
+
+    #
+    # Save preprocessed data.
+    filename_and_extension = get_filename_and_extension(lightning_model_data_source)
+    filename = WS_GOES_DATA_DIR + filename_and_extension[0] + '_preprocessed.parquet.gzip'
+    print(f"Saving preprocessed data to {filename}")
+    df.to_parquet(filename, compression='gzip')
+
 def preprocess_ws(station_id, ws_datasource):
     print(f"Loading datasource file ({ws_datasource}).")
     df = pd.read_csv(ws_datasource)
@@ -117,7 +139,7 @@ def main(argv):
     parser.add_argument('-s', '--station_id', required=True, choices=INMET_STATION_CODES_RJ + COR_STATION_NAMES_RJ, help='ID of the weather station to preprocess data for.')
     # parser.add_argument('-d', '--datasources', required=True, choices=list_valid_datasource_combinations, help='Data sources to preprocess. Combination of R (sounding indices) and N (NWP data) allowed.')
     # parser.add_argument('-n', '--neighbors', default=0, type=int, help='Number of neighbor weather stations to use.')
-    args = parser.parse_args(argv[1:])
+    # args = parser.parse_args(argv[1:])
     
     # sounding_indices_data_source = None
     # numerical_model_data_source = None
@@ -126,12 +148,19 @@ def main(argv):
     #     sounding_indices_data_source = '../data/sounding/SBGL_indices_1997_2023.parquet.gzip'
     # if args.datasources.find('N') != -1:
     #     numerical_model_data_source = '../data/NWP/ERA5_A652_1997_2023.csv'
+    # if args.datasources.find('L') != -1:
+    #     lightning_model_data_source = '../data/goes16/merged_file.parquet.gzip'
+    lightning_model_data_source = 'atmoseer/data/goes16/goes16_merged_file.parquet'
 
     # print(f'Going to preprocess data sources according to user specification ({args.datasources})...')
 
-    print('\n***Preprocessing weather station data***')
-    ws_datasource = WS_INMET_DATA_DIR + args.station_id + ".csv"
-    preprocess_ws(args.station_id, ws_datasource)
+    # print('\n***Preprocessing weather station data***')
+    # ws_datasource = WS_INMET_DATA_DIR + args.station_id + ".csv"
+    # preprocess_ws(args.station_id, ws_datasource)
+
+    if lightning_model_data_source is not None:
+        print('\n***Preprocessing lightning indices data***')
+        preprocess_lightning_data(lightning_model_data_source)
     
     # if sounding_indices_data_source is not None:
     #     print('\n***Preprocessing sounding indices data***')
