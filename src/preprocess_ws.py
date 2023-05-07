@@ -52,7 +52,17 @@ from sklearn.impute import KNNImputer
 #     print(f"Saving preprocessed data to {filename}")
 #     df.to_parquet(filename, compression='gzip')
 
+# We need to add filter for station of Copacabana 
 def preprocess_lightning_data(lightning_model_data_source):
+    """
+    Preprocesses lightning model data by adding timestamps as an index and saving the preprocessed data to disk.
+    This function loads the lightning model data from a Parquet file, adds a datetime index using the 'event_time_offset'
+    column, removes the time-related columns since the information is now in the index, and saves the preprocessed data to
+    a new Parquet file with a compressed gzip format.
+
+    Args:
+        lightning_model_data_source (str): The path to the lightning model data source file.
+    """
     print(f"Loading datasource file ({lightning_model_data_source}).")
     df = pd.read_parquet(lightning_model_data_source)
     format_string = '%Y-%m-%d %H:%M:%S'
