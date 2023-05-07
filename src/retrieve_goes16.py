@@ -4,7 +4,6 @@ from datetime import datetime
 from util import is_posintstring
 from globals import *
 import s3fs
-import numpy as np
 import xarray as xr
 import pandas as pd
 import os
@@ -21,13 +20,14 @@ fs = s3fs.S3FileSystem(anon=True)
 #             'w_lon': -43.733,
 #             'e_lon': -42.933}]
 
-# Latitude e Longitude do RJ
+# Latitude and Longitude of RJ
 def filter_coordinates(ds:xr.Dataset):
   """
     Filter lightning event data in an xarray Dataset based on latitude and longitude boundaries.
 
     Args:
         ds (xarray.Dataset): Dataset containing lightning event data with variables `event_energy`, `event_lat`, and `event_lon`.
+
     Returns:
         xarray.Dataset: A new dataset with the same variables as `ds`, but with lightning events outside of the specified latitude and longitude boundaries removed.
   """
@@ -39,10 +39,11 @@ def filter_coordinates(ds:xr.Dataset):
 # Download all files in parallel, and rename them the same name (without the directory structure)
 def download_file(files):
     """
-    Downloads a GOES-16 netCDF file from an S3 bucket, filters it for events that fall within a specified set of coordinates, 
-    and saves the filtered file to disk.
+    Downloads GOES-16 netCDF files from an S3 bucket, filters them for events that fall within specified coordinates,
+    and saves the filtered data to disk as a Parquet file.
+
     Args:
-        file (str): A string representing the name of the file to be downloaded from an S3 bucket.
+        files (list): A list of strings representing the names of files to be downloaded from an S3 bucket.
     """
     files_process = []
     count = 1
