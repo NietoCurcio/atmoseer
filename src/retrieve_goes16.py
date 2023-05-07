@@ -22,7 +22,7 @@ fs = s3fs.S3FileSystem(anon=True)
 #             'w_lon': -43.733,
 #             'e_lon': -42.933}]
 
-# Latitude e Longitude do forte de copacaban
+# Latitude e Longitude do RJ
 def filter_coordinates(ds:xr.Dataset):
   """
     Filter lightning event data in an xarray Dataset based on latitude and longitude boundaries.
@@ -33,11 +33,11 @@ def filter_coordinates(ds:xr.Dataset):
         xarray.Dataset: A new dataset with the same variables as `ds`, but with lightning events outside of the specified latitude and longitude boundaries removed.
   """
   return ds['event_energy'].where(
-      (ds['event_lat'] >= -23.083) & (ds['event_lat'] <= -22.717) &
-      (ds['event_lon'] >= -42.933) & (ds['event_lon'] <= -43.733),
+      (ds['event_lat'] >= -22.9035) & (ds['event_lat'] <= -22.7469) &
+      (ds['event_lon'] >= -43.7958) & (ds['event_lon'] <= -43.0962),
       drop=True)
 
-def processing_goes_16_file(filename):
+def processing_goes_16_file(ds, filename):
     """
     Processes a GOES-16 data file, filters its coordinates, and returns a filtered xarray dataset.
     This function reads a GOES-16 data file using xarray, applies a filter to its coordinates, drops unnecessary columns,
@@ -50,10 +50,8 @@ def processing_goes_16_file(filename):
     Returns:
         xr.Dataset: A filtered xarray dataset object.
     """
-    df = []
-    ds = xr.open_dataset(filename)
-    ds = filter_coordinates(ds)
     if ds.number_of_events.nbytes != 0:
+        print(f"Saving file: {filename}")
         df = ds.to_dataframe()
         df.drop(df.columns[4:-1], axis=1, inplace=True)
         df.drop(df.columns[0], axis=1, inplace=True)
@@ -75,10 +73,14 @@ def download_file(files):
         file (str): A string representing the name of the file to be downloaded from an S3 bucket.
     """
     files_process = []
+    count = 0
     for file in files:
+        print(f"Reading file number {count}, remaining {len(files) - count} files")
         filename = file.split('/')[-1]
         fs.get(file, filename)
-        files_process.append(processing_goes_16_file(filename))
+        ds = xr.open_dataset(filename)
+        ds = filter_coordinates(ds)
+        files_process.append(processing_goes_16_file(ds, filename))
     # concatenate dataframes along the rows
     merged_df = pd.concat(files_process, axis=0)
 
@@ -105,7 +107,7 @@ def import_data(station_code, initial_year, final_year):
     """
     # Get files of GOES-16 data (multiband format) on multiple dates
     # format: <Product>/<Year>/<Day of Year>/<Hour>/<Filename>
-    hours = [f'{h:02d}' for h in range(24)]  # Download all 24 hours of data
+    hours = [f'{h:02d}' for h in range(25)]  # Download all 24 hours of data
 
     start_date = pd.to_datetime(f'{initial_year}-01-01')
     end_date = pd.to_datetime(f'{final_year}-12-31')
@@ -115,8 +117,7 @@ def import_data(station_code, initial_year, final_year):
     for date in dates:
         year = str(date.year)
         day_of_year = f'{date.dayofyear:03d}'
-        print(f'noaa-goes16/GLM-L2-LCFA/{year}/{day_of_year}')
-        if day_of_year == '005':
+        if day_of_year == '060':
             break
         for hour in hours:
             target = f'noaa-goes16/GLM-L2-LCFA/{year}/{day_of_year}/{hour}'
@@ -161,8 +162,8 @@ def main(argv):
     assert (start_year <= end_year) and (start_year >= start_goes_16)
 
     station_code = 'copacabana'
-    start_year = 2019
-    end_year = 2019
+    start_year = 2018
+    end_year = 2018
 
     import_data(station_code, start_year, end_year)
 
