@@ -55,8 +55,6 @@ def download_file(files):
         ds = filter_coordinates(ds)
         if ds.number_of_events.nbytes != 0:
             files_process.append(ds)
-            # Break for debugger
-            break
         os.remove(filename)
         count += 1
 
@@ -103,9 +101,6 @@ def import_data(station_code, initial_year, final_year):
         year = str(date.year)
         day_of_year = f'{date.dayofyear:03d}'
         print(f'noaa-goes16/GLM-L2-LCFA/{year}/{day_of_year}')
-        if day_of_year == '060':
-            # Break for debugger
-            break
         for hour in hours:
             target = f'noaa-goes16/GLM-L2-LCFA/{year}/{day_of_year}/{hour}'
             files.extend(fs.ls(target))
@@ -149,8 +144,8 @@ def main(argv):
     assert (start_year <= end_year) and (start_year >= start_goes_16)
 
     station_code = 'copacabana'
-    start_year = 2018
-    end_year = 2018
+    start_year = 2017
+    end_year = 2023
 
     import_data(station_code, start_year, end_year)
 
