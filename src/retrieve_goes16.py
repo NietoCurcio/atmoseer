@@ -5,8 +5,9 @@ from util import is_posintstring
 from globals import *
 import s3fs
 import xarray as xr
-import pandas as pd
 import os
+import tenacity
+from botocore.exceptions import ConnectTimeoutError
 
 # Use the anonymous credentials to access public data
 fs = s3fs.S3FileSystem(anon=True)
@@ -37,6 +38,11 @@ def filter_coordinates(ds:xr.Dataset):
       drop=True)
 
 # Download all files in parallel, and rename them the same name (without the directory structure)
+@tenacity.retry(
+    retry=tenacity.retry_if_exception_type(ConnectTimeoutError),
+    wait=tenacity.wait_exponential(),
+    stop=tenacity.stop_after_attempt(5)
+)
 def download_file(files):
     """
     Downloads GOES-16 netCDF files from an S3 bucket, filters them for events that fall within specified coordinates,
@@ -54,19 +60,17 @@ def download_file(files):
         ds = xr.open_dataset(filename)
         ds = filter_coordinates(ds)
         if ds.number_of_events.nbytes != 0:
-            files_process.append(ds)
+          df = ds.to_dataframe()
+          files_process.append(df)
         os.remove(filename)
         count += 1
 
     if len(files_process) > 0:
         # concatenate datasets along the time dimension
-        merged_ds = xr.concat(files_process, dim='time')
+        merged_df = pd.concat(files_process)
 
-        # convert the merged dataset to a dataframe
-        merged_df = merged_ds.to_dataframe()
-
-        # save merged dataframe to a parquet file
-        merged_df.to_parquet("atmoseer/data/goes16/merged_file.parquet")
+        # Save merged dataframe to a Parquet file
+        merged_df.to_parquet("merged_file.parquet")
     else:
         print("No data found within the specified coordinates and Date.")
 
@@ -144,8 +148,8 @@ def main(argv):
     assert (start_year <= end_year) and (start_year >= start_goes_16)
 
     station_code = 'copacabana'
-    start_year = 2017
-    end_year = 2023
+    start_year = 2018
+    end_year = 2018
 
     import_data(station_code, start_year, end_year)
 
