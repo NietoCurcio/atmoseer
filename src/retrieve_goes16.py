@@ -61,6 +61,7 @@ def download_file(files):
         ds = filter_coordinates(ds)
         if ds.number_of_events.nbytes != 0:
           df = ds.to_dataframe()
+          df['event_time_offset'] = df['event_time_offset'].astype('datetime64[us]')
           files_process.append(df)
         os.remove(filename)
         count += 1
@@ -70,7 +71,7 @@ def download_file(files):
         merged_df = pd.concat(files_process)
 
         # Save merged dataframe to a Parquet file
-        merged_df.to_parquet("merged_file.parquet")
+        merged_df.to_parquet("/mnt/e/atmoseer/data/goes16/goes16_merged_file.parquet")
     else:
         print("No data found within the specified coordinates and Date.")
 
@@ -98,12 +99,16 @@ def import_data(station_code, initial_year, final_year):
 
     start_date = pd.to_datetime(f'{initial_year}-01-01')
     end_date = pd.to_datetime(f'{final_year}-12-31')
-    dates = pd.date_range(start=start_date, end=end_date, freq='D')
+    # dates = pd.date_range(start=start_date, end=end_date, freq='D')
+    df = pd.read_csv('/mnt/e/relevant_dates.csv')
+    dates = df.iloc[:, 0].values
 
     files = []
     for date in dates:
+        date = datetime.strptime(date, '%Y-%m-%d')
         year = str(date.year)
-        day_of_year = f'{date.dayofyear:03d}'
+        # day_of_year = f'{date.dayofyear:03d}'
+        day_of_year = date.strftime('%j')
         print(f'noaa-goes16/GLM-L2-LCFA/{year}/{day_of_year}')
         for hour in hours:
             target = f'noaa-goes16/GLM-L2-LCFA/{year}/{day_of_year}/{hour}'

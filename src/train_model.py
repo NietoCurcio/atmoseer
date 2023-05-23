@@ -268,7 +268,7 @@ def main(argv):
 
     # 
     # Load the best model
-    model.load_state_dict(torch.load('../models/best_' + pipeline_id + '.pt'))
+    model.load_state_dict(torch.load('/mnt/e/atmoseer/data/as/best_' + pipeline_id + '.pt'))
 
     y_test = rp.precipitationvalues_to_binary_encoding(y_test)
 

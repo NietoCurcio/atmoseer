@@ -20,8 +20,11 @@ python build_datasets.py -s A627 -d N
 python build_datasets.py -s A602 -d N
 python build_datasets.py -s A652 -d N
 python build_datasets.py -s A652 -d R
+python build_datasets.py -s A652 -d L
 python build_datasets.py -s A652 -d R+N
+python build_datasets.py -s A652 -d R+N+L
 
+Optional commands:
 python augment_datasets.py -s A652 -p A652_N -i A621
 python augment_datasets.py -s A652 -p A652_N -i A602
 python augment_datasets.py -s A652 -p A652_N -i A621 A602

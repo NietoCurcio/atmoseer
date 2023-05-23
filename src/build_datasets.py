@@ -178,7 +178,7 @@ def generate_windowed_split(train_df, val_df, test_df, target_name):
     return X_train, y_train, X_val, y_val, X_test, y_test
 
 # TODO ver como tratar o max_event bool nos argumentos de python
-def get_goes16_data_for_weather_station(df: pd.DataFrame, station_id: str, max_event: bool = False) -> pd.DataFrame:
+def get_goes16_data_for_weather_station(df: pd.DataFrame, station_id: str, max_event: bool = True) -> pd.DataFrame:
     """
     Filters lightning event data in a DataFrame based on latitude and longitude boundaries for a specific weather station
     and calculates the maximum or median value of the 'event_energy' column on an hourly basis.
@@ -205,6 +205,10 @@ def get_goes16_data_for_weather_station(df: pd.DataFrame, station_id: str, max_e
         hourly_data = filtered_df.resample('H').mean()
 
     result_df = pd.DataFrame(hourly_data[['event_energy']])
+    
+    # Remove rows with NaN values in 'event_energy' column
+    result_df = result_df.dropna(subset=['event_energy'])
+
     return result_df
 
 # TODO Transformar em variavel global
@@ -241,7 +245,7 @@ def build_datasets(station_id: str, join_as_data_source: bool, join_nwp_data_sou
         pipeline_id = pipeline_id + '_NN' + str(num_neighbors)
 
     print(f"Loading observations for weather station {station_id}...", end= "")
-    df_ws = pd.read_parquet(station_id + "_preprocessed.parquet.gzip")
+    df_ws = pd.read_parquet("/mnt/e/atmoseer/data/ws/inmetinmetA652_preprocessed.parquet.gzip")
     print(f"Done! Shape = {df_ws.shape}.")
 
     ####
@@ -318,7 +322,7 @@ def build_datasets(station_id: str, join_as_data_source: bool, join_nwp_data_sou
 
     if join_lightning_data_source:
         print(f"Loading NWP (ERA5) data near the weather station {station_id}...", end= "")
-        df_lightning = pd.read_parquet('goes16goes16_merged_file_preprocessed.parquet.gzip')
+        df_lightning = pd.read_parquet('/mnt/e/atmoseer/data/ws/merged_file_preprocessed.parquet.gzip')
         df_lightning_filtered = get_goes16_data_for_weather_station(df_lightning, station_id)
         print(f"Done! Shape = {df_lightning_filtered.shape}.")
         print(df_lightning_filtered.isnull().sum())
@@ -344,7 +348,7 @@ def build_datasets(station_id: str, join_as_data_source: bool, join_nwp_data_sou
 
     #
     # Save train/val/test DataFrames for future error analisys.
-    filename = DATASETS_DIR + pipeline_id + '.parquet.gzip'
+    filename = pipeline_id + '.parquet.gzip'
     print(f'Saving joined data source for pipeline {pipeline_id} to file {filename}.')
     joined_df.to_parquet(filename, compression='gzip')
 
@@ -376,9 +380,9 @@ def build_datasets(station_id: str, join_as_data_source: bool, join_nwp_data_sou
     #
     # Save train/val/test DataFrames for future error analisys.
     print(f'Saving each train/val/test dataset for pipeline {pipeline_id} as a parquet file.')
-    df_train.to_parquet(DATASETS_DIR + pipeline_id + '_train.parquet.gzip', compression='gzip')
-    df_val.to_parquet(DATASETS_DIR + pipeline_id + '_val.parquet.gzip', compression='gzip')
-    df_test.to_parquet(DATASETS_DIR + pipeline_id + '_test.parquet.gzip', compression='gzip')
+    df_train.to_parquet(pipeline_id + '_train.parquet.gzip', compression='gzip')
+    df_val.to_parquet(pipeline_id + '_val.parquet.gzip', compression='gzip')
+    df_test.to_parquet(pipeline_id + '_test.parquet.gzip', compression='gzip')
 
     #
     # Normalize the columns in train/val/test dataframes. This is done as a preparation step for appllying
@@ -434,6 +438,7 @@ def build_datasets(station_id: str, join_as_data_source: bool, join_nwp_data_sou
     print(
         f'Number of examples (train/val/test): {len(X_train)}/{len(X_val)}/{len(X_test)}.')
     filename = DATASETS_DIR + pipeline_id + ".pickle"
+    filename = "/mnt/e/atmoseer/data/ws/" + pipeline_id + ".pickle"
     print(f'Dumping train/val/test np arrays to pickle file {filename}.', end = " ")
     file = open(filename, 'wb')
     ndarrays = (X_train, y_train, 

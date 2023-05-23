@@ -80,7 +80,8 @@ def preprocess_lightning_data(lightning_model_data_source):
     #
     # Save preprocessed data.
     filename_and_extension = get_filename_and_extension(lightning_model_data_source)
-    filename = WS_GOES_DATA_DIR + filename_and_extension[0] + '_preprocessed.parquet.gzip'
+    # filename = WS_GOES_DATA_DIR + filename_and_extension[0] + '_preprocessed.parquet.gzip'
+    filename = "/mnt/e/atmoseer/data/ws/" + filename_and_extension[0] + '_preprocessed.parquet.gzip'
     print(f"Saving preprocessed data to {filename}")
     df.to_parquet(filename, compression='gzip')
 
@@ -160,17 +161,17 @@ def main(argv):
     #     numerical_model_data_source = '../data/NWP/ERA5_A652_1997_2023.csv'
     # if args.datasources.find('L') != -1:
     #     lightning_model_data_source = '../data/goes16/merged_file.parquet.gzip'
-    lightning_model_data_source = 'atmoseer/data/goes16/goes16_merged_file.parquet'
+    # lightning_model_data_source = '/mnt/e/atmoseer/data/goes16/merged_file.parquet'
 
     # print(f'Going to preprocess data sources according to user specification ({args.datasources})...')
 
     # print('\n***Preprocessing weather station data***')
     # ws_datasource = WS_INMET_DATA_DIR + args.station_id + ".csv"
-    # preprocess_ws(args.station_id, ws_datasource)
+    preprocess_ws("A652", "/mnt/e/atmoseer/data/ws/inmetA652.csv")
 
-    if lightning_model_data_source is not None:
-        print('\n***Preprocessing lightning indices data***')
-        preprocess_lightning_data(lightning_model_data_source)
+    # if lightning_model_data_source is not None:
+    #     print('\n***Preprocessing lightning indices data***')
+    #     preprocess_lightning_data(lightning_model_data_source)
     
     # if sounding_indices_data_source is not None:
     #     print('\n***Preprocessing sounding indices data***')

@@ -94,5 +94,5 @@ def gen_learning_curve(train_loss, val_loss, pipeline_id):
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    fig.savefig('../models/loss_plot_' + pipeline_id +
+    fig.savefig('/mnt/e/atmoseer/data/ws/loss_plot_' + pipeline_id +
                 '.png', bbox_inches='tight')
