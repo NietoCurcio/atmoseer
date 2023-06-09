@@ -113,15 +113,14 @@ class OrdinalClassificationNet(nn.Module):
         print('Making predictions with ordinal classification model...')
         self.eval()
 
-        test_x_tensor = torch.from_numpy(X.astype('float64'))
-        test_x_tensor = torch.permute(test_x_tensor, (0, 2, 1))
+        X_as_tensor = torch.from_numpy(X.astype('float64'))
+        X_as_tensor = torch.permute(X_as_tensor, (0, 2, 1))
 
         outputs = []
         with torch.no_grad():
-            output = self(test_x_tensor.float())
+            output = self(X_as_tensor.float())
             yb_pred_encoded = output.detach().cpu().numpy()
-            yb_pred_decoded = ordinal_encoding_to_level(
-                yb_pred_encoded)
+            yb_pred_decoded = ordinal_encoding_to_level(yb_pred_encoded)
             outputs.append(yb_pred_decoded.reshape(-1, 1))
 
         y_pred = np.vstack(outputs)
