@@ -13,6 +13,7 @@ file = open(filename, 'rb')
 (_, _, _, _, X_test, _) = pickle.load(file)
 print(f"Shape of test data matrix: {X_test.shape}")
 
+# Example to predict is the firs one in the test dataset.
 x = X_test[0:1, :, :]
 print(f"Shape of one test example: {x.shape}")
 print("Model input:")
@@ -35,4 +36,4 @@ model.eval()
 # Make prediction using the loaded model
 with torch.no_grad():
     output = model.predict(x)
-    print(output)
+    print(f"Predicted level: {output[0][0]}")

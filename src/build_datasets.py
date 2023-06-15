@@ -16,6 +16,7 @@ import rainfall as rp
 from subsampling import apply_subsampling
 import xarray as xr
 import logging
+import yaml
 
 # def format_for_binary_classification(y_train, y_val, y_test):
 #     y_train_oc = map_to_binary_precipitation_levels(y_train)
@@ -29,7 +30,7 @@ import logging
 #     y_test_oc = map_to_precipitation_levels(y_test)
 #     return y_train_oc, y_val_oc, y_test_oc
 
-def apply_sliding_window(df: pd.DataFrame, target_idx: int):
+def apply_sliding_window(df: pd.DataFrame, target_idx: int, window_size: int):
     """
     This function applies the sliding window preprocessing technique to generate data and response 
     matrices (that is, X and y) from an input time series represented as a pandas DataFrame. This 
@@ -51,15 +52,14 @@ def apply_sliding_window(df: pd.DataFrame, target_idx: int):
         end = block[1]
 
         # logging.info(df[start:end].shape)
-        if df[start:end].shape[0] < globals.hyper_params_dict_bc["SLIDING_WINDOW_SIZE"] + 1:
+        if df[start:end].shape[0] < window_size + 1:
             continue
 
         arr = np.array(df[start:end])
         X_block, y_block = apply_windowing(arr,
                                            initial_time_step=0,
-                                           max_time_step=len(
-                                               arr)-globals.hyper_params_dict_bc["SLIDING_WINDOW_SIZE"]-1,
-                                           window_size=globals.hyper_params_dict_bc["SLIDING_WINDOW_SIZE"],
+                                           max_time_step=len(arr)-window_size-1,
+                                           window_size=window_size,
                                            target_idx=target_idx)
         y_block = y_block.reshape(-1, 1)
         if is_first_block:
@@ -73,7 +73,7 @@ def apply_sliding_window(df: pd.DataFrame, target_idx: int):
     return X, y
 
 def get_NWP_data_for_weather_station(station_id, initial_datetime, final_datetime):
-    df_stations = pd.read_csv("../data/ws/WeatherStations.csv")
+    df_stations = pd.read_csv("./data/ws/WeatherStations.csv")
     row = df_stations[df_stations["STATION_ID"] == station_id].iloc[0]
     station_latitude = row["VL_LATITUDE"]
     station_longitude = row["VL_LONGITUDE"]
@@ -173,24 +173,24 @@ def get_NWP_data_for_weather_station(station_id, initial_datetime, final_datetim
 
     return df_NWP_data_for_station
     
-def generate_windowed_split(train_df, val_df, test_df, target_name):
+def generate_windowed_split(train_df, val_df, test_df, target_name, window_size):
     target_idx = train_df.columns.get_loc(target_name)
     logging.info(f"Position (index) of target variable {target_name}: {target_idx}")
-    X_train, y_train = apply_sliding_window(train_df, target_idx)
-    X_val, y_val = apply_sliding_window(val_df, target_idx)
-    X_test, y_test = apply_sliding_window(test_df, target_idx)
+    X_train, y_train = apply_sliding_window(train_df, target_idx, window_size)
+    X_val, y_val = apply_sliding_window(val_df, target_idx, window_size)
+    X_test, y_test = apply_sliding_window(test_df, target_idx, window_size)
     return X_train, y_train, X_val, y_val, X_test, y_test
 
 
 def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_source: bool, subsampling_procedure: str):
     '''
-    This function joins a set of datasources to build datasets. These resulting datasets are used to fit the parameters of
-    precipitation models down the AtmoSeer pipeline. Each datasource contributes with a group of features to build the datasets 
-    that are going to be used for training and validating the prediction models.
+    This function joins a set of datasources to build datasets. These resulting datasets are used to fit the 
+    parameters of precipitation models down the AtmoSeer pipeline. Each datasource contributes with a group 
+    of features to build the datasets that are going to be used for training and validating the prediction models.
     
-    Notice that, when joining the user-specified data sources, there is always a station of interest, that is, a weather 
-    station that will provide the values of the target variable (in our case, precipitation). It can even be the case that 
-    the only user-specified data source is this weather station. 
+    Notice that, when joining the user-specified data sources, there is always a station of interest, that is, 
+    a weather station that will provide the values of the target variable (in our case, precipitation). 
+    It can even be the case that the only user-specified data source is this weather station. 
     '''
 
     pipeline_id = station_id
@@ -342,7 +342,7 @@ def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_sou
     assert (not df_test.isnull().values.any().any())
 
     #
-    # Normalize the columns in train/val/test dataframes. This is done as a preparation step for appllying
+    # Normalize the columns in train/val/test dataframes. This is done as a preparation step for applying
     # the sliding window technique, since the target variable is going to be used as lag feature.
     # (see, e.g., https://www.mikulskibartosz.name/forecasting-time-series-using-lag-features/)
     # (see also https://datascience.stackexchange.com/questions/72480/what-is-lag-in-time-series-forecasting)
@@ -361,9 +361,16 @@ def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_sou
 
     #
     # Apply sliding windowing method to build examples (instances) of train/val/test datasets 
+    with open('./config/config.yaml', 'r') as file:
+        config = yaml.safe_load(file)
+    window_size = config["preproc"]["SLIDING_WINDOW_SIZE"]
     logging.info('Applying sliding window to build train/val/test datasets.')
     X_train, y_train, X_val, y_val, X_test, y_test = generate_windowed_split(
-        df_train, df_val, df_test, target_name=target_name)
+        df_train, 
+        df_val, 
+        df_test, 
+        target_name, 
+        window_size)
     logging.info("Done! Resulting shapes:")
     logging.info(f' - (X_train/X_val/X_test): ({X_train.shape}/{X_val.shape}/{X_test.shape})')
     logging.info(f' - (y_train/y_val/y_test): ({y_train.shape}/{y_val.shape}/{y_test.shape})')

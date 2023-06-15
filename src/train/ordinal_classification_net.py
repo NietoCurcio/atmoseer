@@ -25,65 +25,60 @@ from train.evaluate import *
 from rainfall import ordinal_encoding_to_level
 from train.early_stopping import *
 import rainfall as rp
-import pprint
 import globals as globals
+import functools
+import operator
+import yaml
 
 class OrdinalClassificationNet(nn.Module):
-    def __init__(self, in_channels, num_classes):
+    def __init__(self, in_channels, input_dim, num_classes, target_average, dropout_rate=0.5):
         super(OrdinalClassificationNet, self).__init__()
-        self.conv1d_1 = nn.Conv1d(
-            in_channels=in_channels, out_channels=32, kernel_size=3, padding=2)
-        self.conv1d_2 = nn.Conv1d(
-            in_channels=32, out_channels=32, kernel_size=3, padding=2)
-        self.conv1d_3 = nn.Conv1d(
-            in_channels=32, out_channels=32, kernel_size=3, padding=2)
-        self.conv1d_4 = nn.Conv1d(
-            in_channels=32, out_channels=64, kernel_size=3, padding=2)
 
+        self.feature_extractor = nn.Sequential(
+            nn.Conv1d(in_channels=in_channels, out_channels=16, kernel_size=3, padding=3),
+            nn.ReLU(inplace=True),
+            nn.Dropout1d(p=dropout_rate))
+
+        # https://datascience.stackexchange.com/questions/40906/determining-size-of-fc-layer-after-conv-layer-in-pytorch
+        num_features_before_fcnn = functools.reduce(operator.mul, list(self.feature_extractor(torch.rand(1, *input_dim)).shape))
+
+        self.classifier = nn.Sequential(
+            nn.Linear(in_features=num_features_before_fcnn, out_features=50),
+            nn.ReLU(inplace=True),
+            nn.Linear(50, num_classes),
+            nn.Sigmoid()
+        )
+
+        # Initialize the bias of the last layer with the average target value
+        # see https://discuss.pytorch.org/t/how-to-initialize-weight-with-arbitrary-tensor/3432
+        if target_average is not None:
+            # Get the last layer
+            last_layer = self.classifier[-2]
+            print(f"last_layer.bias = {last_layer.bias}")
+            print(f"target_average = {target_average[0]}")
+            last_layer.bias = torch.nn.Parameter(target_average[0])
+            print(f"last_layer.bias = {last_layer.bias}")
+
+
+        # self.conv1d_1 = nn.Conv1d(in_channels=in_channels, out_channels=16, kernel_size=3, padding=3)
         # self.relu = nn.ReLU()
-        self.relu = nn.GELU()
-
-        self.sigmoid = nn.Sigmoid()
-
-        self.fc1 = nn.Linear(896, 50)
-
-        self.fc2 = nn.Linear(50, num_classes)
+        # self.sigmoid = nn.Sigmoid()
+        # self.fc1 = nn.Linear(160, 50)
+        # self.fc2 = nn.Linear(50, num_classes)
 
     def forward(self, x):
-        x = self.conv1d_1(x)
-        x = self.relu(x)
-
-        # x = self.max_pooling1d_1(x)
-
-        x = self.conv1d_2(x)
-        x = self.relu(x)
-
-        x = self.conv1d_3(x)
-        x = self.relu(x)
-
-        x = self.conv1d_4(x)
-
-        x = self.relu(x)
-
-        x = x.view(x.shape[0], -1)
-
-        x = self.fc1(x)
-        x = self.relu(x)
-
-        x = self.fc2(x)
-        x = self.sigmoid(x)
-
-        return x
-
-    # def prediction2label(pred: np.ndarray):
-    #   """Convert ordinal predictions to class labels, e.g.
-
-    #   [0.9, 0.1, 0.1, 0.1] -> 0
-    #   [0.9, 0.9, 0.1, 0.1] -> 1
-    #   [0.9, 0.9, 0.9, 0.1] -> 2
-    #   etc.
-    #   """
-    #   return (pred > 0.5).cumprod(axis=1).sum(axis=1) - 1
+        out = self.feature_extractor(x)
+        out = out.view(out.shape[0], -1)
+        out = self.classifier(out)
+        return out
+        # x = self.conv1d_1(x)
+        # x = self.relu(x)
+        # x = x.view(x.shape[0], -1)
+        # x = self.fc1(x)
+        # x = self.relu(x)
+        # x = self.fc2(x)
+        # x = self.sigmoid(x)
+        # return x
 
     def training_step(self, batch):
         X_train, y_train = batch
@@ -128,7 +123,6 @@ class OrdinalClassificationNet(nn.Module):
         return y_pred
 
     def evaluate(self, X_test, y_test):
-        print('Evaluating ordinal classification model...')
         self.eval()
 
         test_x_tensor = torch.from_numpy(X_test.astype('float64'))
@@ -153,7 +147,7 @@ class OrdinalClassificationNet(nn.Module):
 
         return y_pred
 
-    def print_evaluation_report(self, pipeline_id, X_test, y_test, hyper_params_dics):
+    def print_evaluation_report(self, pipeline_id, X_test, y_test):
         self.load_state_dict(torch.load(globals.MODELS_DIR + '/best_' + pipeline_id + '.pt'))
         y_test = rp.value_to_level(y_test)
 
@@ -163,7 +157,11 @@ class OrdinalClassificationNet(nn.Module):
 
         print("\\begin{verbatim}")
         print("***Hyperparameters***")
-        pprint.pprint(hyper_params_dics)
+        with open('./config/config.yaml', 'r') as file:
+            config = yaml.safe_load(file)
+        model_config = config['training']['oc']
+        pretty_model_config = yaml.dump(model_config, indent=4)
+        print(pretty_model_config)
         print("\\end{verbatim}")
 
         print("\\begin{verbatim}")
@@ -175,15 +173,7 @@ class OrdinalClassificationNet(nn.Module):
         print('***Confusion matrix***')
         print("\\end{verbatim}")
 
-        print(f"y_test.shape: {y_test.shape}")
-        print(f"y_test[:50]: {y_test[:50]}")
-        print(f"np.unique(y_test.shape): {np.unique(y_test)}")
-
         y_pred = self.evaluate(X_test, y_test)
-
-        print(f"y_pred.shape: {y_pred.shape}")
-        print(f"y_pred[:50]: {y_pred[:50]}")
-        print(f"np.unique(y_pred.shape): {np.unique(y_pred)}")
 
         export_confusion_matrix_to_latex(
             y_test, y_pred, rp.PredictionTask.ORDINAL_CLASSIFICATION)

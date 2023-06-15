@@ -4,7 +4,7 @@ INMET_API_BASE_URL = "https://apitempo.inmet.gov.br"
 WS_INMET_DATA_DIR = "./data/ws/inmet/"
 
 # Atmospheric sounding datasource directory
-NWP_DATA_DIR = "./data/nwp/"
+NWP_DATA_DIR = "./data/NWP/"
 
 # Atmospheric sounding datasource directory
 AS_DATA_DIR = "./data/as/"
@@ -31,25 +31,25 @@ COR_STATION_NAMES_RJ = ('alto_da_boa_vista',
                         'sao_cristovao',
                         'vidigal')
 
-hyper_params_dict_bc = {
-    "N_EPOCHS" : 3500,
-    "PATIENCE" : 1000,
-    "BATCH_SIZE" : 1024,
-    "WEIGHT_DECAY" : 0,
-    "LEARNING_RATE" : 0.0003,
-    "DROPOUT_RATE" : 0.5,
-    "SLIDING_WINDOW_SIZE" : 6
-}
+# hyper_params_dict_bc = {
+#     "N_EPOCHS" : 3500,
+#     "PATIENCE" : 1000,
+#     "BATCH_SIZE" : 1024,
+#     "WEIGHT_DECAY" : 0,
+#     "LEARNING_RATE" : 0.0003,
+#     "DROPOUT_RATE" : 0.5,
+#     "SLIDING_WINDOW_SIZE" : 6
+# }
 
-hyper_params_dict_oc = {
-    "N_EPOCHS" : 3500,
-    "PATIENCE" : 1000,
-    "BATCH_SIZE" : 1024,
-    "WEIGHT_DECAY" : 0,
-    "LEARNING_RATE" : 3e-5,
-    "DROPOUT_RATE" : 0.5,
-    "SLIDING_WINDOW_SIZE" : 6
-}
+# hyper_params_dict_oc = {
+#     "N_EPOCHS" : 6000,
+#     "PATIENCE" : 1000,
+#     "BATCH_SIZE" : 1024,
+#     "WEIGHT_DECAY" : 0,
+#     "LEARNING_RATE" : 3e-6,
+#     "DROPOUT_RATE" : 0.5,
+#     "SLIDING_WINDOW_SIZE" : 6
+# }
 
 
 # Observed variables for INMET weather stations:

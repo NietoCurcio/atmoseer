@@ -9,7 +9,7 @@ from train.early_stopping import *
 import rainfall as rp
 import functools
 import operator
-import pprint
+import yaml
 
 # class ResidualBlock(nn.Module):
 #     def __init__(self, in_channels, out_channels, kernel_size=3, padding=1):
@@ -202,20 +202,15 @@ class BinaryClassificationNet(RainfallClassificationBase):
         print(f"num_features_before_fcnn = {num_features_before_fcnn}")
 
         self.classifier = nn.Sequential(
-            # nn.Linear(896, 50),
             nn.Linear(in_features=num_features_before_fcnn, out_features=50),
             nn.ReLU(inplace=True),
             nn.Linear(50, 1),
             nn.Sigmoid()
         )
-        # self.fc1 = nn.Linear(num_features_before_fcnn, 50)
-        # self.fc2 = nn.Linear(50, 1)
-        # self.sigmoid = nn.Sigmoid()
 
 
     def forward(self, x):
         out = self.feature_extractor(x)
-        # out = nn.Flatten(1, -1)(out)
         out = out.view(out.shape[0], -1)
         out = self.classifier(out)
         return out
@@ -233,8 +228,8 @@ class BinaryClassificationNet(RainfallClassificationBase):
     #     assert np.all(np.logical_or(y_pred == 0, y_pred == 1))
     #     return y_pred
 
-    def print_evaluation_report(self, pipeline_id, X_test, y_test, hyper_params_dics):
-        self.load_state_dict(torch.load('../models/best_' + pipeline_id + '.pt'))
+    def print_evaluation_report(self, pipeline_id, X_test, y_test):
+        self.load_state_dict(torch.load(globals.MODELS_DIR + '/best_' + pipeline_id + '.pt'))
         y_test = rp.value_to_binary_level(y_test)
         
         print("\\begin{verbatim}")
@@ -243,7 +238,11 @@ class BinaryClassificationNet(RainfallClassificationBase):
 
         print("\\begin{verbatim}")
         print("***Hyperparameters***")
-        pprint.pprint(hyper_params_dics)
+        with open('./config/config.yaml', 'r') as file:
+            config = yaml.safe_load(file)
+        model_config = config['training']['bc']
+        pretty_model_config = yaml.dump(model_config, indent=4)
+        print(pretty_model_config)
         print("\\end{verbatim}")
         
         print("\\begin{verbatim}")
@@ -322,8 +321,6 @@ class BinaryClassificationNet(RainfallClassificationBase):
                 output = self(data.float())
 
                 # calculate the loss
-                # print(f"output.shape: {output.shape}")
-                # print(f"target.shape: {target.shape}")
                 loss = criterion(output, target.float())
                 assert not (np.isnan(loss.item()) or loss.item() >
                             1e6), f"Loss explosion: {loss.item()}"
