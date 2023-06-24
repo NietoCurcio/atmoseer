@@ -193,10 +193,10 @@ def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id, resum
     val_loader = DeviceDataLoader(val_loader, device)
     to_device(model, device)
 
-    resume_training = True
-    if resume_training:
-        model_path = globals.MODELS_DIR + "best_" + pipeline_id + ".pt"  # Path to the pretrained model file
-        model.load_state_dict(torch.load(model_path))
+    # resume_training = True
+    # if resume_training:
+    #     model_path = globals.MODELS_DIR + "best_" + pipeline_id + ".pt"  # Path to the pretrained model file
+    #     model.load_state_dict(torch.load(model_path))
 
     print(f" - Fitting model...", end = " ")
     train_loss, val_loss = model.fit(n_epochs=N_EPOCHS,
