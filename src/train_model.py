@@ -116,10 +116,10 @@ def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id, resum
 
     # model.apply(initialize_weights)
 
-    if prediction_task_id == rp.PredictionTask.ORDINAL_CLASSIFICATION:
-        with open('./config/config.yaml', 'r') as file:
-            config = yaml.safe_load(file)
+    with open('./config/config.yaml', 'r') as file:
+        config = yaml.safe_load(file)
     
+    if prediction_task_id == rp.PredictionTask.ORDINAL_CLASSIFICATION:
         N_EPOCHS = config["training"]["oc"]["N_EPOCHS"]
         PATIENCE = config["training"]["oc"]["PATIENCE"]
         BATCH_SIZE = config["training"]["oc"]["BATCH_SIZE"]
