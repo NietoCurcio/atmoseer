@@ -5,6 +5,7 @@ import numpy as np
 import os
 import random
 import matplotlib.pyplot as plt
+import globals as globals
 
 def initialize_weights(m):
     if isinstance(m, nn.Conv1d):
@@ -17,7 +18,6 @@ def initialize_weights(m):
     elif isinstance(m, nn.Linear):
         nn.init.kaiming_uniform_(m.weight.data)
         nn.init.constant_(m.bias.data, 0)
-
 
 def seed_everything(seed=1234):
     random.seed(seed)
@@ -94,5 +94,9 @@ def gen_learning_curve(train_loss, val_loss, pipeline_id):
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    fig.savefig('/mnt/e/atmoseer/data/ws/loss_plot_' + pipeline_id +
+<<<<<<< HEAD
+    fig.savefig(globals.MODELS_DIR + '/mnt/e/atmoseer/data/ws/loss_plot_' + pipeline_id +
+=======
+    fig.savefig(globals.MODELS_DIR + '/loss_plot_' + pipeline_id +
+>>>>>>> 29138a8d06923737d3a9617c1482aeb9e84fce7c
                 '.png', bbox_inches='tight')

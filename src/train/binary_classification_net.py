@@ -6,10 +6,10 @@ from train.training_utils import *
 from train.evaluate import *
 from rainfall_classification_base import RainfallClassificationBase
 from train.early_stopping import *
-import rainfall_prediction as rp
+import rainfall as rp
 import functools
 import operator
-import pprint
+import yaml
 
 # class ResidualBlock(nn.Module):
 #     def __init__(self, in_channels, out_channels, kernel_size=3, padding=1):
@@ -172,16 +172,16 @@ import pprint
 #         return avg_train_losses, avg_valid_losses
 
 class BinaryClassificationNet(RainfallClassificationBase):
-    def __init__(self, in_channels, input_dim):
+    def __init__(self, in_channels, input_dim, dropout_rate=0.5):
 
         super(BinaryClassificationNet, self).__init__()
 
         self.feature_extractor = nn.Sequential(
             nn.Conv1d(in_channels=in_channels, out_channels=16, kernel_size=3, padding=3),
             nn.ReLU(inplace=True),
-            nn.Dropout1d(p=0.5),
+            nn.Dropout1d(p=dropout_rate),
 
-            # nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, padding=3),
+            # nn.Conv1d(in_channels=16, out_channels=32, kernel_size=3, padding=3),
             # nn.ReLU(inplace=True),
             # nn.Dropout1d(p=0.5),
 
@@ -202,20 +202,15 @@ class BinaryClassificationNet(RainfallClassificationBase):
         print(f"num_features_before_fcnn = {num_features_before_fcnn}")
 
         self.classifier = nn.Sequential(
-            # nn.Linear(896, 50),
             nn.Linear(in_features=num_features_before_fcnn, out_features=50),
             nn.ReLU(inplace=True),
             nn.Linear(50, 1),
             nn.Sigmoid()
         )
-        # self.fc1 = nn.Linear(num_features_before_fcnn, 50)
-        # self.fc2 = nn.Linear(50, 1)
-        # self.sigmoid = nn.Sigmoid()
 
 
     def forward(self, x):
         out = self.feature_extractor(x)
-        # out = nn.Flatten(1, -1)(out)
         out = out.view(out.shape[0], -1)
         out = self.classifier(out)
         return out
@@ -233,14 +228,21 @@ class BinaryClassificationNet(RainfallClassificationBase):
     #     assert np.all(np.logical_or(y_pred == 0, y_pred == 1))
     #     return y_pred
 
-    def print_evaluation_report(self, pipeline_id, X_test, y_test, hyper_params_dics):
+    def print_evaluation_report(self, pipeline_id, X_test, y_test):
+        self.load_state_dict(torch.load(globals.MODELS_DIR + '/best_' + pipeline_id + '.pt'))
+        y_test = rp.value_to_binary_level(y_test)
+        
         print("\\begin{verbatim}")
         print(f"***Evaluation report for pipeline {pipeline_id}***")
         print("\\end{verbatim}")
 
         print("\\begin{verbatim}")
         print("***Hyperparameters***")
-        pprint.pprint(hyper_params_dics)
+        with open('./config/config.yaml', 'r') as file:
+            config = yaml.safe_load(file)
+        model_config = config['training']['bc']
+        pretty_model_config = yaml.dump(model_config, indent=4)
+        print(pretty_model_config)
         print("\\end{verbatim}")
         
         print("\\begin{verbatim}")
@@ -319,8 +321,6 @@ class BinaryClassificationNet(RainfallClassificationBase):
                 output = self(data.float())
 
                 # calculate the loss
-                # print(f"output.shape: {output.shape}")
-                # print(f"target.shape: {target.shape}")
                 loss = criterion(output, target.float())
                 assert not (np.isnan(loss.item()) or loss.item() >
                             1e6), f"Loss explosion: {loss.item()}"
