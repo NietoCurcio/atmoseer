@@ -212,6 +212,8 @@ def get_goes16_data_for_weather_station(df: pd.DataFrame, station_id: str, max_e
     # Remove rows with NaN values in 'event_energy' column
     result_df = result_df.dropna(subset=['event_energy'])
 
+    result_df = result_df.drop('event_energy', axis=1)
+
     return result_df
 
 # TODO Transformar em variavel global
@@ -241,8 +243,8 @@ def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_sou
         pipeline_id = pipeline_id + '_N'
     if join_AS_data_source:
         pipeline_id = pipeline_id + '_R'
-    if join_lightning_data_source:
-        pipeline_id = pipeline_id + '_L'
+    # if join_lightning_data_source:
+    #     pipeline_id = pipeline_id + '_L'
 
     logging.info(f"Loading observations for weather station {station_id}...")
     df_ws = pd.read_parquet("/mnt/e/atmoseer/data/ws/inmetinmetA652_preprocessed.parquet.gzip")
@@ -530,7 +532,6 @@ def main(argv):
         if 'N' in datasources:
             join_nwp_data_source = True
         if 'L' in datasources:
-            use_lightning_model_as_data_source = True
             join_lightning_data_source = True
 
     assert(station_id is not None) and (station_id != "")
