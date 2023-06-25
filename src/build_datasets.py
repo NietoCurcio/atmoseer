@@ -484,7 +484,6 @@ def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_sou
     logging.info(
         f'Number of examples (train/val/test): {len(X_train)}/{len(X_val)}/{len(X_test)}.')
     filename = DATASETS_DIR + pipeline_id + ".pickle"
-    filename = "/mnt/e/atmoseer/data/ws/" + pipeline_id + ".pickle"
     logging.info(f'Dumping train/val/test np arrays to pickle file {filename}.')
     file = open(filename, 'wb')
     ndarrays = (X_train, y_train, 
@@ -523,7 +522,7 @@ def main(argv):
 
     join_as_data_source = False
     join_nwp_data_source = False
-    subsampling_procedure = None
+    subsampling_procedure = "NONE"
 
     if datasources:
         if 'R' in datasources:
