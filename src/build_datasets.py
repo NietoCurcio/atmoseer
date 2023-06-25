@@ -212,8 +212,6 @@ def get_goes16_data_for_weather_station(df: pd.DataFrame, station_id: str, max_e
     # Remove rows with NaN values in 'event_energy' column
     result_df = result_df.dropna(subset=['event_energy'])
 
-    result_df = result_df.drop('event_energy', axis=1)
-
     return result_df
 
 # TODO Transformar em variavel global
@@ -243,8 +241,8 @@ def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_sou
         pipeline_id = pipeline_id + '_N'
     if join_AS_data_source:
         pipeline_id = pipeline_id + '_R'
-    # if join_lightning_data_source:
-    #     pipeline_id = pipeline_id + '_L'
+    if join_lightning_data_source:
+        pipeline_id = pipeline_id + '_L'
 
     logging.info(f"Loading observations for weather station {station_id}...")
     df_ws = pd.read_parquet("/mnt/e/atmoseer/data/ws/inmetinmetA652_preprocessed.parquet.gzip")
@@ -342,7 +340,7 @@ def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_sou
         # TODO: use other sounding stations (?) (see tempo.inmet.gov.br/Sondagem/)
 
     if join_lightning_data_source:
-        print(f"Loading NWP (ERA5) data near the weather station {station_id}...", end= "")
+        print(f"Loading GLM (Goes 16) data near the weather station {station_id}...", end= "")
         df_lightning = pd.read_parquet('/mnt/e/atmoseer/data/ws/merged_file_preprocessed.parquet.gzip')
         df_lightning_filtered = get_goes16_data_for_weather_station(df_lightning, station_id)
         print(f"Done! Shape = {df_lightning_filtered.shape}.")
@@ -350,7 +348,7 @@ def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_sou
         assert (not df_lightning_filtered.isnull().values.any().any())
         joined_df = pd.merge(df_ws, df_lightning_filtered, how='left', left_index=True, right_index=True)
 
-        print(f"NWP data successfully joined; resulting shape = {joined_df.shape}.")
+        print(f"GLM data successfully joined; resulting shape = {joined_df.shape}.")
         print(df_ws.index.difference(joined_df.index).shape)
         print(joined_df.index.difference(df_ws.index).shape)
 
