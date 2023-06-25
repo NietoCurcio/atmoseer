@@ -22,6 +22,7 @@ python src/build_datasets.py -s A602 -d N
 python src/build_datasets.py -s A652 -d N
 python src/build_datasets.py -s A652 -d R -sp NEGATIVE
 python src/build_datasets.py -s A652 -d R+N -sp NEGATIVE
+python src/build_datasets.py -s A652
 
 python src/augment_datasets.py -s A652 -p A652_R -i A621
 
