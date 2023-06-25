@@ -225,7 +225,7 @@ station_ids_for_goes16 = {
         }
     }
 
-def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_source: bool, subsampling_procedure: str):
+def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_source: bool, join_lightning_data_source: bool, subsampling_procedure: str):
     '''
     This function joins a set of datasources to build datasets. These resulting datasets are used to fit the 
     parameters of precipitation models down the AtmoSeer pipeline. Each datasource contributes with a group 
@@ -361,9 +361,6 @@ def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_sou
         joined_df = joined_df.dropna()
         shape_after_dropna = joined_df.shape
         print(f"Removed NaN rows in merge data; Shapes before/after dropna: {shape_before_dropna}/{shape_after_dropna}.")
-
-    if num_neighbors != 0:
-        pass
 
     #
     # Save train/val/test DataFrames for future error analisys.
@@ -507,25 +504,26 @@ def main(argv):
 
     station_id = 'A652'
     datasources = ['L']
-    num_neighbors = 0
-    subsampling_procedure = args.subsampling_procedure
+    # num_neighbors = 0
+    # subsampling_procedure = args.subsampling_procedure
 
     lst_subsampling_procedures = ["NONE", "NAIVE", "NEGATIVE"]
-    if not (subsampling_procedure in lst_subsampling_procedures):
-        print(f"Invalid subsampling procedure: {subsampling_procedure}. Valid values: {lst_subsampling_procedures}")
-        parser.print_help()
-        sys.exit(2)
+    # if not (subsampling_procedure in lst_subsampling_procedures):
+    #     print(f"Invalid subsampling procedure: {subsampling_procedure}. Valid values: {lst_subsampling_procedures}")
+    #     parser.print_help()
+    #     sys.exit(2)
 
-    if not ((station_id in INMET_STATION_CODES_RJ) or (station_id in COR_STATION_NAMES_RJ)):
-        print(f"Invalid station identifier: {station_id}")
-        parser.print_help()
-        sys.exit(2)
+    # if not ((station_id in INMET_STATION_CODES_RJ) or (station_id in COR_STATION_NAMES_RJ)):
+    #     print(f"Invalid station identifier: {station_id}")
+    #     parser.print_help()
+    #     sys.exit(2)
 
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
     logging.basicConfig(level=logging.DEBUG, format = fmt)
 
     join_as_data_source = False
     join_nwp_data_source = False
+    subsampling_procedure = None
 
     if datasources:
         if 'R' in datasources:

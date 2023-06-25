@@ -161,13 +161,13 @@ def main(argv):
     #     numerical_model_data_source = '../data/NWP/ERA5_A652_1997_2023.csv'
     # if args.datasources.find('L') != -1:
     #     lightning_model_data_source = '../data/goes16/merged_file.parquet.gzip'
-    # lightning_model_data_source = '/mnt/e/atmoseer/data/goes16/merged_file.parquet'
+    lightning_model_data_source = '/mnt/e/atmoseer/data/goes16/merged_file.parquet'
 
     # print(f'Going to preprocess data sources according to user specification ({args.datasources})...')
 
     # print('\n***Preprocessing weather station data***')
     # ws_datasource = WS_INMET_DATA_DIR + args.station_id + ".csv"
-    preprocess_ws("A652", "/mnt/e/atmoseer/data/ws/inmetA652.csv")
+    # preprocess_ws("A652", "/mnt/e/atmoseer/data/ws/inmetA652.csv")
 
     # if lightning_model_data_source is not None:
     #     print('\n***Preprocessing lightning indices data***')
