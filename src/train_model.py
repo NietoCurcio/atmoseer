@@ -258,7 +258,14 @@ def main(argv):
     model = train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id)
     logging.info("Model training took %s seconds." % (time.time() - start_time))
 
-    # 
+    # # Load the best model
+    # model.load_state_dict(torch.load('/mnt/e/atmoseer/data/as/best_' + pipeline_id + '.pt'))
+
+    # y_test = rp.precipitationvalues_to_binary_encoding(y_test)
+
+    # model.print_evaluation_report(pipeline_id, X_test, y_test, hyper_params_dics_bc)
+
+    # print("--- %s seconds ---" % (time.time() - start_time))
     # Evaluate using the best model produced
     model.print_evaluation_report(pipeline_id, X_test, y_test)
 

@@ -181,8 +181,51 @@ def generate_windowed_split(train_df, val_df, test_df, target_name, window_size)
     X_test, y_test = apply_sliding_window(test_df, target_idx, window_size)
     return X_train, y_train, X_val, y_val, X_test, y_test
 
+# TODO ver como tratar o max_event bool nos argumentos de python
+def get_goes16_data_for_weather_station(df: pd.DataFrame, station_id: str, max_event: bool = True) -> pd.DataFrame:
+    """
+    Filters lightning event data in a DataFrame based on latitude and longitude boundaries for a specific weather station
+    and calculates the maximum or median value of the 'event_energy' column on an hourly basis.
 
-def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_source: bool, subsampling_procedure: str):
+    Args:
+        df (pd.DataFrame): DataFrame containing lightning event data with columns 'event_energy', 'event_lat', and 'event_lon'.
+        station_id (str): Identifier for the weather station to filter coordinates.
+        max_event (bool, optional): Flag to determine whether to calculate the maximum event energy or the median event energy.
+            Defaults to True, calculating the maximum event energy.
+
+    Returns:
+        pd.DataFrame: A new DataFrame with the same columns as the input DataFrame, but with lightning events outside of the
+            specified latitude and longitude boundaries removed, and the maximum or median value of 'event_energy' for each hour.
+
+    """
+    filtered_df = df.loc[
+        (df['event_lat'] >= station_ids_for_goes16[station_id]['s_lat']) & (df['event_lat'] <= station_ids_for_goes16[station_id]['n_lat']) &
+        (df['event_lon'] >= station_ids_for_goes16[station_id]['w_lon']) & (df['event_lon'] <= station_ids_for_goes16[station_id]['e_lon'])
+    ]
+
+    if max_event:
+        hourly_data = filtered_df.resample('H').max()
+    else:
+        hourly_data = filtered_df.resample('H').mean()
+    result_df = pd.DataFrame(hourly_data[['event_energy']])
+    
+    # Remove rows with NaN values in 'event_energy' column
+    result_df = result_df.dropna(subset=['event_energy'])
+
+    return result_df
+
+# TODO Transformar em variavel global
+station_ids_for_goes16 = {
+    "A652": {
+        "name": "forte de copacabana",
+        "n_lat": -22.717,
+        "s_lat": -23.083,
+        'w_lon': -43.733,
+        'e_lon': -42.933
+        }
+    }
+
+def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_source: bool, join_lightning_data_source: bool, subsampling_procedure: str):
     '''
     This function joins a set of datasources to build datasets. These resulting datasets are used to fit the 
     parameters of precipitation models down the AtmoSeer pipeline. Each datasource contributes with a group 
@@ -198,9 +241,11 @@ def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_sou
         pipeline_id = pipeline_id + '_N'
     if join_AS_data_source:
         pipeline_id = pipeline_id + '_R'
+    if join_lightning_data_source:
+        pipeline_id = pipeline_id + '_L'
 
     logging.info(f"Loading observations for weather station {station_id}...")
-    df_ws = pd.read_parquet(WS_INMET_DATA_DIR + station_id + "_preprocessed.parquet.gzip")
+    df_ws = pd.read_parquet("/mnt/e/atmoseer/data/ws/inmetinmetA652_preprocessed.parquet.gzip")
     logging.info(f"Done! Shape = {df_ws.shape}.")
 
     ####
@@ -294,10 +339,33 @@ def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_sou
         # TODO: Imputing with MICE (see https://towardsdatascience.com/imputing-missing-data-with-simple-and-advanced-techniques-f5c7b157fb87)
         # TODO: use other sounding stations (?) (see tempo.inmet.gov.br/Sondagem/)
 
+    if join_lightning_data_source:
+        print(f"Loading GLM (Goes 16) data near the weather station {station_id}...", end= "")
+        df_lightning = pd.read_parquet('/mnt/e/atmoseer/data/ws/merged_file_preprocessed.parquet.gzip')
+        df_lightning_filtered = get_goes16_data_for_weather_station(df_lightning, station_id)
+        print(f"Done! Shape = {df_lightning_filtered.shape}.")
+        print(df_lightning_filtered.isnull().sum())
+        assert (not df_lightning_filtered.isnull().values.any().any())
+        joined_df = pd.merge(df_ws, df_lightning_filtered, how='left', left_index=True, right_index=True)
+
+        print(f"GLM data successfully joined; resulting shape = {joined_df.shape}.")
+        print(df_ws.index.difference(joined_df.index).shape)
+        print(joined_df.index.difference(df_ws.index).shape)
+
+        print(df_lightning_filtered.index.intersection(df_ws.index).shape)
+        print(df_lightning_filtered.index.difference(df_ws.index).shape)
+        print(df_ws.index.difference(df_lightning_filtered.index).shape)
+        print(df_ws.index.difference(df_lightning_filtered.index))
+
+        shape_before_dropna = joined_df.shape
+        joined_df = joined_df.dropna()
+        shape_after_dropna = joined_df.shape
+        print(f"Removed NaN rows in merge data; Shapes before/after dropna: {shape_before_dropna}/{shape_after_dropna}.")
+
     #
     # Save train/val/test DataFrames for future error analisys.
     filename = DATASETS_DIR + pipeline_id + '.parquet.gzip'
-    logging.info(f'Saving joined data source for pipeline {pipeline_id} to file {filename}.')
+    print(f'Saving joined data source for pipeline {pipeline_id} to file {filename}.')
     joined_df.to_parquet(filename, compression='gzip')
 
     assert (not joined_df.isnull().values.any().any())
@@ -425,42 +493,47 @@ def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_sou
     logging.info('Done!')
 
 def main(argv):
-    parser = argparse.ArgumentParser(
-        description="""This script builds the train/val/test datasets for a given weather station, by using the user-specified data sources.""")
-    parser.add_argument('-s', '--station_id', type=str, required=True, help='station id')
-    parser.add_argument('-d', '--datasources', type=str, help='data source spec')
-    parser.add_argument('-sp', '--subsampling_procedure', type=str, default='NONE', help='Subsampling procedure do be applied.')
-    args = parser.parse_args(argv[1:])
+    # parser = argparse.ArgumentParser(
+    #     description="""This script builds the train/val/test datasets for a given weather station, by using the user-specified data sources.""")
+    # parser.add_argument('-s', '--station_id', type=str, required=True, help='station id')
+    # parser.add_argument('-d', '--datasources', type=str, help='data source spec')
+    # parser.add_argument('-n', '--num_neighbors', type=int, default = 0, help='number of neighbors')
+    # parser.add_argument('-sp', '--subsampling_procedure', type=str, default='NONE', help='Subsampling procedure do be applied.')
+    # args = parser.parse_args(argv[1:])
 
-    station_id = args.station_id
-    datasources = args.datasources
-    subsampling_procedure = args.subsampling_procedure
+    station_id = 'A652'
+    datasources = ['L']
+    # num_neighbors = 0
+    # subsampling_procedure = args.subsampling_procedure
 
     lst_subsampling_procedures = ["NONE", "NAIVE", "NEGATIVE"]
-    if not (subsampling_procedure in lst_subsampling_procedures):
-        print(f"Invalid subsampling procedure: {subsampling_procedure}. Valid values: {lst_subsampling_procedures}")
-        parser.print_help()
-        sys.exit(2)
+    # if not (subsampling_procedure in lst_subsampling_procedures):
+    #     print(f"Invalid subsampling procedure: {subsampling_procedure}. Valid values: {lst_subsampling_procedures}")
+    #     parser.print_help()
+    #     sys.exit(2)
 
-    if not ((station_id in INMET_STATION_CODES_RJ) or (station_id in COR_STATION_NAMES_RJ)):
-        print(f"Invalid station identifier: {station_id}")
-        parser.print_help()
-        sys.exit(2)
+    # if not ((station_id in INMET_STATION_CODES_RJ) or (station_id in COR_STATION_NAMES_RJ)):
+    #     print(f"Invalid station identifier: {station_id}")
+    #     parser.print_help()
+    #     sys.exit(2)
 
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
     logging.basicConfig(level=logging.DEBUG, format = fmt)
 
     join_as_data_source = False
     join_nwp_data_source = False
+    subsampling_procedure = "NONE"
 
     if datasources:
         if 'R' in datasources:
             join_as_data_source = True
         if 'N' in datasources:
             join_nwp_data_source = True
+        if 'L' in datasources:
+            join_lightning_data_source = True
 
     assert(station_id is not None) and (station_id != "")
-    build_datasets(station_id, join_as_data_source, join_nwp_data_source, subsampling_procedure)
+    build_datasets(station_id, join_as_data_source, join_nwp_data_source, join_lightning_data_source, subsampling_procedure)
 
 if __name__ == "__main__":
     main(sys.argv)

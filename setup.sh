@@ -9,6 +9,7 @@ mkdir -p ./data/as
 mkdir -p ./data/NWP
 mkdir -p ./data/NWP/ERA5
 mkdir -p ./data/datasets
+mkdir -p ./data/goes16
 
 # docker image
 #TODO docker build -t atmoseer .

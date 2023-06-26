@@ -3,6 +3,8 @@ INMET_API_BASE_URL = "https://apitempo.inmet.gov.br"
 # Weather station datasource directory
 WS_INMET_DATA_DIR = "./data/ws/inmet/"
 
+WS_GOES_DATA_DIR = "atmoseer/data/ws/goes16"
+
 # Atmospheric sounding datasource directory
 NWP_DATA_DIR = "./data/NWP/"
 
@@ -16,10 +18,10 @@ DATASETS_DIR = './data/datasets/'
 MODELS_DIR = './models/'
 
 # see https://portal.inmet.gov.br/paginas/catalogoaut
-INMET_STATION_CODES_RJ = ('A636', 
-                          'A621', 
-                          'A602', 
-                          'A652',
+INMET_STATION_CODES_RJ = ('A636', # Jacarepagua
+                          'A621', # Vila militar
+                          'A602', # Marambaia
+                          'A652', # Copacabana
                           'A627')
 
 COR_STATION_NAMES_RJ = ('alto_da_boa_vista',
