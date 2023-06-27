@@ -245,7 +245,7 @@ def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_sou
         pipeline_id = pipeline_id + '_L'
 
     logging.info(f"Loading observations for weather station {station_id}...")
-    df_ws = pd.read_parquet("/mnt/e/atmoseer/data/ws/inmetinmetA652_preprocessed.parquet.gzip")
+    df_ws = pd.read_parquet(WS_INMET_DATA_DIR + station_id + "_preprocessed.parquet.gzip")
     logging.info(f"Done! Shape = {df_ws.shape}.")
 
     ####
@@ -493,36 +493,34 @@ def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_sou
     logging.info('Done!')
 
 def main(argv):
-    # parser = argparse.ArgumentParser(
-    #     description="""This script builds the train/val/test datasets for a given weather station, by using the user-specified data sources.""")
-    # parser.add_argument('-s', '--station_id', type=str, required=True, help='station id')
-    # parser.add_argument('-d', '--datasources', type=str, help='data source spec')
-    # parser.add_argument('-n', '--num_neighbors', type=int, default = 0, help='number of neighbors')
-    # parser.add_argument('-sp', '--subsampling_procedure', type=str, default='NONE', help='Subsampling procedure do be applied.')
-    # args = parser.parse_args(argv[1:])
+    parser = argparse.ArgumentParser(
+        description="""This script builds the train/val/test datasets for a given weather station, by using the user-specified data sources.""")
+    parser.add_argument('-s', '--station_id', type=str, required=True, help='station id')
+    parser.add_argument('-d', '--datasources', type=str, help='data source spec')
+    parser.add_argument('-sp', '--subsampling_procedure', type=str, default='NONE', help='Subsampling procedure do be applied.')
+    args = parser.parse_args(argv[1:])
 
-    station_id = 'A652'
-    datasources = ['L']
-    # num_neighbors = 0
-    # subsampling_procedure = args.subsampling_procedure
+    station_id = args.station_id
+    datasources = args.datasources
+    subsampling_procedure = args.subsampling_procedure
 
     lst_subsampling_procedures = ["NONE", "NAIVE", "NEGATIVE"]
-    # if not (subsampling_procedure in lst_subsampling_procedures):
-    #     print(f"Invalid subsampling procedure: {subsampling_procedure}. Valid values: {lst_subsampling_procedures}")
-    #     parser.print_help()
-    #     sys.exit(2)
+    if not (subsampling_procedure in lst_subsampling_procedures):
+        print(f"Invalid subsampling procedure: {subsampling_procedure}. Valid values: {lst_subsampling_procedures}")
+        parser.print_help()
+        sys.exit(2)
 
-    # if not ((station_id in INMET_STATION_CODES_RJ) or (station_id in COR_STATION_NAMES_RJ)):
-    #     print(f"Invalid station identifier: {station_id}")
-    #     parser.print_help()
-    #     sys.exit(2)
+    if not ((station_id in INMET_STATION_CODES_RJ) or (station_id in COR_STATION_NAMES_RJ)):
+        print(f"Invalid station identifier: {station_id}")
+        parser.print_help()
+        sys.exit(2)
 
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
     logging.basicConfig(level=logging.DEBUG, format = fmt)
 
     join_as_data_source = False
     join_nwp_data_source = False
-    subsampling_procedure = "NONE"
+    join_lightning_data_source = False
 
     if datasources:
         if 'R' in datasources:
@@ -533,7 +531,11 @@ def main(argv):
             join_lightning_data_source = True
 
     assert(station_id is not None) and (station_id != "")
-    build_datasets(station_id, join_as_data_source, join_nwp_data_source, join_lightning_data_source, subsampling_procedure)
+    build_datasets(station_id, 
+                   join_as_data_source, 
+                   join_nwp_data_source, 
+                   join_lightning_data_source, 
+                   subsampling_procedure)
 
 if __name__ == "__main__":
     main(sys.argv)
