@@ -46,3 +46,4 @@ These scripts will build the train, validation and test dataset from the times s
 #### Model training and evaluation
 
 The model generation script is responsible for performing the training and exporting the results obtained by the model after testing. 
+# r2t
