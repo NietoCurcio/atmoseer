@@ -131,7 +131,7 @@ def get_data(start_year, end_year):
                             ],
                             "area": REGION_OF_INTEREST,
                         },
-                        globals.NWP_DATA_DIR + "ERA5/RJ_" + year + "_" + str(month) + ".nc",
+                        globals.NWP_DATA_DIR + "ERA5/ERA5_RJ_" + year + "_" + str(month) + ".nc",
                     )
                     print("Done!")
                 except Exception as e:
