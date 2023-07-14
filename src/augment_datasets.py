@@ -35,7 +35,7 @@ def main(argv):
     soi_id = args.station_id
     identifiers = args.identifiers
 
-    if not ((soi_id in INMET_STATION_CODES_RJ) or (soi_id in COR_STATION_NAMES_RJ)):
+    if not ((soi_id in INMET_STATION_CODES_RJ) or (soi_id in ALERTARIO_STATION_NAMES_RJ)):
         print(f"Invalid station identifier: {soi_id}")
         parser.print_help()
         sys.exit(2)

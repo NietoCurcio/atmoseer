@@ -1,7 +1,8 @@
 INMET_API_BASE_URL = "https://apitempo.inmet.gov.br"
 
-# Weather station datasource directory
+# Weather stations datasource directories
 WS_INMET_DATA_DIR = "./data/ws/inmet/"
+WS_ALERTARIO_DATA_DIR = "./data/ws/alertario/ws/"
 
 WS_GOES_DATA_DIR = "atmoseer/data/ws/goes16"
 
@@ -24,7 +25,7 @@ INMET_STATION_CODES_RJ = ('A636', # Jacarepagua
                           'A652', # Copacabana
                           'A627')
 
-COR_STATION_NAMES_RJ = ('alto_da_boa_vista',
+ALERTARIO_STATION_NAMES_RJ = ('alto_da_boa_vista',
                         'guaratiba',
                         'iraja',
                         'jardim_botanico',

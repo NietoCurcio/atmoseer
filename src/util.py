@@ -170,8 +170,9 @@ def add_datetime_index(station_id, df):
     if station_id in INMET_STATION_CODES_RJ:
         df.HR_MEDICAO = df.HR_MEDICAO.apply(format_time) # e.g., 1800 --> 18:00
         timestamp = pd.to_datetime(df.DT_MEDICAO + ' ' + df.HR_MEDICAO)
-    elif station_id in COR_STATION_NAMES_RJ:
-        timestamp = pd.to_datetime(df.Dia + ' ' + df.Hora)
+    elif station_id in ALERTARIO_STATION_NAMES_RJ:
+        timestamp = pd.to_datetime(df['datetime'])
+        timestamp = timestamp.dt.tz_convert('UTC')
     assert timestamp is not None
     df = df.set_index(pd.DatetimeIndex(timestamp))
     return df
@@ -180,9 +181,9 @@ def add_wind_related_features(station_id, df):
     if station_id in INMET_STATION_CODES_RJ:
         df['wind_u'] = df.apply(lambda x: transform_wind(x.VEN_VEL, x.VEN_DIR, 0),axis=1)
         df['wind_v'] = df.apply(lambda x: transform_wind(x.VEN_VEL, x.VEN_DIR, 1),axis=1)
-    elif station_id in COR_STATION_NAMES_RJ:
-        df['wind_u'] = df.apply(lambda x: transform_wind(x.VelVento, x.DirVento, 0),axis=1)
-        df['wind_v'] = df.apply(lambda x: transform_wind(x.VelVento, x.DirVento, 1),axis=1)
+    elif station_id in ALERTARIO_STATION_NAMES_RJ:
+        df['wind_u'] = df.apply(lambda x: transform_wind(x.wind_speed_max, x.wind_dir_max, 0),axis=1)
+        df['wind_v'] = df.apply(lambda x: transform_wind(x.wind_speed_max, x.wind_dir_max, 1),axis=1)
     return df
 
 def add_hour_related_features(df):
@@ -254,6 +255,6 @@ def find_contiguous_observation_blocks(df: pd.DataFrame):
 def get_relevant_variables(station_id):
     if station_id in INMET_STATION_CODES_RJ:
         return ['TEM_MAX', 'PRE_MAX', 'UMD_MAX', 'wind_u', 'wind_v', 'hour_sin', 'hour_cos'], 'CHUVA'
-    elif station_id in COR_STATION_NAMES_RJ:
-        return ['Temperatura', 'Pressao', 'Umidade', 'wind_u', 'wind_v', 'hour_sin', 'hour_cos'], 'Chuva'
+    elif station_id in ALERTARIO_STATION_NAMES_RJ:
+        return ['temperature_mean', 'pressure_mean', 'humidity_mean', 'wind_u', 'wind_v', 'hour_sin', 'hour_cos'], 'precipitation_max'
     return None

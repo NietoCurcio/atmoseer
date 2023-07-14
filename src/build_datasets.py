@@ -225,7 +225,12 @@ station_ids_for_goes16 = {
         }
     }
 
-def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_source: bool, join_lightning_data_source: bool, subsampling_procedure: str):
+def build_datasets(station_id: str, 
+                   ws_data_dir: str,
+                   join_AS_data_source: bool, 
+                   join_NWP_data_source: bool, 
+                   join_lightning_data_source: bool, 
+                   subsampling_procedure: str):
     '''
     This function joins a set of datasources to build datasets. These resulting datasets are used to fit the 
     parameters of precipitation models down the AtmoSeer pipeline. Each datasource contributes with a group 
@@ -245,7 +250,7 @@ def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_sou
         pipeline_id = pipeline_id + '_L'
 
     logging.info(f"Loading observations for weather station {station_id}...")
-    df_ws = pd.read_parquet(WS_INMET_DATA_DIR + station_id + "_preprocessed.parquet.gzip")
+    df_ws = pd.read_parquet(ws_data_dir + station_id + "_preprocessed.parquet.gzip")
     logging.info(f"Done! Shape = {df_ws.shape}.")
 
     ####
@@ -480,7 +485,7 @@ def build_datasets(station_id: str, join_AS_data_source: bool, join_NWP_data_sou
         logging.info(f'- Shapes (y_train/y_val/y_test) after subsampling: {y_train.shape}, {y_val.shape}, {y_test.shape}')
 
     #
-    # Write numpy arrays for train/val/test datast to a single pickle file
+    # Write numpy arrays for train/val/test dataset to a single pickle file
     logging.info(
         f'Number of examples (train/val/test): {len(X_train)}/{len(X_val)}/{len(X_test)}.')
     filename = DATASETS_DIR + pipeline_id + ".pickle"
@@ -510,10 +515,15 @@ def main(argv):
         parser.print_help()
         sys.exit(2)
 
-    if not ((station_id in INMET_STATION_CODES_RJ) or (station_id in COR_STATION_NAMES_RJ)):
+    if not ((station_id in INMET_STATION_CODES_RJ) or (station_id in ALERTARIO_STATION_NAMES_RJ)):
         print(f"Invalid station identifier: {station_id}")
         parser.print_help()
         sys.exit(2)
+
+    if (station_id in INMET_STATION_CODES_RJ):
+        ws_data_dir = WS_INMET_DATA_DIR
+    elif (station_id in ALERTARIO_STATION_NAMES_RJ):
+        ws_data_dir = WS_ALERTARIO_DATA_DIR
 
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
     logging.basicConfig(level=logging.DEBUG, format = fmt)
@@ -532,6 +542,7 @@ def main(argv):
 
     assert(station_id is not None) and (station_id != "")
     build_datasets(station_id, 
+                   ws_data_dir,
                    join_as_data_source, 
                    join_nwp_data_source, 
                    join_lightning_data_source, 

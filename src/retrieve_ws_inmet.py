@@ -35,9 +35,9 @@ def retrieve_from_station(station_id, beginning_year, end_year, api_token):
         else:
             temp = [df_observations_for_all_years, df_observations_for_a_year]
         df_observations_for_all_years = pd.concat(temp)
-    filename = WS_INMET_DATA_DIR + station_row['CD_ESTACAO'].iloc[0] + '.csv'
+    filename = WS_INMET_DATA_DIR + station_row['CD_ESTACAO'].iloc[0] + '.parquet'
     print(f"Done! Saving dowloaded content to '{filename}'.")
-    df_observations_for_all_years.to_csv(filename)
+    df_observations_for_all_years.to_parquet(filename)
 
 def retrieve_data(station_id, initial_year, final_year, api_token):
     if station_id == "all":
