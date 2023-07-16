@@ -17,7 +17,7 @@ def convert_csv_to_parquet(input_folder, output_folder):
       csv_file_path = os.path.join(input_folder, file_name)
       parquet_file_path = os.path.join(output_folder, file_name.replace(".csv", ".parquet"))
       df = pd.read_csv(csv_file_path)
-      pq.write_table(df, parquet_file_path)
+      df.to_parquet(parquet_file_path)
 
 
 if __name__ == "__main__":

@@ -52,9 +52,39 @@ from sklearn.impute import KNNImputer
 #     print(f"Saving preprocessed data to {filename}")
 #     df.to_parquet(filename, compression='gzip')
 
-def preprocess_ws(ws_id, ws_filename):
+def preprocess_ws(ws_id, ws_filename, output_folder):
     print(f"Loading datasource file ({ws_filename}).")
     df = pd.read_parquet(ws_filename)
+
+    print(df.head())
+
+    #
+    # Standardize column names.
+    if ws_id in ALERTARIO_WEATHER_STATION_IDS:
+        column_name_mapping = {
+            "datetime": "datetime",
+            "temperature_mean": "temperature",
+            "humidity_mean": "relative_humidity",
+            "pressure_mean": "barometric_pressure",
+            "wind_speed_mean": "wind_speed",
+            "wind_dir_mean": "wind_dir",
+            "precipitation_sum": "precipitation"
+        }
+    elif ws_id in INMET_WEATHER_STATION_IDS:
+        column_name_mapping = {
+            "datetime": "datetime",
+            "TEM_MAX": "temperature",
+            "UMD_MAX": "relative_humidity",
+            "PRE_MAX": "barometric_pressure",
+            "VEN_VEL": "wind_speed",
+            "VEN_DIR": "wind_dir",
+            "CHUVA": "precipitation"
+        }
+    column_names = column_name_mapping.keys()
+    df = get_dataframe_with_selected_columns(df, column_names)
+    df = rename_dataframe_column_names(df, column_name_mapping)
+
+    print(df.head())
 
     #
     # Add index to dataframe using the timestamps.
@@ -87,7 +117,7 @@ def preprocess_ws(ws_id, ws_filename):
     # Normalize the weather station data. This step is necessary here due to the next step, which deals with missing values.
     # Notice that we drop the target column before normalizing, to avoid some kind of data leakage.
     # (see https://stats.stackexchange.com/questions/214728/should-data-be-normalized-before-or-after-imputation-of-missing-data)
-    print("Normalizing data before applying KNNImputer...", end='')
+    print("Min-max normalizing data...", end='')
     target_column = df[target_name]
     df = df.drop(columns=[target_name], axis=1)
     df = min_max_normalize(df)
@@ -95,6 +125,7 @@ def preprocess_ws(ws_id, ws_filename):
 
     # 
     # Imput missing values on some features.
+    print("Applying KNNImputer...", end='')
     percentage_missing = (df.isna().mean() * 100).mean() # Compute the percentage of missing values
     print(f"There are {df.isnull().sum().sum()} missing values ({percentage_missing:.2f}%). Going to fill them...", end = '')
     imputer = KNNImputer(n_neighbors=2)
@@ -109,30 +140,30 @@ def preprocess_ws(ws_id, ws_filename):
     #
     # Save preprocessed data to a parquet file.
     filename_and_extension = get_filename_and_extension(ws_filename)
-    filename = WS_INMET_DATA_DIR + filename_and_extension[0] + '_preprocessed.parquet.gzip'
+    filename = output_folder + filename_and_extension[0] + '_preprocessed.parquet.gzip'
     print(f"Saving preprocessed data to {filename}")
     df.to_parquet(filename, compression='gzip')
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Preprocess weather station data.')
-    parser.add_argument('-s', '--station_id', required=True, choices=INMET_STATION_CODES_RJ + ALERTARIO_STATION_NAMES_RJ, help='ID of the weather station to preprocess data for.')
+    parser.add_argument('-s', '--station_id', required=True, choices=INMET_WEATHER_STATION_IDS + ALERTARIO_WEATHER_STATION_IDS, help='ID of the weather station to preprocess data for.')
     args = parser.parse_args(argv[1:])
     
     station_id = args.station_id
 
-    if not ((station_id in INMET_STATION_CODES_RJ) or (station_id in ALERTARIO_STATION_NAMES_RJ)):
+    if not ((station_id in INMET_WEATHER_STATION_IDS) or (station_id in ALERTARIO_WEATHER_STATION_IDS)):
         print(f"Invalid station identifier: {station_id}")
         parser.print_help()
         sys.exit(2)
 
-    if (station_id in INMET_STATION_CODES_RJ):
+    if (station_id in INMET_WEATHER_STATION_IDS):
         ws_data_dir = WS_INMET_DATA_DIR
-    elif (station_id in ALERTARIO_STATION_NAMES_RJ):
+    elif (station_id in ALERTARIO_WEATHER_STATION_IDS):
         ws_data_dir = WS_ALERTARIO_DATA_DIR
 
-    print(f'Preprocessing data comingo from weather station {station_id}')
+    print(f'Preprocessing data coming from weather station {station_id}')
     ws_filename = ws_data_dir + args.station_id + ".parquet"
-    preprocess_ws(ws_id=station_id, ws_filename=ws_filename)
+    preprocess_ws(ws_id=station_id, ws_filename=ws_filename, output_folder=ws_data_dir)
 
     print('Done!')
 

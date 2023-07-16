@@ -225,8 +225,21 @@ station_ids_for_goes16 = {
         }
     }
 
+import numpy as np
+import pandas as pd
+
+def gaussian_noise(df, column_name, mu=0, sigma=1):
+
+    # Generate Gaussian noise
+    noise = np.random.normal(mu, sigma, size=df.shape[0])
+
+    # Add noise to the column
+    df[column_name] = df[column_name] + noise
+
+    return df
+
 def build_datasets(station_id: str, 
-                   ws_data_dir: str,
+                   input_folder: str,
                    join_AS_data_source: bool, 
                    join_NWP_data_source: bool, 
                    join_lightning_data_source: bool, 
@@ -250,7 +263,7 @@ def build_datasets(station_id: str,
         pipeline_id = pipeline_id + '_L'
 
     logging.info(f"Loading observations for weather station {station_id}...")
-    df_ws = pd.read_parquet(ws_data_dir + station_id + "_preprocessed.parquet.gzip")
+    df_ws = pd.read_parquet(input_folder + station_id + "_preprocessed.parquet.gzip")
     logging.info(f"Done! Shape = {df_ws.shape}.")
 
     ####
@@ -266,7 +279,7 @@ def build_datasets(station_id: str,
     assert (not df_ws.isnull().values.any().any())
 
     #####
-    # Start with the mandatory datasource (i.e., the one represented by the chosen weather station) 
+    # Start with the mandatory datasource (i.e., the one represented by the weather station of interest) 
     # and sequentially join the other user-specified datasources.
     #####
     joined_df = df_ws
@@ -414,6 +427,11 @@ def build_datasets(station_id: str,
     assert (not df_val.isnull().values.any().any())
     assert (not df_test.isnull().values.any().any())
 
+    if (station_id in ALERTARIO_GAUGE_STATION_IDS):
+        df_train = gaussian_noise(df_train, "barometric_pressure", mu=1000)
+        df_val = gaussian_noise(df_val, "barometric_pressure", mu=1000)
+        df_test = gaussian_noise(df_test, "barometric_pressure", mu=1000)
+    
     #
     # Normalize the columns in train/val/test dataframes. This is done as a preparation step for applying
     # the sliding window technique, since the target variable is going to be used as lag feature.
@@ -515,15 +533,18 @@ def main(argv):
         parser.print_help()
         sys.exit(2)
 
-    if not ((station_id in INMET_STATION_CODES_RJ) or (station_id in ALERTARIO_STATION_NAMES_RJ)):
+    if not ((station_id in INMET_WEATHER_STATION_IDS) or (station_id in ALERTARIO_WEATHER_STATION_IDS) or (station_id in ALERTARIO_GAUGE_STATION_IDS)):
         print(f"Invalid station identifier: {station_id}")
         parser.print_help()
         sys.exit(2)
 
-    if (station_id in INMET_STATION_CODES_RJ):
-        ws_data_dir = WS_INMET_DATA_DIR
-    elif (station_id in ALERTARIO_STATION_NAMES_RJ):
-        ws_data_dir = WS_ALERTARIO_DATA_DIR
+    if (station_id in INMET_WEATHER_STATION_IDS):
+        input_folder = WS_INMET_DATA_DIR
+    elif (station_id in ALERTARIO_WEATHER_STATION_IDS):
+        input_folder = WS_ALERTARIO_DATA_DIR
+    elif (station_id in ALERTARIO_GAUGE_STATION_IDS):
+        # Its a gauge station.
+        input_folder = GS_ALERTARIO_DATA_DIR
 
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
     logging.basicConfig(level=logging.DEBUG, format = fmt)
@@ -542,7 +563,7 @@ def main(argv):
 
     assert(station_id is not None) and (station_id != "")
     build_datasets(station_id, 
-                   ws_data_dir,
+                   input_folder,
                    join_as_data_source, 
                    join_nwp_data_source, 
                    join_lightning_data_source, 

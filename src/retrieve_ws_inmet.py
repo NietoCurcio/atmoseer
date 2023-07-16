@@ -42,7 +42,7 @@ def retrieve_from_station(station_id, beginning_year, end_year, api_token):
 def retrieve_data(station_id, initial_year, final_year, api_token):
     if station_id == "all":
         df_inmet_stations = pd.read_json(INMET_API_BASE_URL + '/estacoes/T')
-        station_row = df_inmet_stations[df_inmet_stations['CD_ESTACAO'].isin(INMET_STATION_CODES_RJ)]
+        station_row = df_inmet_stations[df_inmet_stations['CD_ESTACAO'].isin(INMET_WEATHER_STATION_IDS)]
         for j in list(range(0, len(station_row))):
             station_id = station_row['CD_ESTACAO'].iloc[j]
             retrieve_from_station(station_id, initial_year, final_year, api_token)
@@ -70,7 +70,7 @@ def main(argv):
     start_year = args.begin
     end_year = args.end
 
-    if not (station_id in INMET_STATION_CODES_RJ):
+    if not (station_id in INMET_WEATHER_STATION_IDS):
         parser.error(f'Invalid station ID: {station_id}')
 
     assert (api_token is not None) and (api_token != '')

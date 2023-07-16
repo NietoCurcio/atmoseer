@@ -19,9 +19,9 @@ def main(argv):
         description="""This script builds the train/val/test datasets for a given weather station, 
         by using the user-specified data sources.""", prog=sys.argv[0])
     # Add an argument to accept the station of interest
-    parser.add_argument('-s', '--station_id', type=str, required=True, help='id for station of interest')
+    parser.add_argument('-s', '--station_id', type=str, required=True, help='id of the station of interest')
     # Add an argument to accept the pipeline identifier
-    parser.add_argument('-p', '--pipeline_id', type=str, required=True, help='one or more weather station identifiers')
+    parser.add_argument('-p', '--pipeline_id', type=str, required=True, help='id of the pipeline')
     # Add an argument to accept one or more identifiers
     parser.add_argument('-i', '--identifiers', type=str, nargs='+', help='IDs of one or more weather stations to merge.')
 
@@ -32,11 +32,11 @@ def main(argv):
 
     # Access the list of identifiers
     soi_pipeline_id = args.pipeline_id
-    soi_id = args.station_id
+    wsoi_id = args.station_id
     identifiers = args.identifiers
 
-    if not ((soi_id in INMET_STATION_CODES_RJ) or (soi_id in ALERTARIO_STATION_NAMES_RJ)):
-        print(f"Invalid station identifier: {soi_id}")
+    if not ((wsoi_id in INMET_WEATHER_STATION_IDS) or (wsoi_id in ALERTARIO_WEATHER_STATION_IDS)):
+        print(f"Invalid station identifier: {wsoi_id}")
         parser.print_help()
         sys.exit(2)
 
@@ -52,6 +52,8 @@ def main(argv):
     print(F"Ratio of pos examples in the training set: {get_pos_class_ratio(y_train):.2f}")
     print()
     
+    print(f"(wsoi) X_train.shape = {X_train.shape}")
+
     merged_X_train = X_train
     merged_y_train = y_train
     merged_X_val = X_val
@@ -59,19 +61,31 @@ def main(argv):
     merged_X_test = X_test
     merged_y_test = y_test
     
-    df_stations = pd.read_csv("./data/ws/WeatherStations.csv")
-    row = df_stations[df_stations["STATION_ID"] == soi_id].iloc[0]
-    soi_lat_long = (row["VL_LATITUDE"], row["VL_LONGITUDE"])
+    if wsoi_id in INMET_WEATHER_STATION_IDS:
+        stations_filename = "./data/ws/alertario_stations.parquet"
+        df_stations = pd.read_csv("./data/ws/WeatherStations.csv")
+        row = df_stations[df_stations["STATION_ID"] == wsoi_id].iloc[0]
+        wsoi_lat_long = (row["VL_LATITUDE"], row["VL_LONGITUDE"])
+    elif wsoi_id in ALERTARIO_WEATHER_STATION_IDS:
+        stations_filename = "./data/ws/alertario_stations.parquet"
+        df_stations = pd.read_parquet(stations_filename)
+        row = df_stations[df_stations["estacao_desc"] == wsoi_id].iloc[0]
+        wsoi_lat_long = (row["latitude"], row["longitude"])
 
     for ws_id in identifiers:
         print(f"Merging data from weather station {ws_id}...", end="")
 
-        row = df_stations[df_stations["STATION_ID"] == ws_id].iloc[0]
-        station_lat_long = (row["VL_LATITUDE"], row["VL_LONGITUDE"])
-        dist = haversine_distance(station_lat_long, soi_lat_long)
-        print(f"Distance from station of interest is {dist:.2f} Km.")
+        if wsoi_id in INMET_WEATHER_STATION_IDS:
+            row = df_stations[df_stations["STATION_ID"] == ws_id].iloc[0]
+            ws_lat_long = (row["VL_LATITUDE"], row["VL_LONGITUDE"])
+        elif wsoi_id in ALERTARIO_WEATHER_STATION_IDS:
+            row = df_stations[df_stations["estacao_desc"] == ws_id].iloc[0]
+            ws_lat_long = (row["latitude"], row["longitude"])
 
-        pipeline_id = soi_pipeline_id.replace(soi_id, ws_id)
+        dist = haversine_distance(ws_lat_long, wsoi_lat_long)
+        print(f"Distance from {wsoi_id} to {ws_id} is {dist:.2f} Km.")
+
+        pipeline_id = soi_pipeline_id.replace(wsoi_id, ws_id)
         filename = DATASETS_DIR + pipeline_id + ".pickle"
         print(f"Loading train/val/test datasets from {filename}.")
         file = open(filename, 'rb')
@@ -82,6 +96,7 @@ def main(argv):
         print(f"Max values of train/val/test data matrices: {max(X_train.reshape(-1,1))}/{max(X_val.reshape(-1,1))}/{max(X_test.reshape(-1,1))}")
         print(F"Ratio of pos examples in the training set: {get_pos_class_ratio(y_train):.2f}")
 
+        print(f"(neighbor ws) X_train.shape = {X_train.shape}")
 
         if use_only_pos_examples:
             y_train_gt_zero_idxs = np.where(y_train > 0)[0]

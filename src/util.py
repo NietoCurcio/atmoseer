@@ -167,10 +167,10 @@ def transform_wind(wind_speed, wind_direction, comp_idx):
 
 def add_datetime_index(station_id, df):
     timestamp = None
-    if station_id in INMET_STATION_CODES_RJ:
+    if station_id in INMET_WEATHER_STATION_IDS:
         df.HR_MEDICAO = df.HR_MEDICAO.apply(format_time) # e.g., 1800 --> 18:00
         timestamp = pd.to_datetime(df.DT_MEDICAO + ' ' + df.HR_MEDICAO)
-    elif station_id in ALERTARIO_STATION_NAMES_RJ:
+    elif station_id in ALERTARIO_WEATHER_STATION_IDS:
         timestamp = pd.to_datetime(df['datetime'])
         timestamp = timestamp.dt.tz_convert('UTC')
     assert timestamp is not None
@@ -178,12 +178,8 @@ def add_datetime_index(station_id, df):
     return df
 
 def add_wind_related_features(station_id, df):
-    if station_id in INMET_STATION_CODES_RJ:
-        df['wind_u'] = df.apply(lambda x: transform_wind(x.VEN_VEL, x.VEN_DIR, 0),axis=1)
-        df['wind_v'] = df.apply(lambda x: transform_wind(x.VEN_VEL, x.VEN_DIR, 1),axis=1)
-    elif station_id in ALERTARIO_STATION_NAMES_RJ:
-        df['wind_u'] = df.apply(lambda x: transform_wind(x.wind_speed_max, x.wind_dir_max, 0),axis=1)
-        df['wind_v'] = df.apply(lambda x: transform_wind(x.wind_speed_max, x.wind_dir_max, 1),axis=1)
+    df['wind_direction_u'] = df.apply(lambda x: transform_wind(x.wind_speed, x.wind_dir, 0),axis=1)
+    df['wind_direction_v'] = df.apply(lambda x: transform_wind(x.wind_speed, x.wind_dir, 1),axis=1)
     return df
 
 def add_hour_related_features(df):
@@ -253,8 +249,65 @@ def find_contiguous_observation_blocks(df: pd.DataFrame):
     yield first, last # Yield the last block
 
 def get_relevant_variables(station_id):
-    if station_id in INMET_STATION_CODES_RJ:
-        return ['TEM_MAX', 'PRE_MAX', 'UMD_MAX', 'wind_u', 'wind_v', 'hour_sin', 'hour_cos'], 'CHUVA'
-    elif station_id in ALERTARIO_STATION_NAMES_RJ:
-        return ['temperature_mean', 'pressure_mean', 'humidity_mean', 'wind_u', 'wind_v', 'hour_sin', 'hour_cos'], 'precipitation_max'
+    if station_id in INMET_WEATHER_STATION_IDS:
+        return ['TEM_MAX', 'PRE_MAX', 'UMD_MAX', 'wind_direction_u', 'wind_direction_v', 'hour_sin', 'hour_cos'], 'CHUVA'
+    elif station_id in ALERTARIO_WEATHER_STATION_IDS:
+        return ['temperature', 'barometric_pressure', 'relative_humidity', 'wind_direction_u', 'wind_direction_v', 'hour_sin', 'hour_cos'], 'precipitation'
+    elif station_id in ALERTARIO_GAUGE_STATION_IDS:
+        return ['temperature', 'barometric_pressure', 'relative_humidity', 'wind_direction_u', 'wind_direction_v', 'hour_sin', 'hour_cos'], 'precipitation'
     return None
+
+def convert_to_celsius(temperature_kelvin):
+  """Converts a temperature from Kelvin to Celsius.
+
+  Args:
+    temperature_kelvin: The temperature in Kelvin.
+
+  Returns:
+    The temperature in Celsius.
+  """
+
+  return temperature_kelvin - 273.15
+
+def rename_dataframe_column_names(df: pd.DataFrame, column_name_mapping: dict):
+  """
+  Renames the column names in the DataFrame according to the specified dictionary.
+
+  Args:
+    df: The DataFrame to rename.
+    column_name_mapping: The dictionary that maps old column names to new column names.
+
+  Returns:
+    The renamed DataFrame.
+  """
+
+  new_column_names = []
+  for old_column_name, new_column_name in column_name_mapping.items():
+    if old_column_name in df.columns:
+      new_column_names.append(new_column_name)
+    else:
+      print(f"The column name {old_column_name} does not exist in the DataFrame.")
+
+  df.columns = new_column_names
+  return df
+
+def get_dataframe_with_selected_columns(df, column_names):
+  """
+  Returns a DataFrame containing only the columns whose names are passed in the list.
+
+  Args:
+    df: The DataFrame to select columns from.
+    column_names: The list of column names to select.
+
+  Returns:
+    A DataFrame containing only the selected columns.
+  """
+
+  selected_columns = []
+  for column_name in column_names:
+    if column_name in df.columns:
+      selected_columns.append(column_name)
+    else:
+      print(f"The column name {column_name} does not exist in the DataFrame.")
+
+  return df[selected_columns]
