@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import globals as globals
 import yaml
+import time
 
 import numpy as np
 import sys
@@ -271,4 +272,8 @@ def main(argv):
 
 
 if __name__ == "__main__":
+    start_time = time.time()
     main(sys.argv)
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print("The execution time was", execution_time, "seconds.")

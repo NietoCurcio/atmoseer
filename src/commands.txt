@@ -12,6 +12,9 @@ python src/augment_datasets.py -s A652 -p A652_R -i A621 A636 A627
 python src/augment_datasets.py -s sao_cristovao -p sao_cristovao -i tijuca
 python src/augment_datasets.py -s sao_cristovao -p sao_cristovao -i tijuca tijuca_muda saude grajau
 
+python src/augment_datasets.py -s guaratiba -p guaratiba -i tijuca
+python src/augment_datasets.py -s guaratiba -p guaratiba -i tijuca tijuca_muda saude grajau
+
 ==========================================
 === build_datasets
 ==========================================
@@ -84,6 +87,7 @@ python src/train_model.py -p A652 -t BINARY_CLASSIFICATION
 python src/train_model.py -p guaratiba -t ORDINAL_CLASSIFICATION
 python src/train_model.py -p sao_cristovao -t ORDINAL_CLASSIFICATION
 python src/train_model.py -p sao_cristovao_tijuca -t ORDINAL_CLASSIFICATION
+python src/train_model.py -p guaratiba_tijuca -t ORDINAL_CLASSIFICATION
 
 python src/train_model.py -p A652_N -t BINARY_CLASSIFICATION
 python src/train_model.py -p A652_N_A621 -t BINARY_CLASSIFICATION
