@@ -28,6 +28,46 @@ python src/build_datasets.py -s A652 -d R+N -sp NEGATIVE
 python src/build_datasets.py -s A652
 python src/build_datasets.py -s alto_da_boa_vista
 
+python src/build_datasets.py -s guaratiba
+python src/build_datasets.py -s iraja
+python src/build_datasets.py -s jardim_botanico
+python src/build_datasets.py -s riocentro
+python src/build_datasets.py -s santa_cruz
+python src/build_datasets.py -s sao_cristovao
+python src/build_datasets.py -s vidigal
+
+python src/build_datasets.py -s anchieta 
+python src/build_datasets.py -s av_brasil_mendanha 
+python src/build_datasets.py -s bangu 
+python src/build_datasets.py -s barrinha 
+python src/build_datasets.py -s campo_grande 
+python src/build_datasets.py -s cidade_de_deus 
+python src/build_datasets.py -s copacabana 
+python src/build_datasets.py -s grajau_jacarepagua 
+python src/build_datasets.py -s grajau 
+python src/build_datasets.py -s grande_meier 
+python src/build_datasets.py -s grota_funda 
+python src/build_datasets.py -s ilha_do_governador 
+python src/build_datasets.py -s laranjeiras 
+python src/build_datasets.py -s madureira 
+python src/build_datasets.py -s penha 
+python src/build_datasets.py -s piedade 
+python src/build_datasets.py -s recreio 
+python src/build_datasets.py -s rocinha
+python src/build_datasets.py -s santa_teresa
+python src/build_datasets.py -s saude 
+python src/build_datasets.py -s sepetiba 
+python src/build_datasets.py -s tanque 
+python src/build_datasets.py -s tijuca_muda 
+python src/build_datasets.py -s tijuca 
+python src/build_datasets.py -s urca
+python src/build_datasets.py -s alto_da_boa_vista
+python src/build_datasets.py -s iraja
+python src/build_datasets.py -s jardim_botanico
+python src/build_datasets.py -s riocentro
+python src/build_datasets.py -s santa_cruz
+python src/build_datasets.py -s vidigal
+
 ==========================================
 === preprocess_ws
 ==========================================
@@ -95,3 +135,5 @@ python src/train_model.py -p A652_N_A602 -t BINARY_CLASSIFICATION
 python src/train_model.py -p A652_N_A621_A602 -t BINARY_CLASSIFICATION
 python src/train_model.py -p A652_N_A621_A636_A627 -t BINARY_CLASSIFICATION
 python src/train_model.py -p A652_R_A621_A636_A627 -t BINARY_CLASSIFICATION
+
+python src/train_model.py -p sao_cristovao_tijuca_tijuca_muda_saude_grajau -t ORDINAL_CLASSIFICATION > sao_cristovao_tijuca_tijuca_muda_saude_grajau.txt
