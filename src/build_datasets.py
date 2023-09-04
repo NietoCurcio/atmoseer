@@ -4,8 +4,7 @@ import sys
 import pickle
 from utils.near_stations import prox
 
-from globals import *
-import globals as globals
+import globals
 
 from util import find_contiguous_observation_blocks, add_missing_indicator_column
 from utils.windowing import apply_windowing
@@ -311,7 +310,7 @@ def build_datasets(station_id: str,
     assert (not joined_df.isnull().values.any().any())
 
     if join_AS_data_source:
-        filename = AS_DATA_DIR + 'SBGL_indices_1997_2023.parquet.gzip'
+        filename = globals.AS_DATA_DIR + 'SBGL_indices_1997_2023.parquet.gzip'
         logging.info(f"Loading atmospheric sounding indices from {filename}...")
         df_as = pd.read_parquet(filename)
         logging.info(f"Done! Shape = {df_as.shape}.")
@@ -382,7 +381,7 @@ def build_datasets(station_id: str,
 
     #
     # Save train/val/test DataFrames for future error analisys.
-    filename = DATASETS_DIR + pipeline_id + '.parquet.gzip'
+    filename = globals.DATASETS_DIR + pipeline_id + '.parquet.gzip'
     print(f'Saving joined data source for pipeline {pipeline_id} to file {filename}.')
     joined_df.to_parquet(filename, compression='gzip')
 
@@ -419,15 +418,15 @@ def build_datasets(station_id: str,
     #
     # Save train/val/test DataFrames for future error analisys.
     logging.info(f'Saving each train/val/test dataset for pipeline {pipeline_id} as a parquet file.')
-    df_train.to_parquet(DATASETS_DIR + pipeline_id + '_train.parquet.gzip', compression='gzip')
-    df_val.to_parquet(DATASETS_DIR + pipeline_id + '_val.parquet.gzip', compression='gzip')
-    df_test.to_parquet(DATASETS_DIR + pipeline_id + '_test.parquet.gzip', compression='gzip')
+    df_train.to_parquet(globals.DATASETS_DIR + pipeline_id + '_train.parquet.gzip', compression='gzip')
+    df_val.to_parquet(globals.DATASETS_DIR + pipeline_id + '_val.parquet.gzip', compression='gzip')
+    df_test.to_parquet(globals.DATASETS_DIR + pipeline_id + '_test.parquet.gzip', compression='gzip')
 
     assert (not df_train.isnull().values.any().any())
     assert (not df_val.isnull().values.any().any())
     assert (not df_test.isnull().values.any().any())
 
-    if (station_id in ALERTARIO_GAUGE_STATION_IDS):
+    if (station_id in globals.ALERTARIO_GAUGE_STATION_IDS):
         df_train = gaussian_noise(df_train, "barometric_pressure", mu=1000)
         df_val = gaussian_noise(df_val, "barometric_pressure", mu=1000)
         df_test = gaussian_noise(df_test, "barometric_pressure", mu=1000)
@@ -451,7 +450,7 @@ def build_datasets(station_id: str,
     assert (not df_test.isnull().values.any().any())
 
     #
-    # Apply sliding windowing method to build examples (instances) of train/val/test datasets 
+    # Apply sliding window method to build examples (instances) of train/val/test datasets 
     with open('./config/config.yaml', 'r') as file:
         config = yaml.safe_load(file)
     window_size = config["preproc"]["SLIDING_WINDOW_SIZE"]
@@ -506,7 +505,7 @@ def build_datasets(station_id: str,
     # Write numpy arrays for train/val/test dataset to a single pickle file
     logging.info(
         f'Number of examples (train/val/test): {len(X_train)}/{len(X_val)}/{len(X_test)}.')
-    filename = DATASETS_DIR + pipeline_id + ".pickle"
+    filename = globals.DATASETS_DIR + pipeline_id + ".pickle"
     logging.info(f'Dumping train/val/test np arrays to pickle file {filename}.')
     file = open(filename, 'wb')
     ndarrays = (X_train, y_train, 
@@ -533,18 +532,18 @@ def main(argv):
         parser.print_help()
         sys.exit(2)
 
-    if not ((station_id in INMET_WEATHER_STATION_IDS) or (station_id in ALERTARIO_WEATHER_STATION_IDS) or (station_id in ALERTARIO_GAUGE_STATION_IDS)):
+    if not ((station_id in globals.INMET_WEATHER_STATION_IDS) or (station_id in globals.ALERTARIO_WEATHER_STATION_IDS) or (station_id in globals.ALERTARIO_GAUGE_STATION_IDS)):
         print(f"Invalid station identifier: {station_id}")
         parser.print_help()
         sys.exit(2)
 
-    if (station_id in INMET_WEATHER_STATION_IDS):
-        input_folder = WS_INMET_DATA_DIR
-    elif (station_id in ALERTARIO_WEATHER_STATION_IDS):
-        input_folder = WS_ALERTARIO_DATA_DIR
-    elif (station_id in ALERTARIO_GAUGE_STATION_IDS):
+    if (station_id in globals.INMET_WEATHER_STATION_IDS):
+        input_folder = globals.WS_INMET_DATA_DIR
+    elif (station_id in globals.ALERTARIO_WEATHER_STATION_IDS):
+        input_folder = globals.WS_ALERTARIO_DATA_DIR
+    elif (station_id in globals.ALERTARIO_GAUGE_STATION_IDS):
         # Its a gauge station.
-        input_folder = GS_ALERTARIO_DATA_DIR
+        input_folder = globals.GS_ALERTARIO_DATA_DIR
 
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
     logging.basicConfig(level=logging.DEBUG, format = fmt)

@@ -1,5 +1,6 @@
 import pandas as pd
 import xarray as xr
+import util
 
 def fuse_rain_gauge_and_era5(df_station: pd.DataFrame, station_latitude: float, station_longitude: float, ds_era5):
     df_station['datetime'] = df_station['datetime'].dt.tz_convert('UTC')
@@ -34,7 +35,7 @@ def fuse_rain_gauge_and_era5(df_station: pd.DataFrame, station_latitude: float, 
     df_era5_data_for_station = df_era5_data_for_station.drop(['time', 'datetime'], axis = 1)
     
     # Temperature in ERA5 is provided in Kelvin; convert to Celsius.
-    df_era5_data_for_station["Temperature_1000_Celsius"] = df_era5_data_for_station["Temperature_1000"].apply(convert_to_celsius)
+    df_era5_data_for_station["Temperature_1000_Celsius"] = df_era5_data_for_station["Temperature_1000"].apply(util.convert_to_celsius)
     
     assert (not df_era5_data_for_station.isnull().values.any().any())
     
@@ -50,9 +51,9 @@ def fuse_rain_gauge_and_era5(df_station: pd.DataFrame, station_latitude: float, 
     }
     column_names = column_name_mapping.keys()
 
-    df_fusion = get_dataframe_with_selected_columns(df_fusion, column_names)
+    df_fusion = util.get_dataframe_with_selected_columns(df_fusion, column_names)
 
-    df_fusion = rename_dataframe_column_names(df_fusion, column_name_mapping)
+    df_fusion = util.rename_dataframe_column_names(df_fusion, column_name_mapping)
 
     print(f"Number of observations (fused gauge station): {df_fusion.shape[0]}")
 

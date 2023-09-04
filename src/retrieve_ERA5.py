@@ -7,7 +7,7 @@ import xarray as xr
 import argparse
 import sys
 from enum import Enum
-import globals as globals
+import globals
 
 """
     For using the CDS API to download ERA-5 data consult: https://cds.climate.copernicus.eu/api-how-to

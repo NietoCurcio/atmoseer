@@ -5,7 +5,7 @@ from metpy.calc import wind_components
 from metpy.units import units
 import numpy as np
 import pandas as pd
-from globals import *
+import globals
 from math import radians, sin, cos, sqrt, atan2
 import logging
 
@@ -167,10 +167,10 @@ def transform_wind(wind_speed, wind_direction, comp_idx):
 
 def add_datetime_index(station_id, df):
     timestamp = None
-    if station_id in INMET_WEATHER_STATION_IDS:
+    if station_id in globals.INMET_WEATHER_STATION_IDS:
         df.HR_MEDICAO = df.HR_MEDICAO.apply(format_time) # e.g., 1800 --> 18:00
         timestamp = pd.to_datetime(df.DT_MEDICAO + ' ' + df.HR_MEDICAO)
-    elif station_id in ALERTARIO_WEATHER_STATION_IDS:
+    elif station_id in globals.ALERTARIO_WEATHER_STATION_IDS:
         timestamp = pd.to_datetime(df['datetime'])
         timestamp = timestamp.dt.tz_convert('UTC')
     assert timestamp is not None
@@ -249,11 +249,11 @@ def find_contiguous_observation_blocks(df: pd.DataFrame):
     yield first, last # Yield the last block
 
 def get_relevant_variables(station_id):
-    if station_id in INMET_WEATHER_STATION_IDS:
-        return ['TEM_MAX', 'PRE_MAX', 'UMD_MAX', 'wind_direction_u', 'wind_direction_v', 'hour_sin', 'hour_cos'], 'CHUVA'
-    elif station_id in ALERTARIO_WEATHER_STATION_IDS:
+    if station_id in globals.INMET_WEATHER_STATION_IDS:
         return ['temperature', 'barometric_pressure', 'relative_humidity', 'wind_direction_u', 'wind_direction_v', 'hour_sin', 'hour_cos'], 'precipitation'
-    elif station_id in ALERTARIO_GAUGE_STATION_IDS:
+    elif station_id in globals.ALERTARIO_WEATHER_STATION_IDS:
+        return ['temperature', 'barometric_pressure', 'relative_humidity', 'wind_direction_u', 'wind_direction_v', 'hour_sin', 'hour_cos'], 'precipitation'
+    elif station_id in globals.ALERTARIO_GAUGE_STATION_IDS:
         return ['temperature', 'barometric_pressure', 'relative_humidity', 'wind_direction_u', 'wind_direction_v', 'hour_sin', 'hour_cos'], 'precipitation'
     return None
 

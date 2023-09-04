@@ -2,9 +2,8 @@ import pandas as pd
 from pathlib import Path
 import argparse
 import sys
-from globals import *
-from util import *
-import util as util
+import globals
+import util
 from sklearn.impute import KNNImputer
 
 def get_relevant_variables():
@@ -27,7 +26,7 @@ def preprocess_gauge_station(station_id, df, output_folder):
 
     #
     # Create hour-related features (sin and cos components)
-    df = add_hour_related_features(df)
+    df = util.add_hour_related_features(df)
 
     df = df[predictor_names + [target_name]]
 
@@ -43,7 +42,7 @@ def preprocess_gauge_station(station_id, df, output_folder):
     target_column = df[target_name]
     barometric_pressure_column = df["barometric_pressure"]
     df = df.drop(columns=[target_name, "barometric_pressure"], axis=1)
-    df = min_max_normalize(df)
+    df = util.min_max_normalize(df)
     print("Done!")
 
     assert (not df.isnull().values.any().any())
@@ -64,7 +63,7 @@ def preprocess_all_gauge_stations(output_folder):
     df_alertario_stations = pd.read_parquet(alertario_stations_filename)
     for index, row in df_alertario_stations.iterrows():
         station_id = row["estacao_desc"]
-        if station_id in ALERTARIO_WEATHER_STATION_IDS:
+        if station_id in globals.ALERTARIO_WEATHER_STATION_IDS:
             continue
         print(f"Fusing data for gauge station {station_id}")
         df_station = pd.read_parquet("./data/ws/alertario/rain_gauge_era5_fused/" + station_id + ".parquet")
@@ -72,12 +71,12 @@ def preprocess_all_gauge_stations(output_folder):
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Preprocess gauge station data.')
-    parser.add_argument('-s', '--station_id', required=True, choices=ALERTARIO_GAUGE_STATION_IDS + ("all",), help='ID of the weather station to preprocess data for.')
+    parser.add_argument('-s', '--station_id', required=True, choices=globals.ALERTARIO_GAUGE_STATION_IDS + ("all",), help='ID of the weather station to preprocess data for.')
     args = parser.parse_args(argv[1:])
     
     station_id = args.station_id
 
-    if not (station_id == "all" or station_id in ALERTARIO_GAUGE_STATION_IDS):
+    if not (station_id == "all" or station_id in globals.ALERTARIO_GAUGE_STATION_IDS):
         print(f"Invalid station identifier: {station_id}")
         parser.print_help()
         sys.exit(2)
