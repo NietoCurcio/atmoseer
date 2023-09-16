@@ -125,7 +125,7 @@ class Conv1DNeuralNet(BaseNeuralNet):
             nn.Sigmoid()
         )
 
-    def create_dataloader(self, X, y, batch_size, weights):
+    def create_dataloader(self, X, y, batch_size, weights = None):
         '''
         The X parameter is a numpy array having the following shape:
                     [batch_size, input_size, sequence_len] 
