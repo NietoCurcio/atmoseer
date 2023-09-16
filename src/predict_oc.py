@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from train.ordinal_classification_net import OrdinalClassificationNet
+from src.train.ordinal_classifier import OrdinalClassificationNet
 import globals as globals
 import pickle
 import yaml
