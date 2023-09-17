@@ -14,7 +14,8 @@ from train.ordinal_classifier import OrdinalClassificationNet
 from train.binary_classifier import BinaryClassifier
 from train.regression_net import Regressor
 from train.training_utils import DeviceDataLoader, to_device, gen_learning_curve, seed_everything
-from train.base_neural_net import Conv1DNeuralNet, LstmNeuralNet
+from train.conv1d_neural_net import Conv1DNeuralNet 
+from train.lstm_neural_net import LstmNeuralNet
 import rainfall as rp
 
 import logging

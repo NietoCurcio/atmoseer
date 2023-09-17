@@ -1,12 +1,9 @@
-import torch
+from train.base_learner import BaseLearner
 import torch.nn as nn
-from torch.utils.data import TensorDataset
-import functools
-import operator
 from train.early_stopping import EarlyStopping
 import numpy as np
 
-class BaseNeuralNet(nn.Module):
+class BaseNeuralNet(nn.Module, BaseLearner):
     def fit(self, n_epochs, optimizer, train_loader, val_loader, patience, criterion, pipeline_id):
         # to track the training loss as the model trains
         train_losses = []
@@ -86,128 +83,31 @@ class BaseNeuralNet(nn.Module):
         return avg_train_losses, avg_valid_losses
 
     def forward(self, x):
-        # print(f'x.shape = {x.shape}')
-        # print(f'x[0] = {x[0]}')
         out = self.feature_extractor(x)
-        # print(f'out.shape = {out.shape}')
         out = out.reshape(out.shape[0], -1)
-        # print(f'out.shape = {out.shape}')
         out = self.classifier(out)
         return out
 
-
-class Conv1DNeuralNet(BaseNeuralNet):
-    def __init__(self, seq_length, input_size, dropout_rate=0.5):
-        super(BaseNeuralNet, self).__init__()
-        self.seq_length = seq_length
-        self.input_size = input_size
-        self.dropout_rate = dropout_rate
-        self.feature_extractor = self._get_feature_extractor()
-        self.classifier = self._get_classifier()
+    # def training_step(self, batch):
+    #     images, labels = batch 
+    #     out = self(images)                  # Generate predictions
+    #     loss = F.cross_entropy(out, labels) # Calculate loss
+    #     return loss
     
-    def _get_feature_extractor(self):
-        fe = nn.Sequential(
-            nn.Conv1d(in_channels=self.input_size, out_channels=16, kernel_size=3, padding=3),
-            nn.ReLU(inplace=True),
-            nn.Dropout1d(p=self.dropout_rate)
-        )
-        # https://datascience.stackexchange.com/questions/40906/determining-size-of-fc-layer-after-conv-layer-in-pytorch
-        input_dim = (self.input_size, self.seq_length)
-        self.num_features_before_fcnn = functools.reduce(operator.mul, list(fe(torch.rand(1, *input_dim)).shape))
-        print(f"num_features_before_fcnn = {self.num_features_before_fcnn}")
-        return fe
-
-    def _get_classifier(self):
-        return nn.Sequential(
-            nn.Linear(in_features=self.num_features_before_fcnn, out_features=50),
-            nn.ReLU(inplace=True),
-            nn.Linear(50, 1),
-            nn.Sigmoid()
-        )
-
-    def create_dataloader(self, X, y, batch_size, weights = None):
-        '''
-        The X parameter is a numpy array having the following shape:
-                    [batch_size, input_size, sequence_len] 
-
-        The nn.Conv1D module expects inputs having the following shape: 
-                    [batch_size, sequence_len, input_size] 
-        See https://stackoverflow.com/questions/62372938/understanding-input-shape-to-pytorch-conv1d
-        '''
-        X = torch.from_numpy(X.astype('float64'))
-        X = torch.permute(X, (0, 2, 1))
-        y = torch.from_numpy(y.astype('float64'))
-
-        if weights is None:
-            ds = TensorDataset(X, y)
-        else:
-            ds = TensorDataset(X, y, weights)
-
-        loader = torch.utils.data.DataLoader(ds, batch_size=batch_size, shuffle=True)
-
-        return loader
-
-
-# Needed because LSTM() returns tuple of (tensor, (recurrent state))
-class extract_tensor(nn.Module):
-    def forward(self,x):
-        out, _ = x
-        return out
-
-class LstmNeuralNet(BaseNeuralNet):
-    def __init__(self, seq_length, input_size, dropout_rate=0.5):
-        super(BaseNeuralNet, self).__init__()
-        self.seq_lenght = seq_length
-        self.input_size = input_size
-        self.dropout_rate = dropout_rate
-        self.feature_extractor = self._get_feature_extractor()
-        self.classifier = self._get_classifier()
-
-    def _get_feature_extractor(self):
-        hidden_size = 32
-        fe = nn.Sequential(
-            nn.LSTM(input_size = self.input_size, hidden_size = hidden_size, batch_first = True),
-            extract_tensor(),
-            nn.ReLU(),
-            nn.Dropout(p=self.dropout_rate),
-        )
-        self.num_features_before_fcnn = hidden_size * self.seq_lenght
-        return fe
-
-    def _get_classifier(self):
-        return nn.Sequential(
-            nn.Linear(in_features=self.num_features_before_fcnn, out_features=50),
-            nn.ReLU(),
-            nn.Linear(in_features=50, out_features=1),
-            nn.Sigmoid()
-         )
-
-    def create_dataloader(self, X, y, batch_size, weights = None):
-        '''
-        The X parameter is a numpy array having the following shape:
-                    [batch_size, sequence_len, input_size] 
-
-        The nn.LSTM module (with 'batch_first = True') expects inputs having the following shape: 
-                    [batch_size, sequence_len, input_size] 
-
-        where:
-            - sequence_length = number of timestamps
-            - batch_size = size of each batch
-            - input_size = the length of the vector describing each feature observed at each timestamp.
-
-        See https://discuss.pytorch.org/t/using-lstm-after-conv1d-for-time-series-data/111140
-        '''
-        print(X.shape)
-        print(y.shape)
+    # def validation_step(self, batch):
+    #     images, labels = batch 
+    #     out = self(images)                    # Generate predictions
+    #     loss = F.cross_entropy(out, labels)   # Calculate loss
+    #     acc = accuracy(out, labels)           # Calculate accuracy
+    #     return {'val_loss': loss.detach(), 'val_acc': acc}
         
-        X = torch.from_numpy(X.astype('float64'))
-        y = torch.from_numpy(y.astype('float64'))
-
-        if weights is None:
-            ds = TensorDataset(X, y)
-        else:
-            ds = TensorDataset(X, y, weights)
-
-        loader = torch.utils.data.DataLoader(ds, batch_size=batch_size, shuffle=True)
-
-        return loader
+    # def validation_epoch_end(self, outputs):
+    #     batch_losses = [x['val_loss'] for x in outputs]
+    #     epoch_loss = torch.stack(batch_losses).mean()   # Combine losses
+    #     batch_accs = [x['val_acc'] for x in outputs]
+    #     epoch_acc = torch.stack(batch_accs).mean()      # Combine accuracies
+    #     return {'val_loss': epoch_loss.item(), 'val_acc': epoch_acc.item()}
+    
+    def epoch_end(self, epoch, result):
+        print("Epoch [{}], train_loss: {:.4f}, val_loss: {:.4f}, val_acc: {:.4f}".format(
+            epoch, result['train_loss'], result['val_loss'], result['val_acc']))
