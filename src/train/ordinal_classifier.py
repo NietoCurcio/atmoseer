@@ -27,9 +27,6 @@ from rainfall import ordinal_encoding_to_level
 from train.early_stopping import *
 import rainfall as rp
 import globals as globals
-import functools
-import operator
-import yaml
 
 class OrdinalClassifier(BaseClassifier):
     def __init__(self, learner):
@@ -109,66 +106,36 @@ class OrdinalClassifier(BaseClassifier):
 
         return y_pred
 
-    def evaluate(self, X_test, y_test):
-        self.eval()
+    def evaluate(self, test_loader):
+        print('Evaluating ordinal classifier...')
+        self.learner.eval()
 
-        test_x_tensor = torch.from_numpy(X_test.astype('float64'))
-        test_x_tensor = torch.permute(test_x_tensor, (0, 2, 1))
-        test_y_tensor = torch.from_numpy(y_test.astype('float64'))
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        test_loader = DeviceDataLoader(test_loader, device)
 
-        test_ds = TensorDataset(test_x_tensor, test_y_tensor)
-        test_loader = torch.utils.data.DataLoader(
-            test_ds, batch_size=32, shuffle=False)
-        test_loader = DeviceDataLoader(test_loader, get_default_device())
-
-        test_losses = []
-        outputs = []
+        y_pred = None
         with torch.no_grad():
-            for xb, _ in test_loader:
-                output = self(xb.float())
-                yb_pred_encoded = output.detach().cpu().numpy()
-                yb_pred_decoded = ordinal_encoding_to_level(yb_pred_encoded)
-                outputs.append(yb_pred_decoded.reshape(-1, 1))
+            for xb_test, yb_test in test_loader:
+                yb_pred = self.learner(xb_test.float())
 
-        y_pred = np.vstack(outputs)
+                yb_pred = yb_pred.detach().cpu().numpy()
+                yb_pred = ordinal_encoding_to_level(yb_pred)
+                yb_pred = yb_pred.reshape(-1,1)
 
-        return y_pred
+                yb_test = yb_test.detach().cpu().numpy()
+                yb_test = yb_test.reshape(-1,1)
 
-    def print_evaluation_report(self, pipeline_id, X_test, y_test):
-        self.load_state_dict(torch.load(globals.MODELS_DIR + '/best_' + pipeline_id + '.pt'))
-        y_test = rp.value_to_level(y_test)
+                if y_pred is None:
+                    y_pred = yb_pred
+                    y_true = yb_test
+                else:
+                    y_pred = np.vstack([y_pred, yb_pred])
+                    y_true = np.vstack([y_true, yb_test])
 
-        print("\\begin{verbatim}")
-        print(f"***Evaluation report for pipeline {pipeline_id}***")
-        print("\\end{verbatim}")
+        y_true = rp.value_to_level(y_true)
+        print(f'Shapes: {y_true.shape}, {y_pred.shape}')
 
-        print("\\begin{verbatim}")
-        print("***Hyperparameters***")
-        with open('./config/config.yaml', 'r') as file:
-            config = yaml.safe_load(file)
-        model_config = config['training']['oc']
-        pretty_model_config = yaml.dump(model_config, indent=4)
-        print(pretty_model_config)
-        print("\\end{verbatim}")
-
-        print("\\begin{verbatim}")
-        print("***Model architecture***")
-        print(self.learner)
-        print("\\end{verbatim}")
-
-        print("\\begin{verbatim}")
-        print('***Confusion matrix***')
-        print("\\end{verbatim}")
-
-        y_pred = self.evaluate(X_test, y_test)
-
-        export_confusion_matrix_to_latex(
-            y_test, y_pred, rp.PredictionTask.ORDINAL_CLASSIFICATION)
-
-        print("\\begin{verbatim}")
-        print('***Classification report***')
-        print(skl.classification_report(y_test, y_pred))
-        print("\\end{verbatim}")
+        return y_true, y_pred
 
     # def fit(self, n_epochs, optimizer, train_loader, val_loader, patience, criterion, pipeline_id):
     #     # to track the training loss as the model trains

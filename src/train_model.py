@@ -185,9 +185,9 @@ def main(argv):
     forecasting_task_id = None
 
     if args.task == "ORDINAL_CLASSIFICATION":
-        forecasting_task_id = rp.PredictionTask.ORDINAL_CLASSIFICATION
+        forecasting_task_id = rp.ForecastingTask.ORDINAL_CLASSIFICATION
     elif args.task == "BINARY_CLASSIFICATION":
-        forecasting_task_id = rp.PredictionTask.BINARY_CLASSIFICATION
+        forecasting_task_id = rp.ForecastingTask.BINARY_CLASSIFICATION
 
     seed_everything()
 
@@ -198,13 +198,13 @@ def main(argv):
         config = yaml.safe_load(file)
     SEQ_LENGTH = config["preproc"]["SLIDING_WINDOW_SIZE"]
 
-    if forecasting_task_id == rp.PredictionTask.ORDINAL_CLASSIFICATION:
+    if forecasting_task_id == rp.ForecastingTask.ORDINAL_CLASSIFICATION:
         prediction_task_sufix = "oc"
         args.pipeline_id += "_" + prediction_task_sufix
-    elif forecasting_task_id == rp.PredictionTask.BINARY_CLASSIFICATION:
+    elif forecasting_task_id == rp.ForecastingTask.BINARY_CLASSIFICATION:
         prediction_task_sufix = "bc"
         args.pipeline_id += "_" + prediction_task_sufix
-    elif forecasting_task_id == rp.PredictionTask.REGRESSION:
+    elif forecasting_task_id == rp.ForecastingTask.REGRESSION:
         args.pipeline_id += "_reg"
 
     BATCH_SIZE = config["training"][prediction_task_sufix]["BATCH_SIZE"]
@@ -234,12 +234,12 @@ def main(argv):
 
     # Build model
     start_time = time.time()
-    model = train(X_train, y_train, X_val, y_val, prediction_task_sufix, args.pipeline_id, learner, config)
+    forecaster = train(X_train, y_train, X_val, y_val, prediction_task_sufix, args.pipeline_id, learner, config)
     logging.info("Model training took %s seconds." % (time.time() - start_time))
 
     # Evaluate using the best model produced
     test_loader = learner.create_dataloader(X_test, y_test, batch_size=BATCH_SIZE)
-    model.print_evaluation_report(args.pipeline_id, test_loader)
+    forecaster.print_evaluation_report(args.pipeline_id, test_loader, forecasting_task_id)
 
 if __name__ == "__main__":
     start_time = time.time()
