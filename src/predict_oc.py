@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from src.train.ordinal_classifier import OrdinalClassificationNet
+from src.train.ordinal_classifier import OrdinalClassifier
 import globals as globals
 import pickle
 import yaml
@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     #Create an instance of the model
     input_dim = (NUM_FEATURES, config["preproc"]["SLIDING_WINDOW_SIZE"])
-    model = OrdinalClassificationNet(in_channels=NUM_FEATURES, 
+    model = OrdinalClassifier(in_channels=NUM_FEATURES, 
                                     num_classes=NUM_CLASSES, 
                                     input_dim = input_dim, 
                                     target_average = None)

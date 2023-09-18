@@ -10,7 +10,7 @@ import argparse
 import time
 import train.pipeline as pipeline
 
-from train.ordinal_classifier import OrdinalClassificationNet
+from train.ordinal_classifier import OrdinalClassifier
 from train.binary_classifier import BinaryClassifier
 from train.regression_net import Regressor
 from train.training_utils import DeviceDataLoader, to_device, gen_learning_curve, seed_everything
@@ -34,7 +34,7 @@ def compute_weights_for_binary_classification(y):
     print(mask_RAIN.shape)
 
     weights[mask_NORAIN] = 1
-    weights[mask_RAIN] = 1
+    weights[mask_RAIN] = 80
 
     print(f"# NO_RAIN records: {len(mask_NORAIN)}")
     print(f"# RAIN records: {len(mask_RAIN)}")
@@ -87,74 +87,54 @@ class WeightedBCELoss(torch.nn.Module):
         return -torch.mean(loss)
 
 
-def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id, learner, config, resume_training: bool = False):
+def train(X_train, y_train, X_val, y_val, forecasting_task_sufix, pipeline_id, learner, config, resume_training: bool = False):
     NUM_FEATURES = X_train.shape[2]
     print(f"Number of features: {NUM_FEATURES}")
 
     # model.apply(initialize_weights)
 
-    if prediction_task_id == rp.PredictionTask.ORDINAL_CLASSIFICATION:
-        N_EPOCHS = config["training"]["oc"]["N_EPOCHS"]
-        PATIENCE = config["training"]["oc"]["PATIENCE"]
-        BATCH_SIZE = config["training"]["oc"]["BATCH_SIZE"]
-        WEIGHT_DECAY = config["training"]["oc"]["WEIGHT_DECAY"]
-        LEARNING_RATE = config["training"]["oc"]["LEARNING_RATE"]
-        DROPOUT_RATE = config["training"]["oc"]["DROPOUT_RATE"]
-        NUM_CLASSES = config["training"]["oc"]["NUM_CLASSES"]
-        SEQ_LENGHT = config["preproc"]["SLIDING_WINDOW_SIZE"]
-
+    if forecasting_task_sufix == "oc":
+        print("- Forecasting task: ordinal classification.")
         train_weights = compute_weights_for_ordinal_classification(y_train)
         val_weights = compute_weights_for_ordinal_classification(y_val)
         train_weights = torch.FloatTensor(train_weights)
         val_weights = torch.FloatTensor(val_weights)
-        loss = weighted_mse_loss
-
+        # loss = weighted_mse_loss
+        loss = nn.MSELoss()
         y_train = rp.value_to_ordinal_encoding(y_train)
         y_val = rp.value_to_ordinal_encoding(y_val)
-
-        target_average = torch.mean(torch.tensor(
-            y_train, dtype=torch.float32), dim=0, keepdim=True)
-
-        input_dim = (NUM_FEATURES, SEQ_LENGHT)
-        predictor = OrdinalClassificationNet(in_channels=NUM_FEATURES,
-                                              input_dim=input_dim,
-                                              num_classes=NUM_CLASSES,
-                                              target_average=target_average,
-                                              dropout_rate=DROPOUT_RATE)
-
-    elif prediction_task_id == rp.PredictionTask.BINARY_CLASSIFICATION:
-        print("- Prediction task: binary classification.")
-        train_weights = None
-        val_weights = None
-
-        N_EPOCHS = config["training"]["bc"]["N_EPOCHS"]
-        PATIENCE = config["training"]["bc"]["PATIENCE"]
-        BATCH_SIZE = config["training"]["bc"]["BATCH_SIZE"]
-        WEIGHT_DECAY = config["training"]["bc"]["WEIGHT_DECAY"]
-        LEARNING_RATE = config["training"]["bc"]["LEARNING_RATE"]
-        DROPOUT_RATE = config["training"]["bc"]["DROPOUT_RATE"]
-        SEQ_LENGHT = config["preproc"]["SLIDING_WINDOW_SIZE"]
-
-        # weights = torch.FloatTensor([1.0, 5.0])
+        target_average = torch.mean(torch.tensor(y_train, dtype=torch.float32), dim=0, keepdim=True)
+        forecaster = OrdinalClassifier(learner)
+    elif forecasting_task_sufix == "bc":
+        print("- Forecasting task: binary classification.")
+        train_weights = compute_weights_for_binary_classification(y_train)
+        val_weights = compute_weights_for_binary_classification(y_val)
+        train_weights = torch.FloatTensor(train_weights)
+        val_weights = torch.FloatTensor(val_weights)
         loss = nn.BCELoss()
+        # weights = torch.FloatTensor([1.0, 5.0])
         # loss = WeightedBCELoss(pos_weight=2, neg_weight=1)
-
         y_train = rp.value_to_binary_level(y_train)
         y_val = rp.value_to_binary_level(y_val)
-
-        predictor = BinaryClassifier(learner)
-    elif prediction_task_id == rp.PredictionTask.REGRESSION:
-        print("- Prediction task: regression.")
+        forecaster = BinaryClassifier(learner)
+    elif forecasting_task_sufix == "reg":
+        print("- Forecasting task: regression.")
         loss = nn.MSELoss()
         global y_mean_value
         y_mean_value = np.mean(y_train)
         print(y_mean_value)
-        predictor = Regressor(in_channels=NUM_FEATURES, y_mean_value=y_mean_value)
+        forecaster = Regressor(in_channels=NUM_FEATURES, y_mean_value=y_mean_value)
 
-    print(predictor)
+    print(forecaster)
+
+    BATCH_SIZE = config["training"][forecasting_task_sufix]["BATCH_SIZE"]
+    LEARNING_RATE = config["training"][forecasting_task_sufix]["LEARNING_RATE"]
+    N_EPOCHS = config["training"][forecasting_task_sufix]["N_EPOCHS"]
+    PATIENCE = config["training"][forecasting_task_sufix]["PATIENCE"]
+    WEIGHT_DECAY = config["training"][forecasting_task_sufix]["WEIGHT_DECAY"]
 
     optimizer = torch.optim.Adam(
-        predictor.learner.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
+        forecaster.learner.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
     print(f" - Setting up optimizer: {optimizer}")
     # optimizer = torch.optim.SGD(model.parameters(), lr=1e-5, momentum=0.9)
 
@@ -162,13 +142,13 @@ def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id, learn
     train_loader = learner.create_dataloader(
         X_train, y_train, batch_size=BATCH_SIZE, weights=train_weights)
     val_loader = learner.create_dataloader(
-        X_val, y_val, batch_size=BATCH_SIZE, weights=train_weights)
+        X_val, y_val, batch_size=BATCH_SIZE, weights=val_weights)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f" - Moving data and parameters to {device}.")
     train_loader = DeviceDataLoader(train_loader, device)
     val_loader = DeviceDataLoader(val_loader, device)
-    to_device(predictor.learner, device)
+    to_device(forecaster.learner, device)
 
     # resume_training = True
     # if resume_training:
@@ -176,7 +156,7 @@ def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id, learn
     #     model.load_state_dict(torch.load(model_path))
 
     print(f" - Fitting model...", end=" ")
-    train_loss, val_loss = predictor.learner.fit(n_epochs=N_EPOCHS,
+    train_loss, val_loss = forecaster.learner.fit(n_epochs=N_EPOCHS,
                                           optimizer=optimizer,
                                           train_loader=train_loader,
                                           val_loader=val_loader,
@@ -187,7 +167,7 @@ def train(X_train, y_train, X_val, y_val, prediction_task_id, pipeline_id, learn
 
     gen_learning_curve(train_loss, val_loss, pipeline_id)
 
-    return predictor
+    return forecaster
 
 
 def main(argv):
@@ -200,26 +180,36 @@ def main(argv):
     
     args = parser.parse_args(argv[1:])
 
-    prediction_task_id = None
+    forecasting_task_id = None
 
-    prediction_task_id = None
+    forecasting_task_id = None
 
     if args.task == "ORDINAL_CLASSIFICATION":
-        prediction_task_id = rp.PredictionTask.ORDINAL_CLASSIFICATION
+        forecasting_task_id = rp.PredictionTask.ORDINAL_CLASSIFICATION
     elif args.task == "BINARY_CLASSIFICATION":
-        prediction_task_id = rp.PredictionTask.BINARY_CLASSIFICATION
+        forecasting_task_id = rp.PredictionTask.BINARY_CLASSIFICATION
 
     seed_everything()
 
     X_train, y_train, X_val, y_val, X_test, y_test = pipeline.load_datasets(
         args.pipeline_id)
 
-    if prediction_task_id == rp.PredictionTask.ORDINAL_CLASSIFICATION:
-        args.pipeline_id += "_OC"
-    elif prediction_task_id == rp.PredictionTask.BINARY_CLASSIFICATION:
-        args.pipeline_id += "_BC"
-    elif prediction_task_id == rp.PredictionTask.REGRESSION:
-        args.pipeline_id += "_Reg"
+    with open('./config/config.yaml', 'r') as file:
+        config = yaml.safe_load(file)
+    SEQ_LENGTH = config["preproc"]["SLIDING_WINDOW_SIZE"]
+
+    if forecasting_task_id == rp.PredictionTask.ORDINAL_CLASSIFICATION:
+        prediction_task_sufix = "oc"
+        args.pipeline_id += "_" + prediction_task_sufix
+    elif forecasting_task_id == rp.PredictionTask.BINARY_CLASSIFICATION:
+        prediction_task_sufix = "bc"
+        args.pipeline_id += "_" + prediction_task_sufix
+    elif forecasting_task_id == rp.PredictionTask.REGRESSION:
+        args.pipeline_id += "_reg"
+
+    BATCH_SIZE = config["training"][prediction_task_sufix]["BATCH_SIZE"]
+    DROPOUT_RATE = config["training"][prediction_task_sufix]["DROPOUT_RATE"]
+    OUTPUT_SIZE = config["training"][prediction_task_sufix]["OUTPUT_SIZE"]
 
     # Use globals() to access the global namespace and find the class by name
     class_name = args.learner
@@ -232,23 +222,19 @@ def main(argv):
 
     args.pipeline_id += "_" + class_name
 
-    with open('./config/config.yaml', 'r') as file:
-        config = yaml.safe_load(file)
-    DROPOUT_RATE = config["training"]["bc"]["DROPOUT_RATE"]
-    BATCH_SIZE = config["training"]["bc"]["BATCH_SIZE"]
-    SEQ_LENGTH = config["preproc"]["SLIDING_WINDOW_SIZE"]
-
     NUM_FEATURES = X_train.shape[2]
     print(f"Number of features: {NUM_FEATURES}")
 
     # Instantiate the class
-    learner = class_obj(seq_length=SEQ_LENGTH,
-                        input_size=NUM_FEATURES, dropout_rate=DROPOUT_RATE)
+    learner = class_obj(seq_length = SEQ_LENGTH,
+                        input_size = NUM_FEATURES, 
+                        output_size = OUTPUT_SIZE,
+                        dropout_rate = DROPOUT_RATE)
     print(f'Learner: {learner}')
 
     # Build model
     start_time = time.time()
-    model = train(X_train, y_train, X_val, y_val, prediction_task_id, args.pipeline_id, learner, config)
+    model = train(X_train, y_train, X_val, y_val, prediction_task_sufix, args.pipeline_id, learner, config)
     logging.info("Model training took %s seconds." % (time.time() - start_time))
 
     # Evaluate using the best model produced

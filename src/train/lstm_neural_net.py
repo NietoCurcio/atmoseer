@@ -11,10 +11,11 @@ class extract_tensor(nn.Module):
         return out
 
 class LstmNeuralNet(BaseNeuralNet):
-    def __init__(self, seq_length, input_size, dropout_rate=0.5):
+    def __init__(self, seq_length, input_size, output_size, dropout_rate=0.5):
         super(BaseNeuralNet, self).__init__()
         self.seq_lenght = seq_length
         self.input_size = input_size
+        self.output_size = output_size
         self.dropout_rate = dropout_rate
         self.feature_extractor = self._get_feature_extractor()
         self.classifier = self._get_classifier()
@@ -34,7 +35,7 @@ class LstmNeuralNet(BaseNeuralNet):
         return nn.Sequential(
             nn.Linear(in_features=self.num_features_before_fcnn, out_features=50),
             nn.ReLU(),
-            nn.Linear(in_features=50, out_features=1),
+            nn.Linear(in_features=50, out_features=self.output_size),
             nn.Sigmoid()
          )
 
@@ -53,15 +54,15 @@ class LstmNeuralNet(BaseNeuralNet):
 
         See https://discuss.pytorch.org/t/using-lstm-after-conv1d-for-time-series-data/111140
         '''
-        print(X.shape)
-        print(y.shape)
-        
         X = torch.from_numpy(X.astype('float64'))
         y = torch.from_numpy(y.astype('float64'))
 
         if weights is None:
             ds = TensorDataset(X, y)
         else:
+            print(X.shape)
+            print(y.shape)
+            print(weights.shape)        
             ds = TensorDataset(X, y, weights)
 
         loader = torch.utils.data.DataLoader(ds, batch_size=batch_size, shuffle=True)

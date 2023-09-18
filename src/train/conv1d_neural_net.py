@@ -6,10 +6,11 @@ import functools
 import operator
 
 class Conv1DNeuralNet(BaseNeuralNet):
-    def __init__(self, seq_length, input_size, dropout_rate=0.5):
+    def __init__(self, seq_length, input_size, output_size, dropout_rate=0.5):
         super(BaseNeuralNet, self).__init__()
         self.seq_length = seq_length
         self.input_size = input_size
+        self.output_size = output_size
         self.dropout_rate = dropout_rate
         self.feature_extractor = self._get_feature_extractor()
         self.classifier = self._get_classifier()
@@ -30,7 +31,7 @@ class Conv1DNeuralNet(BaseNeuralNet):
         return nn.Sequential(
             nn.Linear(in_features=self.num_features_before_fcnn, out_features=50),
             nn.ReLU(inplace=True),
-            nn.Linear(50, 1),
+            nn.Linear(50, self.output_size),
             nn.Sigmoid()
         )
 

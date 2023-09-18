@@ -13,38 +13,6 @@ class BinaryClassifier(BaseClassifier):
         super(BinaryClassifier, self).__init__()
         self.learner = learner
 
-    def print_evaluation_report(self, pipeline_id, test_loader):
-        self.learner.load_state_dict(torch.load(globals.MODELS_DIR + '/best_' + pipeline_id + '.pt'))
-        
-        print("\\begin{verbatim}")
-        print(f"***Evaluation report for pipeline {pipeline_id}***")
-        print("\\end{verbatim}")
-
-        print("\\begin{verbatim}")
-        print("***Hyperparameters***")
-        with open('./config/config.yaml', 'r') as file:
-            config = yaml.safe_load(file)
-        model_config = config['training']['bc']
-        pretty_model_config = yaml.dump(model_config, indent=4)
-        print(pretty_model_config)
-        print("\\end{verbatim}")
-        
-        print("\\begin{verbatim}")
-        print("***Model architecture***")
-        print(self)
-        print("\\end{verbatim}")
-
-        print("\\begin{verbatim}")
-        print('***Confusion matrix***')
-        print("\\end{verbatim}")
-        y_pred, y_test = self.evaluate(test_loader)
-        export_confusion_matrix_to_latex(y_test, y_pred, rp.PredictionTask.BINARY_CLASSIFICATION)
-
-        print("\\begin{verbatim}")
-        print('***Classification report***')
-        print(skl.classification_report(y_test, y_pred))
-        print("\\end{verbatim}")
-
     def evaluate(self, test_loader):
         print('Evaluating binary classification model...')
         self.learner.eval()
@@ -78,3 +46,35 @@ class BinaryClassifier(BaseClassifier):
         y_true = y_true.ravel()
 
         return y_true, y_pred
+
+    def print_evaluation_report(self, pipeline_id, test_loader):
+        self.learner.load_state_dict(torch.load(globals.MODELS_DIR + '/best_' + pipeline_id + '.pt'))
+        
+        print("\\begin{verbatim}")
+        print(f"***Evaluation report for pipeline {pipeline_id}***")
+        print("\\end{verbatim}")
+
+        print("\\begin{verbatim}")
+        print("***Hyperparameters***")
+        with open('./config/config.yaml', 'r') as file:
+            config = yaml.safe_load(file)
+        model_config = config['training']['bc']
+        pretty_model_config = yaml.dump(model_config, indent=4)
+        print(pretty_model_config)
+        print("\\end{verbatim}")
+        
+        print("\\begin{verbatim}")
+        print("***Model architecture***")
+        print(self.learner)
+        print("\\end{verbatim}")
+
+        print("\\begin{verbatim}")
+        print('***Confusion matrix***')
+        print("\\end{verbatim}")
+        y_pred, y_test = self.evaluate(test_loader)
+        export_confusion_matrix_to_latex(y_test, y_pred, rp.PredictionTask.BINARY_CLASSIFICATION)
+
+        print("\\begin{verbatim}")
+        print('***Classification report***')
+        print(skl.classification_report(y_test, y_pred))
+        print("\\end{verbatim}")

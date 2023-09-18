@@ -23,7 +23,8 @@ class BaseNeuralNet(nn.Module, BaseLearner):
             # train the model #
             ###################
             self.train()  # prep model for training
-            for data, target in train_loader:
+            # for data, target in train_loader:
+            for data, target, sample_weights in train_loader:
                 # clear the gradients of all optimized variables
                 optimizer.zero_grad()
 
@@ -35,25 +36,30 @@ class BaseNeuralNet(nn.Module, BaseLearner):
                 assert not (np.isnan(loss.item()) or loss.item() >
                             1e6), f"Loss explosion: {loss.item()}"
 
-                loss.backward()
+                # see https://discuss.pytorch.org/t/per-class-and-per-sample-weighting/25530
+                loss = loss * sample_weights
+                loss = (loss * sample_weights / sample_weights.sum()).sum()
+                loss.mean().backward()
+                # loss.backward()
 
                 # perform a single optimization step (parameter update)
                 optimizer.step()
 
                 # record training loss
-                train_losses.append(loss.item())
+                train_losses.append(loss.mean().item())
 
             ######################
             # validate the model #
             ######################
             self.eval()  # prep model for evaluation
-            for data, target in val_loader:
+            for data, target, sample_weights in val_loader:
                 # forward pass: compute predicted outputs by passing inputs to the model
                 output = self(data.float())
                 # calculate the loss
                 loss = criterion(output, target.float())
+                loss = loss * sample_weights
                 # record validation loss
-                valid_losses.append(loss.item())
+                valid_losses.append(loss.mean().item())
 
             # print training/validation statistics
             # calculate average loss over an epoch
