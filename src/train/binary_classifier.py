@@ -5,7 +5,7 @@ from train.training_utils import DeviceDataLoader
 from train.base_classifier import BaseClassifier
 
 class BinaryClassifier(BaseClassifier):
-    def __init__(self, learner):#, input_size, input_dim, dropout_rate=0.5):
+    def __init__(self, learner):
         super(BinaryClassifier, self).__init__()
         self.learner = learner
 

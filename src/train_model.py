@@ -167,6 +167,11 @@ def train(X_train, y_train, X_val, y_val, forecasting_task_sufix, pipeline_id, l
 
     gen_learning_curve(train_loss, val_loss, pipeline_id)
 
+    #
+    # Load the best model obtainined throughout the training epochs.
+    #
+    forecaster.learner.load_state_dict(torch.load(globals.MODELS_DIR + '/best_' + pipeline_id + '.pt'))
+
     return forecaster
 
 

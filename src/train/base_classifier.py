@@ -1,5 +1,4 @@
 from train.base_forecaster import BaseForecaster
-import torch
 import yaml
 from train.evaluate import export_confusion_matrix_to_latex
 from sklearn.metrics import classification_report
@@ -8,8 +7,6 @@ import globals as globals
 class BaseClassifier(BaseForecaster):
 
     def print_evaluation_report(self, pipeline_id, test_loader, forecasting_task):
-        self.learner.load_state_dict(torch.load(globals.MODELS_DIR + '/best_' + pipeline_id + '.pt'))
-
         print("\\begin{verbatim}")
         print(f"***Evaluation report for pipeline {pipeline_id}***")
         print("\\end{verbatim}")

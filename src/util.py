@@ -311,3 +311,27 @@ def get_dataframe_with_selected_columns(df, column_names):
       print(f"The column name {column_name} does not exist in the DataFrame.")
 
   return df[selected_columns]
+
+
+def split_dataframe_by_date(df, split_date):
+    """
+    Split a DataFrame into two DataFrames: one with examples before the given date
+    and the other with examples after the given date.
+
+    Args:
+    - df: pandas DataFrame with a datetime index.
+    - split_date: datetime object specifying the date for splitting the DataFrame.
+
+    Returns:
+    - df_before: DataFrame with examples before the split_date.
+    - df_after: DataFrame with examples after the split_date.
+    """
+
+    # Ensure the DataFrame is sorted by the datetime index
+    df = df.sort_index()
+
+    # Split the DataFrame based on the provided split_date
+    df_before = df[df.index < split_date]
+    df_after = df[df.index >= split_date]
+
+    return df_before, df_after
