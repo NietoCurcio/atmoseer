@@ -18,6 +18,8 @@ from train.conv1d_neural_net import Conv1DNeuralNet
 from train.lstm_neural_net import LstmNeuralNet
 import rainfall as rp
 
+from globals import MODELS_DIR
+
 import logging
 
 def compute_weights_for_binary_classification(y):
@@ -170,7 +172,7 @@ def train(X_train, y_train, X_val, y_val, forecasting_task_sufix, pipeline_id, l
     #
     # Load the best model obtainined throughout the training epochs.
     #
-    forecaster.learner.load_state_dict(torch.load(globals.MODELS_DIR + '/best_' + pipeline_id + '.pt'))
+    forecaster.learner.load_state_dict(torch.load(MODELS_DIR + '/best_' + pipeline_id + '.pt'))
 
     return forecaster
 

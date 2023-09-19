@@ -15,6 +15,8 @@ python src/augment_datasets.py -s sao_cristovao -p sao_cristovao -i tijuca tijuc
 python src/augment_datasets.py -s guaratiba -p guaratiba -i tijuca
 python src/augment_datasets.py -s guaratiba -p guaratiba -i tijuca tijuca_muda saude grajau
 
+python src/augment_datasets.py --only_pos -s A652 -p A652 -i A621 A636 A627
+
 ==========================================
 === build_datasets
 ==========================================
