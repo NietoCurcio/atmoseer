@@ -135,5 +135,6 @@ python src/train_model.py -p A652_N_A602 -t BINARY_CLASSIFICATION
 python src/train_model.py -p A652_N_A621_A602 -t BINARY_CLASSIFICATION
 python src/train_model.py -p A652_N_A621_A636_A627 -t BINARY_CLASSIFICATION
 python src/train_model.py -p A652_R_A621_A636_A627 -t BINARY_CLASSIFICATION
+python src/train_model.py -p A652_A621_A636_A627 -t ORDINAL_CLASSIFICATION
 
 python src/train_model.py -p sao_cristovao_tijuca_tijuca_muda_saude_grajau -t ORDINAL_CLASSIFICATION > sao_cristovao_tijuca_tijuca_muda_saude_grajau.txt

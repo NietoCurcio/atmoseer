@@ -516,7 +516,7 @@ def main(argv):
     parser = argparse.ArgumentParser(
         description="""This script builds the train/val/test datasets for a given weather station, by using the user-specified data sources.""")
     parser.add_argument('-s', '--station_id', type=str, required=True, help='station id')
-    parser.add_argument('-t', '--train_test_threshold', type=str, required=True, help='The date to be used to split train and test examples (format: YYYY-MM-DD).')
+    parser.add_argument('-t', '--train_test_threshold', type=str, required=True, help='The limiting date between train and test examples (format: YYYY-MM-DD).')
     parser.add_argument('-d', '--datasources', type=str, help='data source spec')
     parser.add_argument('-sp', '--subsampling_procedure', type=str, default='NONE', help='Subsampling procedure do be applied.')
     args = parser.parse_args(argv[1:])
