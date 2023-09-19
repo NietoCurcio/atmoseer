@@ -30,11 +30,12 @@ def main(argv):
     parser.add_argument('-p', '--pipeline_id', type=str, required=True, help='id of the pipeline')
     # Add an argument to accept one or more identifiers
     parser.add_argument('-i', '--identifiers', type=str, nargs='+', help='IDs of one or more weather stations to merge.')
-
-    use_only_pos_examples = False
+    parser.add_argument("--only_pos", action="store_true", help="Boolean argument. If provided, only positive events (i.e., events with target (rainfall) greater than zero) are used in the augmentation.")
 
     # Parse the arguments
     args = parser.parse_args()
+
+    use_only_pos_examples = parser.only_pos
 
     # Access the list of identifiers
     soi_pipeline_id = args.pipeline_id
@@ -103,30 +104,24 @@ def main(argv):
         print_events_by_level(str(ws_id)+"/test", y_test)
 
         if use_only_pos_examples:
+            temp = len(X_train)
             y_train_gt_zero_idxs = np.where(y_train > 0)[0]
             X_train = X_train[y_train_gt_zero_idxs]
             y_train = y_train[y_train_gt_zero_idxs]
             
-            y_val_gt_zero_idxs = np.where(y_val > 0)[0]
-            X_val = X_val[y_val_gt_zero_idxs]
-            y_val = y_val[y_val_gt_zero_idxs]
+            # y_val_gt_zero_idxs = np.where(y_val > 0)[0]
+            # X_val = X_val[y_val_gt_zero_idxs]
+            # y_val = y_val[y_val_gt_zero_idxs]
 
             augmented_X_train = np.concatenate((augmented_X_train, X_train))
             augmented_y_train = np.concatenate((augmented_y_train, y_train))
             # augmented_X_val = np.concatenate((augmented_X_val, X_val))
             # augmented_y_val = np.concatenate((augmented_y_val, y_val))
 
-            print(f'Number of positive examples (train/val): {len(X_train)}/{len(X_val)}.')
-        else:
-            print(f'(before) {augmented_y_train.shape[0]}')
-            augmented_X_train = np.concatenate((augmented_X_train, X_train))
-            augmented_y_train = np.concatenate((augmented_y_train, y_train))
-            print(f'(after) {augmented_y_train.shape[0]}')
+            print(f'Ratio of positive examples: {len(X_train)} of {temp}.')
 
-            # augmented_X_train = np.concatenate((augmented_X_train, X_val))
-            # augmented_y_train = np.concatenate((augmented_y_train, y_val))
-            # merged_X_val = np.concatenate((merged_X_val, X_val))
-            # merged_y_val = np.concatenate((merged_y_val, y_val))
+        augmented_X_train = np.concatenate((augmented_X_train, X_train))
+        augmented_y_train = np.concatenate((augmented_y_train, y_train))
 
         print()
 
