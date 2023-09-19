@@ -30,12 +30,12 @@ def main(argv):
     parser.add_argument('-p', '--pipeline_id', type=str, required=True, help='id of the pipeline')
     # Add an argument to accept one or more identifiers
     parser.add_argument('-i', '--identifiers', type=str, nargs='+', help='IDs of one or more weather stations to merge.')
-    parser.add_argument("--only_pos", action="store_true", help="Boolean argument. If provided, only positive events (i.e., events with target (rainfall) greater than zero) are used in the augmentation.")
+    parser.add_argument('-o', '--only_pos', action="store_true", help="Boolean argument. If provided, only positive events (i.e., events with target (rainfall) greater than zero) are used in the augmentation.")
 
     # Parse the arguments
     args = parser.parse_args()
 
-    use_only_pos_examples = parser.only_pos
+    use_only_pos_examples = args.only_pos
 
     # Access the list of identifiers
     soi_pipeline_id = args.pipeline_id
