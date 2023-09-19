@@ -28,7 +28,7 @@ python src/build_datasets.py -s A652 -d R+N -sp NEGATIVE
 python src/build_datasets.py -s A652
 python src/build_datasets.py -s alto_da_boa_vista
 
-python src/build_datasets.py -s guaratiba
+python src/build_datasets.py -s guaratiba --train_test_threshold "2021-11-12"
 python src/build_datasets.py -s iraja
 python src/build_datasets.py -s jardim_botanico
 python src/build_datasets.py -s riocentro

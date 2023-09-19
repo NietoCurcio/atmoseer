@@ -524,8 +524,13 @@ def main(argv):
     station_id = args.station_id
     datasources = args.datasources
     subsampling_procedure = args.subsampling_procedure
-    train_test_threshold = pd.to_datetime(args.train_test_threshold)#, utc=True)
-    
+
+    # This is really anonying!
+    if (station_id in globals.ALERTARIO_WEATHER_STATION_IDS or station_id in globals.ALERTARIO_GAUGE_STATION_IDS):
+        train_test_threshold = pd.to_datetime(args.train_test_threshold, utc=True)
+    else:
+        train_test_threshold = pd.to_datetime(args.train_test_threshold)
+
     lst_subsampling_procedures = ["NONE", "NAIVE", "NEGATIVE"]
     if not (subsampling_procedure in lst_subsampling_procedures):
         print(f"Invalid subsampling procedure: {subsampling_procedure}. Valid values: {lst_subsampling_procedures}")

@@ -331,6 +331,13 @@ def split_dataframe_by_date(df, split_date):
     df = df.sort_index()
 
     # Split the DataFrame based on the provided split_date
+    # print(split_date)
+    # print(df.index[0])
+    # print(type(split_date))
+    # print(type(df.index[0]))
+    # print(type(df.index))
+    # print(type(df.index.to_pydatetime()))
+    
     df_before = df[df.index < split_date]
     df_after = df[df.index >= split_date]
 

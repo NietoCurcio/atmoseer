@@ -147,7 +147,10 @@ def preprocess_ws(ws_id, ws_filename, output_folder):
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Preprocess weather station data.')
-    parser.add_argument('-s', '--station_id', required=True, choices=globals.INMET_WEATHER_STATION_IDS + globals.ALERTARIO_WEATHER_STATION_IDS, help='ID of the weather station to preprocess data for.')
+    parser.add_argument('-s', '--station_id', 
+                        required=True, 
+                        choices=globals.INMET_WEATHER_STATION_IDS + globals.ALERTARIO_WEATHER_STATION_IDS, 
+                        help='ID of the weather station to preprocess data for.')
     args = parser.parse_args(argv[1:])
     
     station_id = args.station_id
