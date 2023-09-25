@@ -4,16 +4,15 @@ import sys
 import pickle
 from utils.near_stations import prox
 
+from era5_data_source import Era5ReanalisysDataSource
+
 import globals
 
 from util import find_contiguous_observation_blocks, add_missing_indicator_column, split_dataframe_by_date
 from utils.windowing import apply_windowing
 import util as util
-import math
 import argparse
-import rainfall as rp
 from subsampling import apply_subsampling
-import xarray as xr
 import logging
 import yaml
 import datetime
@@ -71,107 +70,6 @@ def apply_sliding_window(df: pd.DataFrame, target_idx: int, window_size: int):
             y = np.concatenate((y, y_block), axis=0)
 
     return X, y
-
-def get_NWP_data_for_weather_station(station_id, initial_datetime, final_datetime):
-    df_stations = pd.read_csv("./data/ws/WeatherStations.csv")
-    row = df_stations[df_stations["STATION_ID"] == station_id].iloc[0]
-    station_latitude = row["VL_LATITUDE"]
-    station_longitude = row["VL_LONGITUDE"]
-
-    logging.info(f"Weather station {station_id} is located at lat/long = {station_latitude}/{station_longitude}")
-
-    logging.info(f"Selecting NWP data between {initial_datetime} and {final_datetime}.")
-    
-    ds = xr.open_dataset(globals.NWP_DATA_DIR + "ERA5.nc")
-    logging.info(f"Size.0: {ds.sizes['time']}")
-
-    # Get the minimum and maximum values of the 'time' coordinate
-    # time_min = ds.coords['time'].min().item()
-    # time_max = ds.coords['time'].max().item()
-    # logging.info(f"Range of timestamps in the original NWP data: [{ds.time.min()}, {ds.time.max()}]")
-    # logging.info(f"Range of timestamps in the original NWP data: [{time_min}, {time_max}]")
-    time_min = ds.time.min().values
-    time_max = ds.time.max().values
-    logging.info(f"Range of timestamps in the original NWP data: [{time_min}, {time_max}]")
-
-    # If we want to properly merge the two data sources, then we have to consider 
-    # only the range of periods in which these data sources intersect.
-    time_min = max(time_min, initial_datetime)
-    time_max = min(time_max, final_datetime)
-    logging.info(f"Range of timestamps to be selected: [{time_min}, {time_max}]")
-
-    ds = ds.sel(time=slice(time_min, time_max))
-    logging.info(f"Size.1: {ds.sizes['time']}")
-
-    era5_data_at_200hPa = ds.sel(level=200, longitude=station_longitude, latitude=station_latitude, method="nearest")
-    logging.info(f"Size.2: {era5_data_at_200hPa.sizes['time']}")
-
-    era5_data_at_700hPa = ds.sel(level=700, longitude=station_longitude, latitude=station_latitude, method="nearest")
-    logging.info(f"Size.3: {era5_data_at_700hPa.sizes['time']}")
-
-    era5_data_at_1000hPa = ds.sel(level=1000, longitude=station_longitude, latitude=station_latitude, method="nearest")
-    logging.info(f"Size.4: {era5_data_at_1000hPa.sizes['time']}")
-
-    logging.info(">>><<<")
-    logging.info(type(era5_data_at_1000hPa.time))
-    logging.info("-1-")
-    logging.info(era5_data_at_200hPa.time.values)
-    logging.info("-2-")
-    logging.info(era5_data_at_200hPa.z.values)
-    logging.info("-3-")
-    logging.info(era5_data_at_700hPa.z.values.shape)
-    logging.info("-4-")
-    logging.info(era5_data_at_700hPa.time.values)
-    logging.info("-5-")
-    logging.info(era5_data_at_700hPa.z.values)
-    logging.info("-6-")
-    logging.info(era5_data_at_700hPa.z.values.shape)
-    logging.info(">>><<<")
-
-    df_NWP_data_for_station = pd.DataFrame(
-        {
-            "time": era5_data_at_1000hPa.time.values,
-            
-            "Geopotential_200": era5_data_at_200hPa.z,
-            "Humidity_200": era5_data_at_200hPa.r,
-            "Temperature_200": era5_data_at_200hPa.t,
-            "WindU_200": era5_data_at_200hPa.u,
-            "WindV_200": era5_data_at_200hPa.v,
-
-            "Geopotential_700": era5_data_at_700hPa.z,
-            "Humidity_700": era5_data_at_700hPa.r,
-            "Temperature_700": era5_data_at_700hPa.t,
-            "WindU_700": era5_data_at_700hPa.u,
-            "WindV_700": era5_data_at_700hPa.v,
-
-            "Geopotential_1000": era5_data_at_1000hPa.z,
-            "Humidity_1000": era5_data_at_1000hPa.r,
-            "Temperature_1000": era5_data_at_1000hPa.t,
-            "WindU_1000": era5_data_at_1000hPa.u,
-            "WindV_1000": era5_data_at_1000hPa.v
-        }
-    )
-
-    # Drop rows with at least one NaN
-    logging.info(f"Shape before dropping NaN values is {df_NWP_data_for_station.shape}")
-    df_NWP_data_for_station = df_NWP_data_for_station.dropna(how='any')
-    logging.info(f"Shape before dropping NaN values is {df_NWP_data_for_station.shape}")
-
-    logging.info("Success!")
-
-    #
-    # Add index to dataframe using the timestamps.
-    format_string = '%Y-%m-%d %H:%M:%S'
-    df_NWP_data_for_station['Datetime'] = pd.to_datetime(df_NWP_data_for_station['time'], format=format_string)
-    df_NWP_data_for_station = df_NWP_data_for_station.set_index(pd.DatetimeIndex(df_NWP_data_for_station['Datetime']))
-    df_NWP_data_for_station = df_NWP_data_for_station.drop(['time', 'Datetime'], axis = 1)
-    logging.info(f"Range of timestamps in the selected slice of NWP data: [{min(df_NWP_data_for_station.index)}, {max(df_NWP_data_for_station.index)}]")
-
-    logging.info(df_NWP_data_for_station)
-
-    assert (not df_NWP_data_for_station.isnull().values.any().any())
-
-    return df_NWP_data_for_station
     
 def generate_windowed_split(train_df, val_df, test_df, target_name, window_size):
     target_idx = train_df.columns.get_loc(target_name)
@@ -239,25 +137,26 @@ def gaussian_noise(df, column_name, mu=0, sigma=1):
     return df
 
 
-def add_user_specified_data_sources(station_id, join_AS_data_source, join_NWP_data_source, join_lightning_data_source, df_ws, min_datetime, max_datetime):
+def add_user_specified_data_sources(station_id, join_AS_data_source, join_reanalisys_data_source, join_lightning_data_source, df_ws, min_datetime, max_datetime):
     joined_df = df_ws
 
-    if join_NWP_data_source:
-        logging.info(f"Loading NWP (ERA5) data near the weather station {station_id}...")
-        df_nwp_era5 = get_NWP_data_for_weather_station(station_id, min_datetime, max_datetime)
-        logging.info(f"Done! Shape = {df_nwp_era5.shape}.")
-        assert (not df_nwp_era5.isnull().values.any().any())
+    if join_reanalisys_data_source:
+        logging.info(f"Loading reanalisys (ERA5) data near the weather station {station_id}...")
+        data_source = Era5ReanalisysDataSource()
+        df_era5_reanalisys = data_source.get_data(station_id, min_datetime, max_datetime)
+        logging.info(f"Done! Shape = {df_era5_reanalisys.shape}.")
+        assert (not df_era5_reanalisys.isnull().values.any().any())
 
-        joined_df = pd.merge(df_ws, df_nwp_era5, how='left', left_index=True, right_index=True)
+        joined_df = pd.merge(df_ws, df_era5_reanalisys, how='left', left_index=True, right_index=True)
 
-        logging.info(f"NWP data successfully joined; resulting shape = {joined_df.shape}.")
+        logging.info(f"Reanalisys data successfully joined; resulting shape = {joined_df.shape}.")
         logging.info(df_ws.index.difference(joined_df.index).shape)
         logging.info(joined_df.index.difference(df_ws.index).shape)
 
-        logging.info(df_nwp_era5.index.intersection(df_ws.index).shape)
-        logging.info(df_nwp_era5.index.difference(df_ws.index).shape)
-        logging.info(df_ws.index.difference(df_nwp_era5.index).shape)
-        logging.info(df_ws.index.difference(df_nwp_era5.index))
+        logging.info(df_era5_reanalisys.index.intersection(df_ws.index).shape)
+        logging.info(df_era5_reanalisys.index.difference(df_ws.index).shape)
+        logging.info(df_ws.index.difference(df_era5_reanalisys.index).shape)
+        logging.info(df_ws.index.difference(df_era5_reanalisys.index))
 
         shape_before_dropna = joined_df.shape
         joined_df = joined_df.dropna()
@@ -337,7 +236,7 @@ def build_datasets(station_id: str,
                    input_folder: str,
                    train_test_threshold: datetime.datetime,
                    join_AS_data_source: bool, 
-                   join_NWP_data_source: bool, 
+                   join_reanalisys_data_source: bool, 
                    join_lightning_data_source: bool, 
                    subsampling_procedure: str):
     '''
@@ -351,7 +250,7 @@ def build_datasets(station_id: str,
     '''
 
     pipeline_id = station_id
-    if join_NWP_data_source:
+    if join_reanalisys_data_source:
         pipeline_id = pipeline_id + '_N'
     if join_AS_data_source:
         pipeline_id = pipeline_id + '_R'
@@ -385,7 +284,7 @@ def build_datasets(station_id: str,
     #####
     # Now add user-specified data sources.
     #####
-    joined_df = add_user_specified_data_sources(station_id, join_AS_data_source, join_NWP_data_source, join_lightning_data_source, df_ws, min_datetime, max_datetime)
+    joined_df = add_user_specified_data_sources(station_id, join_AS_data_source, join_reanalisys_data_source, join_lightning_data_source, df_ws, min_datetime, max_datetime)
 
     #
     # Save train/val/test DataFrames for future error analisys.

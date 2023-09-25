@@ -113,8 +113,8 @@ def main(argv):
             # X_val = X_val[y_val_gt_zero_idxs]
             # y_val = y_val[y_val_gt_zero_idxs]
 
-            augmented_X_train = np.concatenate((augmented_X_train, X_train))
-            augmented_y_train = np.concatenate((augmented_y_train, y_train))
+            # augmented_X_train = np.concatenate((augmented_X_train, X_train))
+            # augmented_y_train = np.concatenate((augmented_y_train, y_train))
             # augmented_X_val = np.concatenate((augmented_X_val, X_val))
             # augmented_y_val = np.concatenate((augmented_y_val, y_val))
 

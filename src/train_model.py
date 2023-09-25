@@ -89,7 +89,7 @@ class WeightedBCELoss(torch.nn.Module):
         return -torch.mean(loss)
 
 
-def train(X_train, y_train, X_val, y_val, forecasting_task_sufix, pipeline_id, learner, config, resume_training: bool = False):
+def train(forecaster, X_train, y_train, X_val, y_val, forecasting_task_sufix, pipeline_id, learner, config, resume_training: bool = False):
     NUM_FEATURES = X_train.shape[2]
     print(f"Number of features: {NUM_FEATURES}")
 
@@ -106,7 +106,6 @@ def train(X_train, y_train, X_val, y_val, forecasting_task_sufix, pipeline_id, l
         y_train = rp.value_to_ordinal_encoding(y_train)
         y_val = rp.value_to_ordinal_encoding(y_val)
         target_average = torch.mean(torch.tensor(y_train, dtype=torch.float32), dim=0, keepdim=True)
-        forecaster = OrdinalClassifier(learner)
     elif forecasting_task_sufix == "bc":
         print("- Forecasting task: binary classification.")
         train_weights = compute_weights_for_binary_classification(y_train)
@@ -118,14 +117,12 @@ def train(X_train, y_train, X_val, y_val, forecasting_task_sufix, pipeline_id, l
         # loss = WeightedBCELoss(pos_weight=2, neg_weight=1)
         y_train = rp.value_to_binary_level(y_train)
         y_val = rp.value_to_binary_level(y_val)
-        forecaster = BinaryClassifier(learner)
     elif forecasting_task_sufix == "reg":
         print("- Forecasting task: regression.")
         loss = nn.MSELoss()
         global y_mean_value
         y_mean_value = np.mean(y_train)
         print(y_mean_value)
-        forecaster = Regressor(in_channels=NUM_FEATURES, y_mean_value=y_mean_value)
 
     print(forecaster)
 
@@ -173,8 +170,6 @@ def train(X_train, y_train, X_val, y_val, forecasting_task_sufix, pipeline_id, l
     # Load the best model obtainined throughout the training epochs.
     #
     forecaster.learner.load_state_dict(torch.load(MODELS_DIR + '/best_' + pipeline_id + '.pt'))
-
-    return forecaster
 
 
 def main(argv):
@@ -239,9 +234,16 @@ def main(argv):
                         dropout_rate = DROPOUT_RATE)
     print(f'Learner: {learner}')
 
+    if prediction_task_sufix == "oc":
+        forecaster = OrdinalClassifier(learner)
+    elif prediction_task_sufix == "bc":
+        forecaster = BinaryClassifier(learner)
+    elif prediction_task_sufix == "reg":
+        forecaster = Regressor(in_channels=NUM_FEATURES, y_mean_value=y_mean_value)
+
     # Build model
     start_time = time.time()
-    forecaster = train(X_train, y_train, X_val, y_val, prediction_task_sufix, args.pipeline_id, learner, config)
+    train(forecaster, X_train, y_train, X_val, y_val, prediction_task_sufix, args.pipeline_id, learner, config)
     logging.info("Model training took %s seconds." % (time.time() - start_time))
 
     # Evaluate using the best model produced
