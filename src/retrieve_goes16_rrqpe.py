@@ -25,8 +25,8 @@ def store_file(product_name, yyyymmddhhmn, output, img, acum, extent, undef):
 def download_data_for_a_day(yyyymmdd):
   #-----------------------------------------------------------------------------------------------------------
   # Input and output directories
-  input = "./temp/Samples"; os.makedirs(input, exist_ok=True)
-  output = "./temp/Output"; os.makedirs(output, exist_ok=True)
+  input  = "./data/goes16/Samples"; os.makedirs(input, exist_ok=True)
+  output = "./data/goes16/Output"; os.makedirs(output, exist_ok=True)
 
   extent = [-44.0, -23.0, -43.0, -22.0]  # Min lon, Min lat, Max lon, Max lat
 
