@@ -127,13 +127,13 @@ def main(argv):
     # date_ini = args.date_ini
     # date_end = args.date_end
 
-    # stations_of_interest = dict()
-    # stations_filename = "./data/ws/WeatherStations.csv"
-    # df_stations = pd.read_csv(stations_filename)
-    # for wsoi_id in INMET_WEATHER_STATION_IDS:
-    #     row = df_stations[df_stations["STATION_ID"] == wsoi_id].iloc[0]
-    #     wsoi_lat_lon = (row["VL_LATITUDE"], row["VL_LONGITUDE"])
-    #     stations_of_interest[row["STATION_ID"]] = wsoi_lat_lon
+    stations_of_interest = dict()
+    stations_filename = "./data/ws/WeatherStations.csv"
+    df_stations = pd.read_csv(stations_filename)
+    for wsoi_id in INMET_WEATHER_STATION_IDS:
+        row = df_stations[df_stations["STATION_ID"] == wsoi_id].iloc[0]
+        wsoi_lat_lon = (row["VL_LATITUDE"], row["VL_LONGITUDE"])
+        stations_of_interest[row["STATION_ID"]] = wsoi_lat_lon
 
     for period in periods:
         # Create an empty DataFrame
