@@ -60,34 +60,37 @@ def download_data_for_a_day(df, yyyymmdd, stations_of_interest):
         # Download the file
         file_name = download_PROD(yyyymmddhhmn, product_name, input)
 
-        ds = open_dataset(f'{input}/{file_name}.nc')
+        try:
+            filename = f'{input}/{file_name}.nc'
+            ds = open_dataset(filename)
 
-        if ds is not None:
-            RRQPE, LonCen, LatCen = ds.image(var, lonlat='center')
+            if ds is not None:
+                RRQPE, LonCen, LatCen = ds.image(var, lonlat='center')
 
-            for wsoi_id in stations_of_interest:
-                lon = stations_of_interest[wsoi_id][1]
-                lat = stations_of_interest[wsoi_id][0]
-                x, y = find_pixel_of_coordinate(LonCen, LatCen, lon, lat)
-                value1 = RRQPE.data[y,x]
-                new_row = {'timestamp': yyyymmddhhmn, 'station_id': wsoi_id, 'tpw_value': value1}
-                df = df.append(new_row, ignore_index=True)
-        
+                for wsoi_id in stations_of_interest:
+                    lon = stations_of_interest[wsoi_id][1]
+                    lat = stations_of_interest[wsoi_id][0]
+                    x, y = find_pixel_of_coordinate(LonCen, LatCen, lon, lat)
+                    value1 = RRQPE.data[y,x]
+                    new_row = {'timestamp': yyyymmddhhmn, 'station_id': wsoi_id, 'tpw_value': value1}
+                    df = df.append(new_row, ignore_index=True)
+
+            try:
+                file_path = f'{input}/{file_name}.nc'
+                # print(f'Removing file {file_path}')
+                os.remove(file_path)  # Use os.remove() to delete the file
+                # print(f"File '{file_path}' has been successfully removed.")
+            except FileNotFoundError:
+                print(f"Error: File '{file_path}' not found.")
+            except PermissionError:
+                print(f"Error: Permission denied to remove file '{file_path}'.")
+            except Exception as e:
+                print(f"An error occurred: {e}")
+        except FileNotFoundError:
+            print(f"Error: File '{filename}' not found.")
+
         # Increment 10 minutes
         temp = temp + timedelta(minutes=10)
-
-        try:
-            file_path = f'{input}/{file_name}.nc'
-            # print(f'Removing file {file_path}')
-            os.remove(file_path)  # Use os.remove() to delete the file
-            # print(f"File '{file_path}' has been successfully removed.")
-        except FileNotFoundError:
-            print(f"Error: File '{file_path}' not found.")
-        except PermissionError:
-            print(f"Error: Permission denied to remove file '{file_path}'.")
-        except Exception as e:
-            print(f"An error occurred: {e}")
-        #-----------------------------------------------------------------------------------------------------------
     return df
 
 
