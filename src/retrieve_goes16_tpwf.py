@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt                 # Plotting library
 from datetime import timedelta, date, datetime  # Basic Dates and time types
 import cartopy, cartopy.crs as ccrs             # Plot maps
 import os                                       # Miscellaneous operating system interfaces
-from osgeo import gdal                          # Python bindings for GDAL
+# from osgeo import gdal                          # Python bindings for GDAL
 import numpy as np                              # Scientific computing with Python
 from matplotlib import cm                       # Colormap handling utilities
 from goes16_utils import download_PROD             # Our function for download
@@ -18,7 +18,7 @@ import sys
 import argparse
 from globals import INMET_WEATHER_STATION_IDS
 
-gdal.PushErrorHandler('CPLQuietErrorHandler')   # Ignore GDAL warnings
+# gdal.PushErrorHandler('CPLQuietErrorHandler')   # Ignore GDAL warnings
 
 #------------------------------------------------------------------------------
 def store_file(product_name, yyyymmddhhmn, output, img, acum, extent, undef):
@@ -60,12 +60,9 @@ def download_data_for_a_day(df, yyyymmdd, stations_of_interest):
         # Download the file
         file_name = download_PROD(yyyymmddhhmn, product_name, input)
 
-        # Open the file
-        img = gdal.Open(f'NETCDF:{input}/{file_name}.nc:' + var)
+        ds = open_dataset(f'{input}/{file_name}.nc')
 
-        if img is not None:
-
-            ds = open_dataset(f'{input}/{file_name}.nc')
+        if ds is not None:
             RRQPE, LonCen, LatCen = ds.image(var, lonlat='center')
 
             for wsoi_id in stations_of_interest:
@@ -75,15 +72,7 @@ def download_data_for_a_day(df, yyyymmdd, stations_of_interest):
                 value1 = RRQPE.data[y,x]
                 new_row = {'timestamp': yyyymmddhhmn, 'station_id': wsoi_id, 'tpw_value': value1}
                 df = df.append(new_row, ignore_index=True)
-
-            acum = np.zeros((5424,5424))
         
-            # Read the header metadata
-            metadata = img.GetMetadata()
-            undef = float(metadata.get(var + '#_FillValue'))
-
-            store_file(product_name, yyyymmddhhmn, output, img, acum, extent, undef)
-
         # Increment 10 minutes
         temp = temp + timedelta(minutes=10)
 
@@ -104,6 +93,7 @@ def download_data_for_a_day(df, yyyymmdd, stations_of_interest):
 
 def main(argv):
     periods = [
+        # ('20200101', '20200101')
         ('20200101', '20200531'),
         ('20200901', '20201231'),
 
@@ -111,9 +101,9 @@ def main(argv):
         ('20210901', '20211231'),
 
         ('20220101', '20220531'),
-        ('20220901', '20221231'),
+        # ('20220901', '20221231'),
 
-        ('20230001', '20230531'),
+        # ('20230001', '20230531'),
     ]
 
     # # Create an argument parser
