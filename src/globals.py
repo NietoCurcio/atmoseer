@@ -20,11 +20,13 @@ DATASETS_DIR = './data/datasets/'
 MODELS_DIR = './models/'
 
 # see https://portal.inmet.gov.br/paginas/catalogoaut
-INMET_WEATHER_STATION_IDS = ('A636', # Jacarepagua
-                     'A621', # Vila militar
-                     'A602', # Marambaia
-                     'A652', # Copacabana
-                     'A627')
+INMET_WEATHER_STATION_IDS = (
+    'A636', # Jacarepagua
+    'A621', # Vila militar
+    'A602', # Marambaia
+    'A652', # Forte de Copacabana
+    'A627'  # Niteroi
+)
 
 ALERTARIO_GAUGE_STATION_IDS = (
                          'anchieta', 

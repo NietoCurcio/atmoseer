@@ -174,7 +174,7 @@ def download_PROD(yyyymmddhhmn, product_name, path_dest):
       if os.path.exists(f'{path_dest}/{file_name}.nc'):
         print(f'File {path_dest}/{file_name}.nc exists')
       else:
-        print(f'Downloading file {path_dest}/{file_name}.nc')
+        # print(f'Downloading file {path_dest}/{file_name}.nc')
         s3_client.download_file(bucket_name, key, f'{path_dest}/{file_name}.nc')
   return f'{file_name}'
 

@@ -8,22 +8,48 @@ import numpy as np                              # Scientific computing with Pyth
 from matplotlib import cm                       # Colormap handling utilities
 from goes16_utils import download_PROD             # Our function for download
 from goes16_utils import reproject                 # Our function for reproject
+from goes16.processing_data import find_pixel_of_coordinate
+from goes16.processing_data import open_dataset
+
+#------------------------------------------------------------------------------
+def get_rrqpe_value(sat_data):
+
+    # Read number of cols and rows
+    ncol = sat_data.RasterXSize
+    nrow = sat_data.RasterYSize
+    print(f'ncol, nrow = {ncol}, {nrow}')
+
+    # Load the data
+    sat_array = sat_data.ReadAsArray(0, 0, ncol, nrow).astype(float)
+
+    # Get geotransform
+    transform = sat_data.GetGeoTransform()
+
+    # Coordenadas da estação do Forte de Copacabana
+    lat = -22.98833333
+    lon = -43.19055555
+
+    x = int((lon - transform[0]) / transform[1])
+    y = int((transform[3] - lat) / -transform[5])
+
+    # print(f'Value at ({x},{y}): {sat_array[x,y]}')
+
+    return sat_array[x,y]
+
 
 import sys
 
 gdal.PushErrorHandler('CPLQuietErrorHandler')   # Ignore GDAL warnings
 
-product_name = 'ABI-L2-RRQPEF'
-
-
+#------------------------------------------------------------------------------
 def store_file(product_name, yyyymmddhhmn, output, img, acum, extent, undef):
   # Reproject the file
   filename_acum = f'{output}/{product_name}_{yyyymmddhhmn}.nc'
   reproject(filename_acum, img, acum, extent, undef)
 
 
+#------------------------------------------------------------------------------
 def download_data_for_a_day(yyyymmdd):
-  #-----------------------------------------------------------------------------------------------------------
   # Input and output directories
   input  = "./data/goes16/Samples"; os.makedirs(input, exist_ok=True)
   output = "./data/goes16/Output"; os.makedirs(output, exist_ok=True)
@@ -47,6 +73,9 @@ def download_data_for_a_day(yyyymmdd):
       # Date structure
       yyyymmddhhmn = datetime.strptime(str(temp), '%Y-%m-%d %H:%M:%S').strftime('%Y%m%d%H%M')
 
+      product_name = 'ABI-L2-TPWF'
+      # product_name = 'ABI-L2-RRQPEF'
+
       print(f'Getting {product_name} data for {yyyymmddhhmn}...')
 
       # Download the file
@@ -54,13 +83,34 @@ def download_data_for_a_day(yyyymmdd):
 
       #-----------------------------------------------------------------------------------------------------------
       # Variable
-      var = 'RRQPE'
+      var = 'TPW'
 
       # Open the file
       img = gdal.Open(f'NETCDF:{input}/{file_name}.nc:' + var)
       dqf = gdal.Open(f'NETCDF:{input}/{file_name}.nc:DQF')
 
       if img is not None:
+
+        ds = open_dataset(f'{input}/{file_name}.nc')
+        RRQPE, LonCen, LatCen = ds.image(var, lonlat='center')
+
+        print('@@@@@@-RRQPE')
+        print(RRQPE)
+        print('@@@@@@')
+
+        print('@@@@@@-LonCen')
+        print(LonCen)
+        print('@@@@@@')
+
+        print('@@@@@@-LatCen')
+        print(LatCen)
+        print('@@@@@@')
+
+        lat = -22.98833333
+        lon = -43.19055555
+        x, y = find_pixel_of_coordinate(LonCen, LatCen, lon, lat)
+        value1 = RRQPE.data[y,x]
+
         acum = np.zeros((5424,5424))
       
         # Read the header metadata
@@ -72,7 +122,7 @@ def download_data_for_a_day(yyyymmdd):
       
         # Load the data
         ds = img.ReadAsArray(0, 0, img.RasterXSize, img.RasterYSize).astype(float)
-        ds_dqf = dqf.ReadAsArray(0, 0, dqf.RasterXSize, dqf.RasterYSize).astype(float)
+        # ds_dqf = dqf.ReadAsArray(0, 0, dqf.RasterXSize, dqf.RasterYSize).astype(float)
 
         # Remove undef
         ds[ds == undef] = np.nan
@@ -81,12 +131,19 @@ def download_data_for_a_day(yyyymmdd):
         ds = (ds * scale + offset)
 
         # Apply NaN's where the quality flag is greater than 1
-        ds[ds_dqf > 0] = np.nan
+        # ds[ds_dqf > 0] = np.nan
+
+        print('@@@@@@-ds.shape')
+        print(ds[y,x])
+        print(ds.shape)
+        print('@@@@@@')
+        value2 = ds[y,x]#get_rrqpe_value(img)
+        print(f'***Values for PoI at {yyyymmddhhmn}: {value1}/{value2}')
 
         # Sum the instantaneous value in the accumulation
-        acum = np.nansum(np.dstack((acum, ds)),2)
+        # acum = np.nansum(np.dstack((acum, ds)),2)
 
-        store_file(product_name, yyyymmddhhmn, output, img, acum, extent, undef)
+        # store_file(product_name, yyyymmddhhmn, output, img, acum, extent, undef)
 
       # Increment 1 hour
       temp = temp + timedelta(hours=1)
@@ -108,10 +165,15 @@ def download_data_for_a_day(yyyymmdd):
 def main(argv):
 
   periods = [
-       ('20191204', '20200531'),
-       ('20200901', '20210531'),
-       ('20210901', '20220531'),
-       ('20220901', '20230531')
+      #  ('20191204', '20200531'),
+      #  ('20200901', '20210531'),
+      #  ('20210901', '20220531'),
+      #  ('20220901', '20230531')
+      #  ('20220401', '20220531')
+  ]
+
+  periods = [
+     ('20220331', '20220331')
   ]
 
   for period in periods:

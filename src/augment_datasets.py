@@ -67,8 +67,8 @@ def main(argv):
     augmented_y_val = wsoi_y_val
     
     if wsoi_id in INMET_WEATHER_STATION_IDS:
-        stations_filename = "./data/ws/alertario_stations.parquet"
-        df_stations = pd.read_csv("./data/ws/WeatherStations.csv")
+        stations_filename = "./data/ws/WeatherStations.csv"
+        df_stations = pd.read_csv(stations_filename)
         row = df_stations[df_stations["STATION_ID"] == wsoi_id].iloc[0]
         wsoi_lat_lon = (row["VL_LATITUDE"], row["VL_LONGITUDE"])
     elif wsoi_id in ALERTARIO_WEATHER_STATION_IDS:

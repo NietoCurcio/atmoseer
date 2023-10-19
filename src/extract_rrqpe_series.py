@@ -19,7 +19,7 @@ def dictionary_to_dataframe(input_dict):
     
     # Sort the DataFrame by the 'Datetime' index in ascending order
     df.sort_index(inplace=True)
-    
+
     return df
 
 def extract_datetime_from_string(input_string):
@@ -47,7 +47,7 @@ def get_rrqpe_value(filename):
     # Read number of cols and rows
     ncol = sat_data.RasterXSize
     nrow = sat_data.RasterYSize
-    # print(f'ncol, nrow = {ncol}, {nrow}')
+    print(f'ncol, nrow = {ncol}, {nrow}')
 
     # Load the data
     sat_array = sat_data.ReadAsArray(0, 0, ncol, nrow).astype(float)
@@ -91,9 +91,10 @@ def get_rrqpe_series(folder_path):
         print(f"Permission denied to access folder '{folder_path}'.")
 
 if __name__ == "__main__":
-    folder_path = './temp/Output'
+    folder_path = './data/goes16/Output'
     print(folder_path)
     series = get_rrqpe_series(folder_path)
     df = dictionary_to_dataframe(series)
+    print(f'Extracted series has {df.shape[0]} points, from {min(df.index)} to {max(df.index)}.')
     print(df.head())
-    df.to_csv('./temp/rrqpe.csv')
+    df.to_csv('./data/goes16/rrqpe.csv')
