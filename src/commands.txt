@@ -21,6 +21,7 @@ python src/augment_datasets.py --only_pos -s A652 -p A652 -i A621 A636 A627
 === build_datasets
 ==========================================
 
+python src/build_datasets.py -s A652 -d T --train_test_threshold "2021-11-30"
 python src/build_datasets.py -s A621 -d R
 python src/build_datasets.py -s A621 -d N
 python src/build_datasets.py -s A602 -d N
@@ -119,6 +120,7 @@ python src/retrieve_ERA5.py -b 2021 -e 2021
 python src/train_model.py -p A652_R -t ORDINAL_CLASSIFICATION
 python src/train_model.py -p A652_R_A621_A636_A627 -t ORDINAL_CLASSIFICATION
 
+python src/train_model.py -p A652_T -t BINARY_CLASSIFICATION
 python src/train_model.py -p A652_R -t BINARY_CLASSIFICATION
 python src/train_model.py -p A652_N_R -t BINARY_CLASSIFICATION
 

@@ -13,6 +13,9 @@ NWP_DATA_DIR = "./data/NWP/"
 # Atmospheric sounding datasource directory
 AS_DATA_DIR = "./data/as/"
 
+# TPW GOES16 datasource directory
+TPW_DATA_DIR = "./data/goes16/wsoi"
+
 # Directory to store the train/val/test datasets for each weather station of interest
 DATASETS_DIR = './data/datasets/'
 

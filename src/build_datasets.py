@@ -137,17 +137,25 @@ def gaussian_noise(df, column_name, mu=0, sigma=1):
     return df
 
 
-def add_user_specified_data_sources(station_id, join_AS_data_source, join_reanalisys_data_source, join_lightning_data_source, df_ws, min_datetime, max_datetime):
+def add_user_specified_data_sources(
+        station_id, 
+        join_AS_datasource, 
+        join_reanalisys_datasource, 
+        join_goes16_glm_datasource, 
+        join_goes16_tpw_datasource, 
+        df_ws, 
+        min_datetime, 
+        max_datetime):
     joined_df = df_ws
 
-    if join_reanalisys_data_source:
+    if join_reanalisys_datasource:
         logging.info(f"Loading reanalisys (ERA5) data near the weather station {station_id}...")
         data_source = Era5ReanalisysDataSource()
         df_era5_reanalisys = data_source.get_data(station_id, min_datetime, max_datetime)
         logging.info(f"Done! Shape = {df_era5_reanalisys.shape}.")
         assert (not df_era5_reanalisys.isnull().values.any().any())
 
-        joined_df = pd.merge(df_ws, df_era5_reanalisys, how='left', left_index=True, right_index=True)
+        joined_df = pd.merge(joined_df, df_era5_reanalisys, how='left', left_index=True, right_index=True)
 
         logging.info(f"Reanalisys data successfully joined; resulting shape = {joined_df.shape}.")
         logging.info(df_ws.index.difference(joined_df.index).shape)
@@ -161,11 +169,11 @@ def add_user_specified_data_sources(station_id, join_AS_data_source, join_reanal
         shape_before_dropna = joined_df.shape
         joined_df = joined_df.dropna()
         shape_after_dropna = joined_df.shape
-        logging.info(f"Removed NaN rows in merge data; Shapes before/after dropna: {shape_before_dropna}/{shape_after_dropna}.")
+        logging.info(f"Removed NaN rows in merged dataset; Shapes before/after dropna: {shape_before_dropna}/{shape_after_dropna}.")
 
     assert (not joined_df.isnull().values.any().any())
 
-    if join_AS_data_source:
+    if join_AS_datasource:
         filename = globals.AS_DATA_DIR + 'SBGL_indices_1997_2023.parquet.gzip'
         logging.info(f"Loading atmospheric sounding indices from {filename}...")
         df_as = pd.read_parquet(filename)
@@ -199,8 +207,8 @@ def add_user_specified_data_sources(station_id, join_AS_data_source, join_reanal
         joined_df['showalter'] = joined_df['showalter'].interpolate(method='linear')
         logging.info("Done!")
 
-        # At the beggining of the joined dataframe, a few entries may remain with NaN values. The code below
-        # gets rid of these entries.
+        # At the beggining of the joined dataframe, a few entries may remain with NaN values. 
+        # The code below gets rid of these entries.
         # see https://stackoverflow.com/questions/27905295/how-to-replace-nans-by-preceding-or-next-values-in-pandas-dataframe
         joined_df.fillna(method='bfill', inplace=True)
 
@@ -210,9 +218,40 @@ def add_user_specified_data_sources(station_id, join_AS_data_source, join_reanal
         # TODO: Imputing with MICE (see https://towardsdatascience.com/imputing-missing-data-with-simple-and-advanced-techniques-f5c7b157fb87)
         # TODO: use other sounding stations (?) (see tempo.inmet.gov.br/Sondagem/)
 
+    if join_goes16_tpw_datasource:
+        logging.info(f"Loading GOES16 TPW product for weather station {station_id}...")
+        df_tpw = pd.read_parquet(f'{globals.TPW_DATA_DIR}/{station_id}.parquet')
+        logging.info(f"Done! Shape = {df_tpw.shape}.")
+
+        logging.info(f"Range of timestamps in the TPW data: [{min(df_tpw.index)}, {max(df_tpw.index)}]")
+
+        joined_df = joined_df.join(df_tpw, how='inner')
+
+        logging.info(f"TPW data successfully joined; resulting shape: {joined_df.shape}.")
+
+        # print(joined_df.columns)
+
+        logging.info(f"Adding missing indicator column...")
+        joined_df = add_missing_indicator_column(joined_df, "tpw_idx_missing")
+        logging.info(f"Done! New shape: {joined_df.shape}.")
+
+        logging.info(f"Doing interpolation to imput missing values on the TPW values...")
+        joined_df['tpw_value'] = joined_df['tpw_value'].interpolate(method='linear')
+        logging.info(f"Done!")
+
+        # At the beggining of the joined dataframe, a few entries may remain with NaN values. 
+        # The code below gets rid of these entries.
+        # see https://stackoverflow.com/questions/27905295/how-to-replace-nans-by-preceding-or-next-values-in-pandas-dataframe
+        joined_df.fillna(method='bfill', inplace=True)
+
+        shape_before_dropna = joined_df.shape
+        joined_df = joined_df.dropna()
+        shape_after_dropna = joined_df.shape
+        assert shape_before_dropna == shape_after_dropna
+
     assert (not joined_df.isnull().values.any().any())
 
-    if join_lightning_data_source:
+    if join_goes16_glm_datasource:
         print(f"Loading GLM (Goes 16) data near the weather station {station_id}...", end= "")
         df_lightning = pd.read_parquet('/mnt/e/atmoseer/data/ws/merged_file_preprocessed.parquet.gzip')
         df_lightning_filtered = get_goes16_data_for_weather_station(df_lightning, station_id)
@@ -236,8 +275,9 @@ def build_datasets(station_id: str,
                    input_folder: str,
                    train_test_threshold: datetime.datetime,
                    join_AS_data_source: bool, 
-                   join_reanalisys_data_source: bool, 
-                   join_lightning_data_source: bool, 
+                   join_reanalisys_datasource: bool, 
+                   join_goes16_glm_datasource: bool, 
+                   join_goes16_tpw_datasource: bool,
                    subsampling_procedure: str):
     '''
     This function joins a set of datasources to build datasets. These resulting datasets are used to fit the 
@@ -250,16 +290,18 @@ def build_datasets(station_id: str,
     '''
 
     pipeline_id = station_id
-    if join_reanalisys_data_source:
+    if join_reanalisys_datasource:
         pipeline_id = pipeline_id + '_N'
     if join_AS_data_source:
         pipeline_id = pipeline_id + '_R'
-    if join_lightning_data_source:
+    if join_goes16_glm_datasource:
         pipeline_id = pipeline_id + '_L'
+    if join_goes16_tpw_datasource:
+        pipeline_id = pipeline_id + '_T'
 
     logging.info(f"Loading observations for weather station {station_id}...")
     df_ws = pd.read_parquet(input_folder + station_id + "_preprocessed.parquet.gzip")
-    logging.info(f"Done! Shape = {df_ws.shape}.")
+    logging.info(f"Done! Shape = {df_ws.shape}.\n")
 
     ####
     # Apply a filtering step, with the purpose of disregarding all observations made between  
@@ -269,7 +311,7 @@ def build_datasets(station_id: str,
     shape_before_month_filtering = df_ws.shape
     df_ws = df_ws[df_ws.index.month.isin([9, 10, 11, 12, 1, 2, 3, 4, 5])].sort_index(ascending=True)
     shape_after_month_filtering = df_ws.shape
-    logging.info(f"Done! Shapes before/after: {shape_before_month_filtering}/{shape_after_month_filtering}")
+    logging.info(f"Done! Shapes before/after: {shape_before_month_filtering}/{shape_after_month_filtering}\n")
 
     assert (not df_ws.isnull().values.any().any())
 
@@ -284,16 +326,32 @@ def build_datasets(station_id: str,
     #####
     # Now add user-specified data sources.
     #####
-    joined_df = add_user_specified_data_sources(station_id, join_AS_data_source, join_reanalisys_data_source, join_lightning_data_source, df_ws, min_datetime, max_datetime)
+    logging.info(f'Going to add features from specified datasources...')
+    joined_df = add_user_specified_data_sources(
+        station_id, 
+        join_AS_data_source, 
+        join_reanalisys_datasource, 
+        join_goes16_glm_datasource, 
+        join_goes16_tpw_datasource,         
+        df_ws, 
+        min_datetime, 
+        max_datetime)
+    logging.info(f'Done!\n')
 
     #
     # Save train/val/test DataFrames for future error analisys.
     filename = globals.DATASETS_DIR + pipeline_id + '.parquet.gzip'
     logging.info(f'Saving joined data source for pipeline {pipeline_id} to file {filename}.')
     joined_df.to_parquet(filename, compression='gzip')
+    logging.info(f'Done!\n')
 
     assert (not joined_df.isnull().values.any().any())
 
+    #####
+    # Perform train/val/test split
+    #####
+    logging.info(f'Going to split examples (train/val/test)...')
+    logging.info(f'Timestamp used to split train and test examples: {train_test_threshold}')
     df_train_val, df_test = split_dataframe_by_date(joined_df, train_test_threshold)
 
     # TODO: parameterize with user-defined train/val splitting proportions.
@@ -307,10 +365,11 @@ def build_datasets(station_id: str,
     assert (not df_val.isnull().values.any().any())
     assert (not df_test.isnull().values.any().any())
 
-    logging.info(f'Done! Number of examples in each dataset (train/val/test): {len(df_train)}/{len(df_val)}/{len(df_test)}.')
     logging.info(f"Range of timestamps in the training dataset: [{min(df_train.index)}, {max(df_train.index)}]")
     logging.info(f"Range of timestamps in the validation dataset: [{min(df_val.index)}, {max(df_val.index)}]")
     logging.info(f"Range of timestamps in the test dataset: [{min(df_test.index)}, {max(df_test.index)}]")
+    logging.info(f'Number of examples in each dataset (train/val/test): {len(df_train)}/{len(df_val)}/{len(df_test)}.')
+    logging.info(f'Done!\n')
 
     #
     # Save train/val/test DataFrames for future error analisys.
@@ -318,6 +377,7 @@ def build_datasets(station_id: str,
     df_train.to_parquet(globals.DATASETS_DIR + pipeline_id + '_train.parquet.gzip', compression='gzip')
     df_val.to_parquet(globals.DATASETS_DIR + pipeline_id + '_val.parquet.gzip', compression='gzip')
     df_test.to_parquet(globals.DATASETS_DIR + pipeline_id + '_test.parquet.gzip', compression='gzip')
+    logging.info(f'Done!\n')
 
     assert (not df_train.isnull().values.any().any())
     assert (not df_val.isnull().values.any().any())
@@ -333,7 +393,7 @@ def build_datasets(station_id: str,
     # the sliding window technique, since the target variable is going to be used as lag feature.
     # (see, e.g., https://www.mikulskibartosz.name/forecasting-time-series-using-lag-features/)
     # (see also https://datascience.stackexchange.com/questions/72480/what-is-lag-in-time-series-forecasting)
-    logging.info('Normalizing the features in train/val/test dataframes.')
+    logging.info('Normalizing the features in train/val/test dataframes...')
     _, target_name = util.get_relevant_variables(station_id)
     min_target_value_in_train, max_target_value_in_train = min(df_train[target_name]), max(df_train[target_name])
     min_target_value_in_val, max_target_value_in_val = min(df_val[target_name]), max(df_val[target_name])
@@ -341,6 +401,7 @@ def build_datasets(station_id: str,
     df_train = util.min_max_normalize(df_train)
     df_val = util.min_max_normalize(df_val)
     df_test = util.min_max_normalize(df_test)
+    logging.info(f'Done!\n')
 
     assert (not df_train.isnull().values.any().any())
     assert (not df_val.isnull().values.any().any())
@@ -351,16 +412,17 @@ def build_datasets(station_id: str,
     with open('./config/config.yaml', 'r') as file:
         config = yaml.safe_load(file)
     window_size = config["preproc"]["SLIDING_WINDOW_SIZE"]
-    logging.info('Applying sliding window to build train/val/test datasets.')
+    logging.info('Applying sliding window to build train/val/test datasets...')
     X_train, y_train, X_val, y_val, X_test, y_test = generate_windowed_split(
         df_train, 
         df_val, 
         df_test, 
         target_name, 
         window_size)
-    logging.info("Done! Resulting shapes:")
+    logging.info("Resulting shapes:")
     logging.info(f' - (X_train/X_val/X_test): ({X_train.shape}/{X_val.shape}/{X_test.shape})')
     logging.info(f' - (y_train/y_val/y_test): ({y_train.shape}/{y_val.shape}/{y_test.shape})')
+    logging.info(f'Done!\n')
 
     assert not np.isnan(np.sum(X_train))
     assert not np.isnan(np.sum(X_val))
@@ -372,7 +434,7 @@ def build_datasets(station_id: str,
     #
     # Now, we restore the target variable to their original values. This is needed in case a multiclass
     # classification task is defined down the pipeline.
-    logging.info('Restoring the target variable to their original values.')
+    logging.info('Restoring the target variable to their original values...')
     y_train = (y_train + min_target_value_in_train) * (max_target_value_in_train - min_target_value_in_train)
     y_val = (y_val + min_target_value_in_val) * (max_target_value_in_val - min_target_value_in_val)
     y_test = (y_test + min_target_value_in_test) * (max_target_value_in_test - min_target_value_in_test)
@@ -380,6 +442,7 @@ def build_datasets(station_id: str,
           (np.min(y_train), np.min(y_val), np.min(y_test)))
     logging.info('Max precipitation values (train/val/test): %.5f, %.5f, %.5f' %
           (np.max(y_train), np.max(y_val), np.max(y_test)))
+    logging.info(f'Done!\n')
 
     if subsampling_procedure != "NONE":
         #
@@ -388,7 +451,7 @@ def build_datasets(station_id: str,
         logging.info(f'- Shapes before subsampling (y_train/y_val/y_test): {y_train.shape}, {y_val.shape}, {y_test.shape}')
         logging.info("Subsampling train data.")
         X_train, y_train = apply_subsampling(X_train, y_train, subsampling_procedure)
-        logging.info("Subsampling val data.")
+        logging.info("Subsampling val data...")
 
         X_val, y_val = apply_subsampling(X_val, y_val, "NEGATIVE")
         logging.info('- Min precipitation values (train/val/test) after subsampling: %.5f, %.5f, %.5f' %
@@ -397,19 +460,22 @@ def build_datasets(station_id: str,
         logging.info('- Max precipitation values (train/val/test) after subsampling: %.5f, %.5f, %.5f' %
             (np.max(y_train), np.max(y_val), np.max(y_test)))
         logging.info(f'- Shapes (y_train/y_val/y_test) after subsampling: {y_train.shape}, {y_val.shape}, {y_test.shape}')
+        logging.info(f'Done!\n')
 
     #
     # Write numpy arrays for train/val/test dataset to a single pickle file
+    logging.info(f'Dumping train/val/test np arrays to pickle file {filename}...')
     logging.info(
         f'Number of examples (train/val/test): {len(X_train)}/{len(X_val)}/{len(X_test)}.')
     filename = globals.DATASETS_DIR + pipeline_id + ".pickle"
-    logging.info(f'Dumping train/val/test np arrays to pickle file {filename}.')
     file = open(filename, 'wb')
     ndarrays = (X_train, y_train, 
                 X_val, y_val, 
                 X_test, y_test)
     pickle.dump(ndarrays, file)
-    logging.info('Done!')
+    logging.info(f'Done!\n')
+    
+    logging.info('Done it all!')
 
 def main(argv):
     parser = argparse.ArgumentParser(
@@ -452,6 +518,7 @@ def main(argv):
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
     logging.basicConfig(level=logging.DEBUG, format = fmt)
 
+    join_goes16_tpw_data_source = False
     join_as_data_source = False
     join_nwp_data_source = False
     join_lightning_data_source = False
@@ -463,9 +530,10 @@ def main(argv):
             join_nwp_data_source = True
         if 'L' in datasources:
             join_lightning_data_source = True
+        if 'T' in datasources:
+            join_goes16_tpw_data_source = True
 
     assert(station_id is not None) and (station_id != "")
-
 
     build_datasets(station_id, 
                    input_folder,
@@ -473,6 +541,7 @@ def main(argv):
                    join_as_data_source, 
                    join_nwp_data_source, 
                    join_lightning_data_source, 
+                   join_goes16_tpw_data_source,
                    subsampling_procedure)
 
 if __name__ == "__main__":

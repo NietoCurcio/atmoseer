@@ -132,6 +132,8 @@ def download_CMI(yyyymmddhhmn, band, path_dest):
         s3_client.download_file(bucket_name, key, f'{path_dest}/{file_name}.nc')
   return f'{file_name}'
 
+s3_client = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+
 #-----------------------------------------------------------------------------------------------------------
 def download_PROD(yyyymmddhhmn, product_name, path_dest):
 
@@ -147,7 +149,8 @@ def download_PROD(yyyymmddhhmn, product_name, path_dest):
   bucket_name = 'noaa-goes16'
 
   # Initializes the S3 client
-  s3_client = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+  # s3_client = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+
   #-----------------------------------------------------------------------------------------------------------
   # File structure
   prefix = f'{product_name}/{year}/{day_of_year}/{hour}/OR_{product_name}-M6_G16_s{year}{day_of_year}{hour}{min}'
