@@ -22,6 +22,9 @@ python src/augment_datasets.py --only_pos -s A652 -p A652 -i A621 A636 A627
 ==========================================
 
 python src/build_datasets.py -s A652 -d T --train_test_threshold "2021-11-30"
+
+python src/build_datasets.py -s A652 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+
 python src/build_datasets.py -s A621 -d R
 python src/build_datasets.py -s A621 -d N
 python src/build_datasets.py -s A602 -d N
@@ -142,3 +145,38 @@ python src/train_model.py -p A652_R_A621_A636_A627 -t BINARY_CLASSIFICATION
 python src/train_model.py -p A652_A621_A636_A627 -t ORDINAL_CLASSIFICATION
 
 python src/train_model.py -p sao_cristovao_tijuca_tijuca_muda_saude_grajau -t ORDINAL_CLASSIFICATION > sao_cristovao_tijuca_tijuca_muda_saude_grajau.txt
+
+
+LAFUSION
+===========
+
+python src/preprocess_ws.py -s A602 > preprocess_A602.out
+python src/preprocess_ws.py -s A621 > preprocess_A621.out
+python src/preprocess_ws.py -s A627 > preprocess_A627.out
+python src/preprocess_ws.py -s A636 > preprocess_A636.out
+python src/preprocess_ws.py -s A652 > preprocess_A652.out
+
+python src/build_datasets.py -s A636 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A621 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A602 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A652 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A627 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+
+python src/build_datasets.py -s A636 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A621 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A602 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A652 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A627 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+
+python src/train_model.py -p A636_T -t BINARY_CLASSIFICATION > A636_T.out
+python src/train_model.py -p A621_T -t BINARY_CLASSIFICATION > A621_T.out
+python src/train_model.py -p A602_T -t BINARY_CLASSIFICATION > A602_T.out
+python src/train_model.py -p A652_T -t BINARY_CLASSIFICATION > A652_T.out
+python src/train_model.py -p A627_T -t BINARY_CLASSIFICATION > A627_T.out
+
+python src/train_model.py -p A602 -t BINARY_CLASSIFICATION > train_model_A602.out
+python src/train_model.py -p A621 -t BINARY_CLASSIFICATION > train_model_A621.out
+python src/train_model.py -p A627 -t BINARY_CLASSIFICATION > train_model_A627.out
+python src/train_model.py -p A636 -t BINARY_CLASSIFICATION > train_model_A636.out
+python src/train_model.py -p A652 -t BINARY_CLASSIFICATION > train_model_A652.out
+

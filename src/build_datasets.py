@@ -273,6 +273,7 @@ def add_user_specified_data_sources(
 
 def build_datasets(station_id: str, 
                    input_folder: str,
+                   train_start_threshold: datetime.datetime,
                    train_test_threshold: datetime.datetime,
                    join_AS_data_source: bool, 
                    join_reanalisys_datasource: bool, 
@@ -304,6 +305,20 @@ def build_datasets(station_id: str,
     logging.info(f"Done! Shape = {df_ws.shape}.\n")
 
     ####
+    # Apply a filtering step, with the purpose of disregarding all observations 
+    # before a user-specified timestamp. This is useful when doing training 
+    # experiments with datasources whose start of operation was AFTER the one 
+    # corresponding to the WSoI.
+    ####
+    if train_start_threshold is not None:
+        logging.info(f"Applying start threshold filtering...")
+        logging.info(f'Timestamp from which examples will be considered: {train_start_threshold}')
+        shape_before_month_filtering = df_ws.shape
+        df_ws = df_ws[df_ws.index >= train_start_threshold]
+        shape_after_month_filtering = df_ws.shape
+        logging.info(f"Done! Shapes before/after: {shape_before_month_filtering}/{shape_after_month_filtering}\n")
+
+    ####
     # Apply a filtering step, with the purpose of disregarding all observations made between  
     # what we consider to be the drought period of a year (months of June, July, and August).
     ####
@@ -326,7 +341,7 @@ def build_datasets(station_id: str,
     #####
     # Now add user-specified data sources.
     #####
-    logging.info(f'Going to add features from specified datasources...')
+    logging.info(f'Going to add features from the user-specified datasources...')
     joined_df = add_user_specified_data_sources(
         station_id, 
         join_AS_data_source, 
@@ -341,7 +356,7 @@ def build_datasets(station_id: str,
     #
     # Save train/val/test DataFrames for future error analisys.
     filename = globals.DATASETS_DIR + pipeline_id + '.parquet.gzip'
-    logging.info(f'Saving joined data source for pipeline {pipeline_id} to file {filename}.')
+    logging.info(f'Saving joined dataset for pipeline {pipeline_id} to file {filename}.')
     joined_df.to_parquet(filename, compression='gzip')
     logging.info(f'Done!\n')
 
@@ -481,7 +496,8 @@ def main(argv):
     parser = argparse.ArgumentParser(
         description="""This script builds the train/val/test datasets for a given weather station, by using the user-specified data sources.""")
     parser.add_argument('-s', '--station_id', type=str, required=True, help='station id')
-    parser.add_argument('-t', '--train_test_threshold', type=str, required=True, help='The limiting date between train and test examples (format: YYYY-MM-DD).')
+    parser.add_argument('-tt', '--train_test_threshold', type=str, required=True, help='The limiting date between train and test examples (format: YYYY-MM-DD).')
+    parser.add_argument('-ts', '--train_start_threshold', type=str, required=False, help='The limiting date from which to consider examples (format: YYYY-MM-DD).')
     parser.add_argument('-d', '--datasources', type=str, help='data source spec')
     parser.add_argument('-sp', '--subsampling_procedure', type=str, default='NONE', help='Subsampling procedure do be applied.')
     args = parser.parse_args(argv[1:])
@@ -490,11 +506,24 @@ def main(argv):
     datasources = args.datasources
     subsampling_procedure = args.subsampling_procedure
 
-    # This is really anonying!
-    if (station_id in globals.ALERTARIO_WEATHER_STATION_IDS or station_id in globals.ALERTARIO_GAUGE_STATION_IDS):
-        train_test_threshold = pd.to_datetime(args.train_test_threshold, utc=True)
-    else:
-        train_test_threshold = pd.to_datetime(args.train_test_threshold)
+    try:
+        if (station_id in globals.ALERTARIO_WEATHER_STATION_IDS or station_id in globals.ALERTARIO_GAUGE_STATION_IDS):
+            train_test_threshold = pd.to_datetime(args.train_test_threshold, utc=True) # This UTC thing is really anonying!
+        else:
+            train_test_threshold = pd.to_datetime(args.train_test_threshold)
+    except ParserError:
+        print(f"Invalid date format: {args.train_test_threshold}.")
+        parser.print_help()
+        sys.exit(2)
+
+    try:
+        train_start_threshold = args.train_start_threshold
+        if  train_start_threshold is not None:
+            train_start_threshold = pd.to_datetime(args.train_start_threshold)
+    except pd.errors.ParserError:
+        print(f"Invalid date format: {args.train_start_threshold}.")
+        parser.print_help()
+        sys.exit(2)
 
     lst_subsampling_procedures = ["NONE", "NAIVE", "NEGATIVE"]
     if not (subsampling_procedure in lst_subsampling_procedures):
@@ -537,6 +566,7 @@ def main(argv):
 
     build_datasets(station_id, 
                    input_folder,
+                   train_start_threshold,
                    train_test_threshold,
                    join_as_data_source, 
                    join_nwp_data_source, 

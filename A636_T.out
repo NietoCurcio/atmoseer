@@ -1,0 +1,3608 @@
+LstmNeuralNet
+Number of features: 10
+Learner: LstmNeuralNet(
+  (feature_extractor): Sequential(
+    (0): LSTM(10, 32, num_layers=2, batch_first=True)
+    (1): extract_tensor()
+    (2): ReLU()
+    (3): Dropout(p=0.5, inplace=False)
+  )
+  (classifier): Sequential(
+    (0): Linear(in_features=96, out_features=50, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=50, out_features=1, bias=True)
+    (3): Sigmoid()
+  )
+)
+Number of features: 10
+- Forecasting task: binary classification.
+(10219, 1)
+(9236,)
+(983,)
+# NO_RAIN records: 9236
+# RAIN records: 983
+(2414, 1)
+(2149,)
+(265,)
+# NO_RAIN records: 2149
+# RAIN records: 265
+<train.binary_classifier.BinaryClassifier object at 0x7f98b4f6f1f0>
+ - Setting up optimizer: Adam (
+Parameter Group 0
+    amsgrad: False
+    betas: (0.9, 0.999)
+    capturable: False
+    eps: 1e-08
+    foreach: None
+    lr: 0.0003
+    maximize: False
+    weight_decay: 0
+)
+ - Creating data loaders.
+torch.Size([10219, 3, 10])
+torch.Size([10219, 1])
+torch.Size([10219, 1])
+torch.Size([2414, 3, 10])
+torch.Size([2414, 1])
+torch.Size([2414, 1])
+ - Moving data and parameters to cuda:0.
+ - Fitting model... [   1/3500] train_loss: 45.96243 valid_loss: 6.15483
+Validation loss decreased (inf --> 6.154831).  Saving model ...
+[   2/3500] train_loss: 45.27079 valid_loss: 5.94434
+Validation loss decreased (6.154831 --> 5.944343).  Saving model ...
+[   3/3500] train_loss: 44.59794 valid_loss: 6.06403
+EarlyStopping counter: 1 out of 1000
+[   4/3500] train_loss: 43.82983 valid_loss: 6.11738
+EarlyStopping counter: 2 out of 1000
+[   5/3500] train_loss: 42.86274 valid_loss: 5.48050
+Validation loss decreased (5.944343 --> 5.480502).  Saving model ...
+[   6/3500] train_loss: 41.64631 valid_loss: 5.72260
+EarlyStopping counter: 1 out of 1000
+[   7/3500] train_loss: 40.05206 valid_loss: 5.03430
+Validation loss decreased (5.480502 --> 5.034299).  Saving model ...
+[   8/3500] train_loss: 37.92703 valid_loss: 4.93846
+Validation loss decreased (5.034299 --> 4.938458).  Saving model ...
+[   9/3500] train_loss: 35.21170 valid_loss: 4.85153
+Validation loss decreased (4.938458 --> 4.851530).  Saving model ...
+[  10/3500] train_loss: 31.85794 valid_loss: 4.03186
+Validation loss decreased (4.851530 --> 4.031860).  Saving model ...
+[  11/3500] train_loss: 28.30709 valid_loss: 3.67151
+Validation loss decreased (4.031860 --> 3.671514).  Saving model ...
+[  12/3500] train_loss: 25.39238 valid_loss: 3.38662
+Validation loss decreased (3.671514 --> 3.386619).  Saving model ...
+[  13/3500] train_loss: 23.89568 valid_loss: 3.46104
+EarlyStopping counter: 1 out of 1000
+[  14/3500] train_loss: 23.65910 valid_loss: 3.70039
+EarlyStopping counter: 2 out of 1000
+[  15/3500] train_loss: 23.55692 valid_loss: 3.45511
+EarlyStopping counter: 3 out of 1000
+[  16/3500] train_loss: 23.24830 valid_loss: 3.39305
+EarlyStopping counter: 4 out of 1000
+[  17/3500] train_loss: 23.33767 valid_loss: 3.70076
+EarlyStopping counter: 5 out of 1000
+[  18/3500] train_loss: 23.23735 valid_loss: 3.27911
+Validation loss decreased (3.386619 --> 3.279106).  Saving model ...
+[  19/3500] train_loss: 23.09942 valid_loss: 3.17135
+Validation loss decreased (3.279106 --> 3.171354).  Saving model ...
+[  20/3500] train_loss: 22.97986 valid_loss: 3.18449
+EarlyStopping counter: 1 out of 1000
+[  21/3500] train_loss: 22.81438 valid_loss: 3.22990
+EarlyStopping counter: 2 out of 1000
+[  22/3500] train_loss: 22.58639 valid_loss: 3.40603
+EarlyStopping counter: 3 out of 1000
+[  23/3500] train_loss: 22.53990 valid_loss: 3.31239
+EarlyStopping counter: 4 out of 1000
+[  24/3500] train_loss: 22.33318 valid_loss: 3.39705
+EarlyStopping counter: 5 out of 1000
+[  25/3500] train_loss: 22.09306 valid_loss: 3.02797
+Validation loss decreased (3.171354 --> 3.027972).  Saving model ...
+[  26/3500] train_loss: 21.78055 valid_loss: 3.17928
+EarlyStopping counter: 1 out of 1000
+[  27/3500] train_loss: 21.52822 valid_loss: 3.04837
+EarlyStopping counter: 2 out of 1000
+[  28/3500] train_loss: 21.26398 valid_loss: 3.46990
+EarlyStopping counter: 3 out of 1000
+[  29/3500] train_loss: 20.83722 valid_loss: 3.01029
+Validation loss decreased (3.027972 --> 3.010289).  Saving model ...
+[  30/3500] train_loss: 20.51928 valid_loss: 2.91352
+Validation loss decreased (3.010289 --> 2.913516).  Saving model ...
+[  31/3500] train_loss: 20.20348 valid_loss: 3.02860
+EarlyStopping counter: 1 out of 1000
+[  32/3500] train_loss: 19.69800 valid_loss: 2.83967
+Validation loss decreased (2.913516 --> 2.839670).  Saving model ...
+[  33/3500] train_loss: 19.41218 valid_loss: 2.97015
+EarlyStopping counter: 1 out of 1000
+[  34/3500] train_loss: 19.18050 valid_loss: 2.79781
+Validation loss decreased (2.839670 --> 2.797809).  Saving model ...
+[  35/3500] train_loss: 19.09669 valid_loss: 2.88712
+EarlyStopping counter: 1 out of 1000
+[  36/3500] train_loss: 18.85738 valid_loss: 2.67166
+Validation loss decreased (2.797809 --> 2.671660).  Saving model ...
+[  37/3500] train_loss: 18.81714 valid_loss: 2.67928
+EarlyStopping counter: 1 out of 1000
+[  38/3500] train_loss: 18.65697 valid_loss: 2.75391
+EarlyStopping counter: 2 out of 1000
+[  39/3500] train_loss: 18.60139 valid_loss: 2.71586
+EarlyStopping counter: 3 out of 1000
+[  40/3500] train_loss: 18.41589 valid_loss: 2.58893
+Validation loss decreased (2.671660 --> 2.588931).  Saving model ...
+[  41/3500] train_loss: 18.44045 valid_loss: 2.60339
+EarlyStopping counter: 1 out of 1000
+[  42/3500] train_loss: 18.51796 valid_loss: 2.79995
+EarlyStopping counter: 2 out of 1000
+[  43/3500] train_loss: 18.28769 valid_loss: 2.52634
+Validation loss decreased (2.588931 --> 2.526336).  Saving model ...
+[  44/3500] train_loss: 18.24303 valid_loss: 2.63861
+EarlyStopping counter: 1 out of 1000
+[  45/3500] train_loss: 18.07495 valid_loss: 2.56759
+EarlyStopping counter: 2 out of 1000
+[  46/3500] train_loss: 18.04772 valid_loss: 2.76607
+EarlyStopping counter: 3 out of 1000
+[  47/3500] train_loss: 17.90510 valid_loss: 2.52537
+Validation loss decreased (2.526336 --> 2.525374).  Saving model ...
+[  48/3500] train_loss: 17.87847 valid_loss: 2.72588
+EarlyStopping counter: 1 out of 1000
+[  49/3500] train_loss: 17.74933 valid_loss: 2.81647
+EarlyStopping counter: 2 out of 1000
+[  50/3500] train_loss: 17.74672 valid_loss: 2.46300
+Validation loss decreased (2.525374 --> 2.462998).  Saving model ...
+[  51/3500] train_loss: 17.70941 valid_loss: 2.50449
+EarlyStopping counter: 1 out of 1000
+[  52/3500] train_loss: 17.68904 valid_loss: 2.69670
+EarlyStopping counter: 2 out of 1000
+[  53/3500] train_loss: 17.55325 valid_loss: 2.95654
+EarlyStopping counter: 3 out of 1000
+[  54/3500] train_loss: 17.38088 valid_loss: 2.42967
+Validation loss decreased (2.462998 --> 2.429673).  Saving model ...
+[  55/3500] train_loss: 17.37791 valid_loss: 2.43777
+EarlyStopping counter: 1 out of 1000
+[  56/3500] train_loss: 17.27653 valid_loss: 2.76551
+EarlyStopping counter: 2 out of 1000
+[  57/3500] train_loss: 17.29760 valid_loss: 2.79172
+EarlyStopping counter: 3 out of 1000
+[  58/3500] train_loss: 17.18149 valid_loss: 2.54819
+EarlyStopping counter: 4 out of 1000
+[  59/3500] train_loss: 17.09445 valid_loss: 2.56571
+EarlyStopping counter: 5 out of 1000
+[  60/3500] train_loss: 17.17138 valid_loss: 2.62008
+EarlyStopping counter: 6 out of 1000
+[  61/3500] train_loss: 17.08535 valid_loss: 2.94840
+EarlyStopping counter: 7 out of 1000
+[  62/3500] train_loss: 17.05787 valid_loss: 2.39956
+Validation loss decreased (2.429673 --> 2.399558).  Saving model ...
+[  63/3500] train_loss: 16.91810 valid_loss: 2.43400
+EarlyStopping counter: 1 out of 1000
+[  64/3500] train_loss: 16.86528 valid_loss: 2.33567
+Validation loss decreased (2.399558 --> 2.335672).  Saving model ...
+[  65/3500] train_loss: 16.93380 valid_loss: 2.57227
+EarlyStopping counter: 1 out of 1000
+[  66/3500] train_loss: 16.99267 valid_loss: 2.48733
+EarlyStopping counter: 2 out of 1000
+[  67/3500] train_loss: 16.95366 valid_loss: 2.52908
+EarlyStopping counter: 3 out of 1000
+[  68/3500] train_loss: 16.88928 valid_loss: 2.37870
+EarlyStopping counter: 4 out of 1000
+[  69/3500] train_loss: 16.87313 valid_loss: 2.58524
+EarlyStopping counter: 5 out of 1000
+[  70/3500] train_loss: 16.79139 valid_loss: 2.47357
+EarlyStopping counter: 6 out of 1000
+[  71/3500] train_loss: 16.84335 valid_loss: 2.61371
+EarlyStopping counter: 7 out of 1000
+[  72/3500] train_loss: 16.60342 valid_loss: 2.41860
+EarlyStopping counter: 8 out of 1000
+[  73/3500] train_loss: 16.77791 valid_loss: 2.45944
+EarlyStopping counter: 9 out of 1000
+[  74/3500] train_loss: 16.70690 valid_loss: 2.47587
+EarlyStopping counter: 10 out of 1000
+[  75/3500] train_loss: 16.70468 valid_loss: 2.39091
+EarlyStopping counter: 11 out of 1000
+[  76/3500] train_loss: 16.57209 valid_loss: 2.60228
+EarlyStopping counter: 12 out of 1000
+[  77/3500] train_loss: 16.67468 valid_loss: 2.61872
+EarlyStopping counter: 13 out of 1000
+[  78/3500] train_loss: 16.64901 valid_loss: 2.52465
+EarlyStopping counter: 14 out of 1000
+[  79/3500] train_loss: 16.59766 valid_loss: 2.52293
+EarlyStopping counter: 15 out of 1000
+[  80/3500] train_loss: 16.52325 valid_loss: 2.70045
+EarlyStopping counter: 16 out of 1000
+[  81/3500] train_loss: 16.48642 valid_loss: 2.58773
+EarlyStopping counter: 17 out of 1000
+[  82/3500] train_loss: 16.51252 valid_loss: 2.30741
+Validation loss decreased (2.335672 --> 2.307413).  Saving model ...
+[  83/3500] train_loss: 16.63347 valid_loss: 2.40112
+EarlyStopping counter: 1 out of 1000
+[  84/3500] train_loss: 16.50623 valid_loss: 2.37552
+EarlyStopping counter: 2 out of 1000
+[  85/3500] train_loss: 16.43175 valid_loss: 2.75427
+EarlyStopping counter: 3 out of 1000
+[  86/3500] train_loss: 16.42372 valid_loss: 2.52660
+EarlyStopping counter: 4 out of 1000
+[  87/3500] train_loss: 16.49172 valid_loss: 2.44246
+EarlyStopping counter: 5 out of 1000
+[  88/3500] train_loss: 16.29210 valid_loss: 2.31898
+EarlyStopping counter: 6 out of 1000
+[  89/3500] train_loss: 16.38924 valid_loss: 2.48222
+EarlyStopping counter: 7 out of 1000
+[  90/3500] train_loss: 16.40739 valid_loss: 2.45314
+EarlyStopping counter: 8 out of 1000
+[  91/3500] train_loss: 16.41212 valid_loss: 2.78576
+EarlyStopping counter: 9 out of 1000
+[  92/3500] train_loss: 16.29207 valid_loss: 2.32228
+EarlyStopping counter: 10 out of 1000
+[  93/3500] train_loss: 16.31175 valid_loss: 2.31312
+EarlyStopping counter: 11 out of 1000
+[  94/3500] train_loss: 16.58130 valid_loss: 2.50078
+EarlyStopping counter: 12 out of 1000
+[  95/3500] train_loss: 16.38671 valid_loss: 2.61425
+EarlyStopping counter: 13 out of 1000
+[  96/3500] train_loss: 16.24515 valid_loss: 2.27955
+Validation loss decreased (2.307413 --> 2.279553).  Saving model ...
+[  97/3500] train_loss: 16.22914 valid_loss: 2.34714
+EarlyStopping counter: 1 out of 1000
+[  98/3500] train_loss: 16.10540 valid_loss: 2.29025
+EarlyStopping counter: 2 out of 1000
+[  99/3500] train_loss: 16.23742 valid_loss: 2.49570
+EarlyStopping counter: 3 out of 1000
+[ 100/3500] train_loss: 16.22508 valid_loss: 2.41909
+EarlyStopping counter: 4 out of 1000
+[ 101/3500] train_loss: 16.28310 valid_loss: 2.48361
+EarlyStopping counter: 5 out of 1000
+[ 102/3500] train_loss: 16.11254 valid_loss: 2.43514
+EarlyStopping counter: 6 out of 1000
+[ 103/3500] train_loss: 16.23067 valid_loss: 2.35505
+EarlyStopping counter: 7 out of 1000
+[ 104/3500] train_loss: 16.07176 valid_loss: 2.26250
+Validation loss decreased (2.279553 --> 2.262500).  Saving model ...
+[ 105/3500] train_loss: 16.06823 valid_loss: 2.41719
+EarlyStopping counter: 1 out of 1000
+[ 106/3500] train_loss: 16.04899 valid_loss: 2.33440
+EarlyStopping counter: 2 out of 1000
+[ 107/3500] train_loss: 16.01401 valid_loss: 2.37529
+EarlyStopping counter: 3 out of 1000
+[ 108/3500] train_loss: 16.03461 valid_loss: 2.59821
+EarlyStopping counter: 4 out of 1000
+[ 109/3500] train_loss: 16.07234 valid_loss: 2.39563
+EarlyStopping counter: 5 out of 1000
+[ 110/3500] train_loss: 16.02491 valid_loss: 2.53186
+EarlyStopping counter: 6 out of 1000
+[ 111/3500] train_loss: 16.04525 valid_loss: 2.29801
+EarlyStopping counter: 7 out of 1000
+[ 112/3500] train_loss: 16.05376 valid_loss: 2.30388
+EarlyStopping counter: 8 out of 1000
+[ 113/3500] train_loss: 16.03681 valid_loss: 2.28657
+EarlyStopping counter: 9 out of 1000
+[ 114/3500] train_loss: 15.92620 valid_loss: 2.44187
+EarlyStopping counter: 10 out of 1000
+[ 115/3500] train_loss: 15.88066 valid_loss: 2.51363
+EarlyStopping counter: 11 out of 1000
+[ 116/3500] train_loss: 16.00742 valid_loss: 2.27638
+EarlyStopping counter: 12 out of 1000
+[ 117/3500] train_loss: 15.82733 valid_loss: 2.34880
+EarlyStopping counter: 13 out of 1000
+[ 118/3500] train_loss: 15.84760 valid_loss: 2.30934
+EarlyStopping counter: 14 out of 1000
+[ 119/3500] train_loss: 15.68097 valid_loss: 2.24409
+Validation loss decreased (2.262500 --> 2.244093).  Saving model ...
+[ 120/3500] train_loss: 15.83796 valid_loss: 2.62234
+EarlyStopping counter: 1 out of 1000
+[ 121/3500] train_loss: 15.79549 valid_loss: 2.16906
+Validation loss decreased (2.244093 --> 2.169058).  Saving model ...
+[ 122/3500] train_loss: 15.70518 valid_loss: 2.20407
+EarlyStopping counter: 1 out of 1000
+[ 123/3500] train_loss: 15.66724 valid_loss: 2.29501
+EarlyStopping counter: 2 out of 1000
+[ 124/3500] train_loss: 15.70341 valid_loss: 2.32340
+EarlyStopping counter: 3 out of 1000
+[ 125/3500] train_loss: 15.70892 valid_loss: 2.22983
+EarlyStopping counter: 4 out of 1000
+[ 126/3500] train_loss: 15.63252 valid_loss: 2.10956
+Validation loss decreased (2.169058 --> 2.109558).  Saving model ...
+[ 127/3500] train_loss: 15.70842 valid_loss: 2.34791
+EarlyStopping counter: 1 out of 1000
+[ 128/3500] train_loss: 15.69388 valid_loss: 2.20117
+EarlyStopping counter: 2 out of 1000
+[ 129/3500] train_loss: 15.61953 valid_loss: 2.25580
+EarlyStopping counter: 3 out of 1000
+[ 130/3500] train_loss: 15.66090 valid_loss: 2.17246
+EarlyStopping counter: 4 out of 1000
+[ 131/3500] train_loss: 15.71067 valid_loss: 2.30778
+EarlyStopping counter: 5 out of 1000
+[ 132/3500] train_loss: 15.40127 valid_loss: 2.38451
+EarlyStopping counter: 6 out of 1000
+[ 133/3500] train_loss: 15.54283 valid_loss: 2.37804
+EarlyStopping counter: 7 out of 1000
+[ 134/3500] train_loss: 15.37638 valid_loss: 2.43390
+EarlyStopping counter: 8 out of 1000
+[ 135/3500] train_loss: 15.45155 valid_loss: 2.31547
+EarlyStopping counter: 9 out of 1000
+[ 136/3500] train_loss: 15.36006 valid_loss: 2.16570
+EarlyStopping counter: 10 out of 1000
+[ 137/3500] train_loss: 15.54262 valid_loss: 2.22174
+EarlyStopping counter: 11 out of 1000
+[ 138/3500] train_loss: 15.43928 valid_loss: 2.09392
+Validation loss decreased (2.109558 --> 2.093919).  Saving model ...
+[ 139/3500] train_loss: 15.35311 valid_loss: 2.22884
+EarlyStopping counter: 1 out of 1000
+[ 140/3500] train_loss: 15.39034 valid_loss: 2.21872
+EarlyStopping counter: 2 out of 1000
+[ 141/3500] train_loss: 15.37264 valid_loss: 2.20242
+EarlyStopping counter: 3 out of 1000
+[ 142/3500] train_loss: 15.33713 valid_loss: 2.26193
+EarlyStopping counter: 4 out of 1000
+[ 143/3500] train_loss: 15.37726 valid_loss: 2.29134
+EarlyStopping counter: 5 out of 1000
+[ 144/3500] train_loss: 15.26490 valid_loss: 2.06760
+Validation loss decreased (2.093919 --> 2.067596).  Saving model ...
+[ 145/3500] train_loss: 15.21698 valid_loss: 2.20781
+EarlyStopping counter: 1 out of 1000
+[ 146/3500] train_loss: 15.27954 valid_loss: 2.17505
+EarlyStopping counter: 2 out of 1000
+[ 147/3500] train_loss: 15.36233 valid_loss: 2.23154
+EarlyStopping counter: 3 out of 1000
+[ 148/3500] train_loss: 15.25681 valid_loss: 2.22336
+EarlyStopping counter: 4 out of 1000
+[ 149/3500] train_loss: 15.26306 valid_loss: 2.33667
+EarlyStopping counter: 5 out of 1000
+[ 150/3500] train_loss: 15.18933 valid_loss: 2.16255
+EarlyStopping counter: 6 out of 1000
+[ 151/3500] train_loss: 15.10599 valid_loss: 2.17740
+EarlyStopping counter: 7 out of 1000
+[ 152/3500] train_loss: 15.13632 valid_loss: 2.04048
+Validation loss decreased (2.067596 --> 2.040480).  Saving model ...
+[ 153/3500] train_loss: 15.06994 valid_loss: 2.25910
+EarlyStopping counter: 1 out of 1000
+[ 154/3500] train_loss: 15.19995 valid_loss: 2.12054
+EarlyStopping counter: 2 out of 1000
+[ 155/3500] train_loss: 15.20433 valid_loss: 2.02423
+Validation loss decreased (2.040480 --> 2.024227).  Saving model ...
+[ 156/3500] train_loss: 15.02709 valid_loss: 2.07931
+EarlyStopping counter: 1 out of 1000
+[ 157/3500] train_loss: 15.00378 valid_loss: 2.16906
+EarlyStopping counter: 2 out of 1000
+[ 158/3500] train_loss: 15.11347 valid_loss: 2.10835
+EarlyStopping counter: 3 out of 1000
+[ 159/3500] train_loss: 15.03522 valid_loss: 2.16888
+EarlyStopping counter: 4 out of 1000
+[ 160/3500] train_loss: 15.01690 valid_loss: 1.94453
+Validation loss decreased (2.024227 --> 1.944527).  Saving model ...
+[ 161/3500] train_loss: 14.96498 valid_loss: 1.94056
+Validation loss decreased (1.944527 --> 1.940563).  Saving model ...
+[ 162/3500] train_loss: 15.01084 valid_loss: 2.23048
+EarlyStopping counter: 1 out of 1000
+[ 163/3500] train_loss: 15.01160 valid_loss: 2.19511
+EarlyStopping counter: 2 out of 1000
+[ 164/3500] train_loss: 15.05247 valid_loss: 2.12073
+EarlyStopping counter: 3 out of 1000
+[ 165/3500] train_loss: 14.95171 valid_loss: 2.08475
+EarlyStopping counter: 4 out of 1000
+[ 166/3500] train_loss: 14.94874 valid_loss: 2.12302
+EarlyStopping counter: 5 out of 1000
+[ 167/3500] train_loss: 14.99486 valid_loss: 2.19330
+EarlyStopping counter: 6 out of 1000
+[ 168/3500] train_loss: 14.97888 valid_loss: 2.19653
+EarlyStopping counter: 7 out of 1000
+[ 169/3500] train_loss: 14.93086 valid_loss: 2.03327
+EarlyStopping counter: 8 out of 1000
+[ 170/3500] train_loss: 14.93850 valid_loss: 2.07299
+EarlyStopping counter: 9 out of 1000
+[ 171/3500] train_loss: 14.92348 valid_loss: 2.11822
+EarlyStopping counter: 10 out of 1000
+[ 172/3500] train_loss: 14.85497 valid_loss: 2.14414
+EarlyStopping counter: 11 out of 1000
+[ 173/3500] train_loss: 14.84500 valid_loss: 2.15237
+EarlyStopping counter: 12 out of 1000
+[ 174/3500] train_loss: 15.02080 valid_loss: 2.10625
+EarlyStopping counter: 13 out of 1000
+[ 175/3500] train_loss: 15.03244 valid_loss: 2.23032
+EarlyStopping counter: 14 out of 1000
+[ 176/3500] train_loss: 14.79391 valid_loss: 2.12304
+EarlyStopping counter: 15 out of 1000
+[ 177/3500] train_loss: 14.85157 valid_loss: 2.53177
+EarlyStopping counter: 16 out of 1000
+[ 178/3500] train_loss: 14.75735 valid_loss: 2.11846
+EarlyStopping counter: 17 out of 1000
+[ 179/3500] train_loss: 14.74866 valid_loss: 2.07102
+EarlyStopping counter: 18 out of 1000
+[ 180/3500] train_loss: 14.79452 valid_loss: 2.11981
+EarlyStopping counter: 19 out of 1000
+[ 181/3500] train_loss: 14.83601 valid_loss: 2.05455
+EarlyStopping counter: 20 out of 1000
+[ 182/3500] train_loss: 14.73257 valid_loss: 2.02585
+EarlyStopping counter: 21 out of 1000
+[ 183/3500] train_loss: 14.73524 valid_loss: 2.10148
+EarlyStopping counter: 22 out of 1000
+[ 184/3500] train_loss: 14.82591 valid_loss: 2.04662
+EarlyStopping counter: 23 out of 1000
+[ 185/3500] train_loss: 14.74336 valid_loss: 2.06956
+EarlyStopping counter: 24 out of 1000
+[ 186/3500] train_loss: 14.62183 valid_loss: 2.04592
+EarlyStopping counter: 25 out of 1000
+[ 187/3500] train_loss: 14.76006 valid_loss: 2.08416
+EarlyStopping counter: 26 out of 1000
+[ 188/3500] train_loss: 14.78947 valid_loss: 2.21550
+EarlyStopping counter: 27 out of 1000
+[ 189/3500] train_loss: 14.75307 valid_loss: 2.16444
+EarlyStopping counter: 28 out of 1000
+[ 190/3500] train_loss: 14.66815 valid_loss: 2.07916
+EarlyStopping counter: 29 out of 1000
+[ 191/3500] train_loss: 14.57685 valid_loss: 2.04463
+EarlyStopping counter: 30 out of 1000
+[ 192/3500] train_loss: 14.54530 valid_loss: 2.21664
+EarlyStopping counter: 31 out of 1000
+[ 193/3500] train_loss: 14.57009 valid_loss: 2.15501
+EarlyStopping counter: 32 out of 1000
+[ 194/3500] train_loss: 14.59712 valid_loss: 2.05862
+EarlyStopping counter: 33 out of 1000
+[ 195/3500] train_loss: 14.47337 valid_loss: 1.95890
+EarlyStopping counter: 34 out of 1000
+[ 196/3500] train_loss: 14.74828 valid_loss: 2.02210
+EarlyStopping counter: 35 out of 1000
+[ 197/3500] train_loss: 14.63637 valid_loss: 2.03967
+EarlyStopping counter: 36 out of 1000
+[ 198/3500] train_loss: 14.61442 valid_loss: 2.19539
+EarlyStopping counter: 37 out of 1000
+[ 199/3500] train_loss: 14.53468 valid_loss: 2.05527
+EarlyStopping counter: 38 out of 1000
+[ 200/3500] train_loss: 14.62830 valid_loss: 1.96503
+EarlyStopping counter: 39 out of 1000
+[ 201/3500] train_loss: 14.43316 valid_loss: 2.04031
+EarlyStopping counter: 40 out of 1000
+[ 202/3500] train_loss: 14.63352 valid_loss: 2.18787
+EarlyStopping counter: 41 out of 1000
+[ 203/3500] train_loss: 14.57100 valid_loss: 1.85146
+Validation loss decreased (1.940563 --> 1.851462).  Saving model ...
+[ 204/3500] train_loss: 14.59684 valid_loss: 1.94872
+EarlyStopping counter: 1 out of 1000
+[ 205/3500] train_loss: 14.62052 valid_loss: 2.08873
+EarlyStopping counter: 2 out of 1000
+[ 206/3500] train_loss: 14.41878 valid_loss: 2.04586
+EarlyStopping counter: 3 out of 1000
+[ 207/3500] train_loss: 14.51874 valid_loss: 2.06132
+EarlyStopping counter: 4 out of 1000
+[ 208/3500] train_loss: 14.50481 valid_loss: 2.22882
+EarlyStopping counter: 5 out of 1000
+[ 209/3500] train_loss: 14.48558 valid_loss: 2.05366
+EarlyStopping counter: 6 out of 1000
+[ 210/3500] train_loss: 14.37375 valid_loss: 2.03365
+EarlyStopping counter: 7 out of 1000
+[ 211/3500] train_loss: 14.66567 valid_loss: 1.90064
+EarlyStopping counter: 8 out of 1000
+[ 212/3500] train_loss: 14.52386 valid_loss: 2.10526
+EarlyStopping counter: 9 out of 1000
+[ 213/3500] train_loss: 14.49007 valid_loss: 1.91557
+EarlyStopping counter: 10 out of 1000
+[ 214/3500] train_loss: 14.38660 valid_loss: 2.23894
+EarlyStopping counter: 11 out of 1000
+[ 215/3500] train_loss: 14.36323 valid_loss: 2.05156
+EarlyStopping counter: 12 out of 1000
+[ 216/3500] train_loss: 14.44522 valid_loss: 2.18335
+EarlyStopping counter: 13 out of 1000
+[ 217/3500] train_loss: 14.45904 valid_loss: 1.96910
+EarlyStopping counter: 14 out of 1000
+[ 218/3500] train_loss: 14.45732 valid_loss: 2.15769
+EarlyStopping counter: 15 out of 1000
+[ 219/3500] train_loss: 14.35683 valid_loss: 1.92464
+EarlyStopping counter: 16 out of 1000
+[ 220/3500] train_loss: 14.34668 valid_loss: 2.17758
+EarlyStopping counter: 17 out of 1000
+[ 221/3500] train_loss: 14.25997 valid_loss: 2.14526
+EarlyStopping counter: 18 out of 1000
+[ 222/3500] train_loss: 14.39937 valid_loss: 1.93532
+EarlyStopping counter: 19 out of 1000
+[ 223/3500] train_loss: 14.15211 valid_loss: 2.09009
+EarlyStopping counter: 20 out of 1000
+[ 224/3500] train_loss: 14.28839 valid_loss: 2.17690
+EarlyStopping counter: 21 out of 1000
+[ 225/3500] train_loss: 14.29442 valid_loss: 2.05274
+EarlyStopping counter: 22 out of 1000
+[ 226/3500] train_loss: 14.34056 valid_loss: 1.97610
+EarlyStopping counter: 23 out of 1000
+[ 227/3500] train_loss: 14.11894 valid_loss: 2.04339
+EarlyStopping counter: 24 out of 1000
+[ 228/3500] train_loss: 14.26686 valid_loss: 1.86240
+EarlyStopping counter: 25 out of 1000
+[ 229/3500] train_loss: 14.31351 valid_loss: 1.96169
+EarlyStopping counter: 26 out of 1000
+[ 230/3500] train_loss: 14.19602 valid_loss: 2.05872
+EarlyStopping counter: 27 out of 1000
+[ 231/3500] train_loss: 14.13705 valid_loss: 2.01305
+EarlyStopping counter: 28 out of 1000
+[ 232/3500] train_loss: 14.41335 valid_loss: 2.08563
+EarlyStopping counter: 29 out of 1000
+[ 233/3500] train_loss: 14.23524 valid_loss: 2.03645
+EarlyStopping counter: 30 out of 1000
+[ 234/3500] train_loss: 14.24339 valid_loss: 1.80958
+Validation loss decreased (1.851462 --> 1.809583).  Saving model ...
+[ 235/3500] train_loss: 14.17773 valid_loss: 2.04314
+EarlyStopping counter: 1 out of 1000
+[ 236/3500] train_loss: 14.05802 valid_loss: 2.02727
+EarlyStopping counter: 2 out of 1000
+[ 237/3500] train_loss: 14.18480 valid_loss: 2.06920
+EarlyStopping counter: 3 out of 1000
+[ 238/3500] train_loss: 14.23701 valid_loss: 1.98689
+EarlyStopping counter: 4 out of 1000
+[ 239/3500] train_loss: 14.21516 valid_loss: 1.87906
+EarlyStopping counter: 5 out of 1000
+[ 240/3500] train_loss: 14.19028 valid_loss: 1.85734
+EarlyStopping counter: 6 out of 1000
+[ 241/3500] train_loss: 13.97698 valid_loss: 1.97571
+EarlyStopping counter: 7 out of 1000
+[ 242/3500] train_loss: 14.19319 valid_loss: 1.91047
+EarlyStopping counter: 8 out of 1000
+[ 243/3500] train_loss: 14.26038 valid_loss: 1.95411
+EarlyStopping counter: 9 out of 1000
+[ 244/3500] train_loss: 14.12568 valid_loss: 2.05872
+EarlyStopping counter: 10 out of 1000
+[ 245/3500] train_loss: 14.00898 valid_loss: 2.06661
+EarlyStopping counter: 11 out of 1000
+[ 246/3500] train_loss: 14.15275 valid_loss: 1.99572
+EarlyStopping counter: 12 out of 1000
+[ 247/3500] train_loss: 14.07775 valid_loss: 1.98634
+EarlyStopping counter: 13 out of 1000
+[ 248/3500] train_loss: 14.04302 valid_loss: 2.19351
+EarlyStopping counter: 14 out of 1000
+[ 249/3500] train_loss: 14.05550 valid_loss: 1.98722
+EarlyStopping counter: 15 out of 1000
+[ 250/3500] train_loss: 14.10103 valid_loss: 2.01359
+EarlyStopping counter: 16 out of 1000
+[ 251/3500] train_loss: 13.97623 valid_loss: 1.92925
+EarlyStopping counter: 17 out of 1000
+[ 252/3500] train_loss: 14.03743 valid_loss: 2.12965
+EarlyStopping counter: 18 out of 1000
+[ 253/3500] train_loss: 14.08573 valid_loss: 2.10781
+EarlyStopping counter: 19 out of 1000
+[ 254/3500] train_loss: 14.01057 valid_loss: 2.12192
+EarlyStopping counter: 20 out of 1000
+[ 255/3500] train_loss: 14.11057 valid_loss: 1.88075
+EarlyStopping counter: 21 out of 1000
+[ 256/3500] train_loss: 13.91778 valid_loss: 1.91516
+EarlyStopping counter: 22 out of 1000
+[ 257/3500] train_loss: 13.97158 valid_loss: 1.90830
+EarlyStopping counter: 23 out of 1000
+[ 258/3500] train_loss: 13.92360 valid_loss: 1.90897
+EarlyStopping counter: 24 out of 1000
+[ 259/3500] train_loss: 14.12196 valid_loss: 2.05219
+EarlyStopping counter: 25 out of 1000
+[ 260/3500] train_loss: 13.87517 valid_loss: 1.86133
+EarlyStopping counter: 26 out of 1000
+[ 261/3500] train_loss: 14.14259 valid_loss: 1.99239
+EarlyStopping counter: 27 out of 1000
+[ 262/3500] train_loss: 14.22355 valid_loss: 1.86883
+EarlyStopping counter: 28 out of 1000
+[ 263/3500] train_loss: 14.08988 valid_loss: 1.97535
+EarlyStopping counter: 29 out of 1000
+[ 264/3500] train_loss: 13.91156 valid_loss: 2.18001
+EarlyStopping counter: 30 out of 1000
+[ 265/3500] train_loss: 13.97333 valid_loss: 1.76194
+Validation loss decreased (1.809583 --> 1.761941).  Saving model ...
+[ 266/3500] train_loss: 13.88945 valid_loss: 2.00202
+EarlyStopping counter: 1 out of 1000
+[ 267/3500] train_loss: 13.98797 valid_loss: 2.14040
+EarlyStopping counter: 2 out of 1000
+[ 268/3500] train_loss: 13.96196 valid_loss: 1.84748
+EarlyStopping counter: 3 out of 1000
+[ 269/3500] train_loss: 14.03437 valid_loss: 2.00714
+EarlyStopping counter: 4 out of 1000
+[ 270/3500] train_loss: 13.90225 valid_loss: 1.81700
+EarlyStopping counter: 5 out of 1000
+[ 271/3500] train_loss: 13.79138 valid_loss: 2.00865
+EarlyStopping counter: 6 out of 1000
+[ 272/3500] train_loss: 13.79405 valid_loss: 2.13621
+EarlyStopping counter: 7 out of 1000
+[ 273/3500] train_loss: 13.90575 valid_loss: 1.97587
+EarlyStopping counter: 8 out of 1000
+[ 274/3500] train_loss: 13.74470 valid_loss: 2.17346
+EarlyStopping counter: 9 out of 1000
+[ 275/3500] train_loss: 13.74750 valid_loss: 1.87196
+EarlyStopping counter: 10 out of 1000
+[ 276/3500] train_loss: 13.93676 valid_loss: 1.89735
+EarlyStopping counter: 11 out of 1000
+[ 277/3500] train_loss: 13.78403 valid_loss: 2.21609
+EarlyStopping counter: 12 out of 1000
+[ 278/3500] train_loss: 13.95902 valid_loss: 1.92205
+EarlyStopping counter: 13 out of 1000
+[ 279/3500] train_loss: 13.79461 valid_loss: 1.93711
+EarlyStopping counter: 14 out of 1000
+[ 280/3500] train_loss: 13.77051 valid_loss: 2.07368
+EarlyStopping counter: 15 out of 1000
+[ 281/3500] train_loss: 13.87057 valid_loss: 1.84377
+EarlyStopping counter: 16 out of 1000
+[ 282/3500] train_loss: 13.85998 valid_loss: 1.99698
+EarlyStopping counter: 17 out of 1000
+[ 283/3500] train_loss: 13.74757 valid_loss: 1.95728
+EarlyStopping counter: 18 out of 1000
+[ 284/3500] train_loss: 13.85303 valid_loss: 1.95987
+EarlyStopping counter: 19 out of 1000
+[ 285/3500] train_loss: 13.80379 valid_loss: 2.01928
+EarlyStopping counter: 20 out of 1000
+[ 286/3500] train_loss: 13.69938 valid_loss: 1.93986
+EarlyStopping counter: 21 out of 1000
+[ 287/3500] train_loss: 13.90359 valid_loss: 1.93343
+EarlyStopping counter: 22 out of 1000
+[ 288/3500] train_loss: 13.72379 valid_loss: 1.77177
+EarlyStopping counter: 23 out of 1000
+[ 289/3500] train_loss: 13.71720 valid_loss: 1.97609
+EarlyStopping counter: 24 out of 1000
+[ 290/3500] train_loss: 13.79305 valid_loss: 1.98147
+EarlyStopping counter: 25 out of 1000
+[ 291/3500] train_loss: 13.84496 valid_loss: 1.74505
+Validation loss decreased (1.761941 --> 1.745054).  Saving model ...
+[ 292/3500] train_loss: 13.78126 valid_loss: 1.97688
+EarlyStopping counter: 1 out of 1000
+[ 293/3500] train_loss: 13.83793 valid_loss: 1.98839
+EarlyStopping counter: 2 out of 1000
+[ 294/3500] train_loss: 13.70266 valid_loss: 1.91703
+EarlyStopping counter: 3 out of 1000
+[ 295/3500] train_loss: 13.77086 valid_loss: 1.95835
+EarlyStopping counter: 4 out of 1000
+[ 296/3500] train_loss: 13.59380 valid_loss: 1.90549
+EarlyStopping counter: 5 out of 1000
+[ 297/3500] train_loss: 13.78766 valid_loss: 1.83637
+EarlyStopping counter: 6 out of 1000
+[ 298/3500] train_loss: 13.60778 valid_loss: 1.86868
+EarlyStopping counter: 7 out of 1000
+[ 299/3500] train_loss: 13.71984 valid_loss: 1.90510
+EarlyStopping counter: 8 out of 1000
+[ 300/3500] train_loss: 13.64439 valid_loss: 1.92811
+EarlyStopping counter: 9 out of 1000
+[ 301/3500] train_loss: 13.72164 valid_loss: 1.94171
+EarlyStopping counter: 10 out of 1000
+[ 302/3500] train_loss: 13.92450 valid_loss: 1.98421
+EarlyStopping counter: 11 out of 1000
+[ 303/3500] train_loss: 13.70452 valid_loss: 1.83446
+EarlyStopping counter: 12 out of 1000
+[ 304/3500] train_loss: 13.71048 valid_loss: 1.79064
+EarlyStopping counter: 13 out of 1000
+[ 305/3500] train_loss: 13.54711 valid_loss: 1.85254
+EarlyStopping counter: 14 out of 1000
+[ 306/3500] train_loss: 13.55939 valid_loss: 1.79916
+EarlyStopping counter: 15 out of 1000
+[ 307/3500] train_loss: 13.64850 valid_loss: 1.77392
+EarlyStopping counter: 16 out of 1000
+[ 308/3500] train_loss: 13.62159 valid_loss: 1.94807
+EarlyStopping counter: 17 out of 1000
+[ 309/3500] train_loss: 13.66459 valid_loss: 1.91756
+EarlyStopping counter: 18 out of 1000
+[ 310/3500] train_loss: 13.67000 valid_loss: 1.90339
+EarlyStopping counter: 19 out of 1000
+[ 311/3500] train_loss: 13.67394 valid_loss: 1.83698
+EarlyStopping counter: 20 out of 1000
+[ 312/3500] train_loss: 13.49752 valid_loss: 1.86016
+EarlyStopping counter: 21 out of 1000
+[ 313/3500] train_loss: 13.64204 valid_loss: 1.74443
+Validation loss decreased (1.745054 --> 1.744429).  Saving model ...
+[ 314/3500] train_loss: 13.49516 valid_loss: 1.71481
+Validation loss decreased (1.744429 --> 1.714814).  Saving model ...
+[ 315/3500] train_loss: 13.50580 valid_loss: 1.77706
+EarlyStopping counter: 1 out of 1000
+[ 316/3500] train_loss: 13.62756 valid_loss: 1.78673
+EarlyStopping counter: 2 out of 1000
+[ 317/3500] train_loss: 13.64348 valid_loss: 1.98302
+EarlyStopping counter: 3 out of 1000
+[ 318/3500] train_loss: 13.58439 valid_loss: 2.03860
+EarlyStopping counter: 4 out of 1000
+[ 319/3500] train_loss: 13.54851 valid_loss: 1.84268
+EarlyStopping counter: 5 out of 1000
+[ 320/3500] train_loss: 13.34838 valid_loss: 2.01292
+EarlyStopping counter: 6 out of 1000
+[ 321/3500] train_loss: 13.46478 valid_loss: 1.75580
+EarlyStopping counter: 7 out of 1000
+[ 322/3500] train_loss: 13.61871 valid_loss: 1.90842
+EarlyStopping counter: 8 out of 1000
+[ 323/3500] train_loss: 13.58849 valid_loss: 1.82051
+EarlyStopping counter: 9 out of 1000
+[ 324/3500] train_loss: 13.45390 valid_loss: 1.83437
+EarlyStopping counter: 10 out of 1000
+[ 325/3500] train_loss: 13.42366 valid_loss: 1.97910
+EarlyStopping counter: 11 out of 1000
+[ 326/3500] train_loss: 13.56783 valid_loss: 1.95048
+EarlyStopping counter: 12 out of 1000
+[ 327/3500] train_loss: 13.41364 valid_loss: 1.70109
+Validation loss decreased (1.714814 --> 1.701091).  Saving model ...
+[ 328/3500] train_loss: 13.44154 valid_loss: 1.87103
+EarlyStopping counter: 1 out of 1000
+[ 329/3500] train_loss: 13.65699 valid_loss: 1.83370
+EarlyStopping counter: 2 out of 1000
+[ 330/3500] train_loss: 13.59568 valid_loss: 1.88397
+EarlyStopping counter: 3 out of 1000
+[ 331/3500] train_loss: 13.39310 valid_loss: 1.94469
+EarlyStopping counter: 4 out of 1000
+[ 332/3500] train_loss: 13.35690 valid_loss: 1.99652
+EarlyStopping counter: 5 out of 1000
+[ 333/3500] train_loss: 13.56262 valid_loss: 2.22380
+EarlyStopping counter: 6 out of 1000
+[ 334/3500] train_loss: 13.42753 valid_loss: 1.98007
+EarlyStopping counter: 7 out of 1000
+[ 335/3500] train_loss: 13.40146 valid_loss: 1.84252
+EarlyStopping counter: 8 out of 1000
+[ 336/3500] train_loss: 13.50581 valid_loss: 1.90031
+EarlyStopping counter: 9 out of 1000
+[ 337/3500] train_loss: 13.43776 valid_loss: 1.85512
+EarlyStopping counter: 10 out of 1000
+[ 338/3500] train_loss: 13.44176 valid_loss: 2.00401
+EarlyStopping counter: 11 out of 1000
+[ 339/3500] train_loss: 13.39537 valid_loss: 1.96306
+EarlyStopping counter: 12 out of 1000
+[ 340/3500] train_loss: 13.51566 valid_loss: 1.84048
+EarlyStopping counter: 13 out of 1000
+[ 341/3500] train_loss: 13.40651 valid_loss: 1.83243
+EarlyStopping counter: 14 out of 1000
+[ 342/3500] train_loss: 13.32734 valid_loss: 1.87530
+EarlyStopping counter: 15 out of 1000
+[ 343/3500] train_loss: 13.50360 valid_loss: 1.73902
+EarlyStopping counter: 16 out of 1000
+[ 344/3500] train_loss: 13.37708 valid_loss: 1.79057
+EarlyStopping counter: 17 out of 1000
+[ 345/3500] train_loss: 13.42842 valid_loss: 1.80203
+EarlyStopping counter: 18 out of 1000
+[ 346/3500] train_loss: 13.48748 valid_loss: 1.87133
+EarlyStopping counter: 19 out of 1000
+[ 347/3500] train_loss: 13.23916 valid_loss: 2.03783
+EarlyStopping counter: 20 out of 1000
+[ 348/3500] train_loss: 13.34044 valid_loss: 1.91194
+EarlyStopping counter: 21 out of 1000
+[ 349/3500] train_loss: 13.38991 valid_loss: 1.78897
+EarlyStopping counter: 22 out of 1000
+[ 350/3500] train_loss: 13.31282 valid_loss: 1.88132
+EarlyStopping counter: 23 out of 1000
+[ 351/3500] train_loss: 13.48548 valid_loss: 1.81101
+EarlyStopping counter: 24 out of 1000
+[ 352/3500] train_loss: 13.41724 valid_loss: 1.83776
+EarlyStopping counter: 25 out of 1000
+[ 353/3500] train_loss: 13.37791 valid_loss: 2.00762
+EarlyStopping counter: 26 out of 1000
+[ 354/3500] train_loss: 13.25899 valid_loss: 1.82233
+EarlyStopping counter: 27 out of 1000
+[ 355/3500] train_loss: 13.28733 valid_loss: 1.89886
+EarlyStopping counter: 28 out of 1000
+[ 356/3500] train_loss: 13.34124 valid_loss: 1.91251
+EarlyStopping counter: 29 out of 1000
+[ 357/3500] train_loss: 13.36418 valid_loss: 1.91533
+EarlyStopping counter: 30 out of 1000
+[ 358/3500] train_loss: 13.38119 valid_loss: 1.87791
+EarlyStopping counter: 31 out of 1000
+[ 359/3500] train_loss: 13.25408 valid_loss: 1.85983
+EarlyStopping counter: 32 out of 1000
+[ 360/3500] train_loss: 13.31100 valid_loss: 1.77060
+EarlyStopping counter: 33 out of 1000
+[ 361/3500] train_loss: 13.37036 valid_loss: 1.97206
+EarlyStopping counter: 34 out of 1000
+[ 362/3500] train_loss: 13.32866 valid_loss: 1.99103
+EarlyStopping counter: 35 out of 1000
+[ 363/3500] train_loss: 13.28391 valid_loss: 1.79499
+EarlyStopping counter: 36 out of 1000
+[ 364/3500] train_loss: 13.20254 valid_loss: 1.71464
+EarlyStopping counter: 37 out of 1000
+[ 365/3500] train_loss: 13.25350 valid_loss: 1.93352
+EarlyStopping counter: 38 out of 1000
+[ 366/3500] train_loss: 13.15555 valid_loss: 1.74521
+EarlyStopping counter: 39 out of 1000
+[ 367/3500] train_loss: 13.32528 valid_loss: 1.86062
+EarlyStopping counter: 40 out of 1000
+[ 368/3500] train_loss: 13.43511 valid_loss: 1.78684
+EarlyStopping counter: 41 out of 1000
+[ 369/3500] train_loss: 13.36128 valid_loss: 2.00507
+EarlyStopping counter: 42 out of 1000
+[ 370/3500] train_loss: 13.15395 valid_loss: 1.84276
+EarlyStopping counter: 43 out of 1000
+[ 371/3500] train_loss: 13.33353 valid_loss: 1.74450
+EarlyStopping counter: 44 out of 1000
+[ 372/3500] train_loss: 13.34485 valid_loss: 1.82002
+EarlyStopping counter: 45 out of 1000
+[ 373/3500] train_loss: 13.23272 valid_loss: 1.80628
+EarlyStopping counter: 46 out of 1000
+[ 374/3500] train_loss: 13.25708 valid_loss: 1.88206
+EarlyStopping counter: 47 out of 1000
+[ 375/3500] train_loss: 13.26788 valid_loss: 1.88756
+EarlyStopping counter: 48 out of 1000
+[ 376/3500] train_loss: 13.08205 valid_loss: 1.95667
+EarlyStopping counter: 49 out of 1000
+[ 377/3500] train_loss: 13.30579 valid_loss: 1.72069
+EarlyStopping counter: 50 out of 1000
+[ 378/3500] train_loss: 13.23560 valid_loss: 1.73357
+EarlyStopping counter: 51 out of 1000
+[ 379/3500] train_loss: 13.13413 valid_loss: 2.03380
+EarlyStopping counter: 52 out of 1000
+[ 380/3500] train_loss: 13.23492 valid_loss: 1.88275
+EarlyStopping counter: 53 out of 1000
+[ 381/3500] train_loss: 13.33281 valid_loss: 1.97261
+EarlyStopping counter: 54 out of 1000
+[ 382/3500] train_loss: 13.39810 valid_loss: 1.74120
+EarlyStopping counter: 55 out of 1000
+[ 383/3500] train_loss: 13.13747 valid_loss: 1.76708
+EarlyStopping counter: 56 out of 1000
+[ 384/3500] train_loss: 13.39047 valid_loss: 1.92417
+EarlyStopping counter: 57 out of 1000
+[ 385/3500] train_loss: 13.14032 valid_loss: 1.72702
+EarlyStopping counter: 58 out of 1000
+[ 386/3500] train_loss: 13.19493 valid_loss: 1.91064
+EarlyStopping counter: 59 out of 1000
+[ 387/3500] train_loss: 13.25678 valid_loss: 1.83896
+EarlyStopping counter: 60 out of 1000
+[ 388/3500] train_loss: 13.34271 valid_loss: 1.79985
+EarlyStopping counter: 61 out of 1000
+[ 389/3500] train_loss: 13.17295 valid_loss: 1.82581
+EarlyStopping counter: 62 out of 1000
+[ 390/3500] train_loss: 13.27423 valid_loss: 1.72467
+EarlyStopping counter: 63 out of 1000
+[ 391/3500] train_loss: 13.23660 valid_loss: 1.71809
+EarlyStopping counter: 64 out of 1000
+[ 392/3500] train_loss: 13.23196 valid_loss: 1.76299
+EarlyStopping counter: 65 out of 1000
+[ 393/3500] train_loss: 13.14580 valid_loss: 1.87059
+EarlyStopping counter: 66 out of 1000
+[ 394/3500] train_loss: 13.20462 valid_loss: 1.76915
+EarlyStopping counter: 67 out of 1000
+[ 395/3500] train_loss: 13.11918 valid_loss: 1.88570
+EarlyStopping counter: 68 out of 1000
+[ 396/3500] train_loss: 13.25762 valid_loss: 1.74566
+EarlyStopping counter: 69 out of 1000
+[ 397/3500] train_loss: 13.52379 valid_loss: 1.79985
+EarlyStopping counter: 70 out of 1000
+[ 398/3500] train_loss: 13.24668 valid_loss: 1.86832
+EarlyStopping counter: 71 out of 1000
+[ 399/3500] train_loss: 13.19080 valid_loss: 1.84710
+EarlyStopping counter: 72 out of 1000
+[ 400/3500] train_loss: 13.13856 valid_loss: 1.87183
+EarlyStopping counter: 73 out of 1000
+[ 401/3500] train_loss: 13.22243 valid_loss: 2.07314
+EarlyStopping counter: 74 out of 1000
+[ 402/3500] train_loss: 13.06424 valid_loss: 1.74198
+EarlyStopping counter: 75 out of 1000
+[ 403/3500] train_loss: 12.94641 valid_loss: 1.76880
+EarlyStopping counter: 76 out of 1000
+[ 404/3500] train_loss: 13.04872 valid_loss: 1.79102
+EarlyStopping counter: 77 out of 1000
+[ 405/3500] train_loss: 13.18830 valid_loss: 1.89631
+EarlyStopping counter: 78 out of 1000
+[ 406/3500] train_loss: 13.18317 valid_loss: 2.00591
+EarlyStopping counter: 79 out of 1000
+[ 407/3500] train_loss: 13.28399 valid_loss: 1.95985
+EarlyStopping counter: 80 out of 1000
+[ 408/3500] train_loss: 13.24632 valid_loss: 1.77549
+EarlyStopping counter: 81 out of 1000
+[ 409/3500] train_loss: 13.20243 valid_loss: 1.87013
+EarlyStopping counter: 82 out of 1000
+[ 410/3500] train_loss: 13.11844 valid_loss: 1.69492
+Validation loss decreased (1.701091 --> 1.694917).  Saving model ...
+[ 411/3500] train_loss: 13.02015 valid_loss: 1.76149
+EarlyStopping counter: 1 out of 1000
+[ 412/3500] train_loss: 13.12577 valid_loss: 1.73386
+EarlyStopping counter: 2 out of 1000
+[ 413/3500] train_loss: 13.03516 valid_loss: 1.79958
+EarlyStopping counter: 3 out of 1000
+[ 414/3500] train_loss: 13.26562 valid_loss: 1.80102
+EarlyStopping counter: 4 out of 1000
+[ 415/3500] train_loss: 13.14412 valid_loss: 1.76322
+EarlyStopping counter: 5 out of 1000
+[ 416/3500] train_loss: 13.11934 valid_loss: 1.91994
+EarlyStopping counter: 6 out of 1000
+[ 417/3500] train_loss: 12.89538 valid_loss: 1.75837
+EarlyStopping counter: 7 out of 1000
+[ 418/3500] train_loss: 13.03098 valid_loss: 1.75030
+EarlyStopping counter: 8 out of 1000
+[ 419/3500] train_loss: 13.19292 valid_loss: 1.82211
+EarlyStopping counter: 9 out of 1000
+[ 420/3500] train_loss: 13.10925 valid_loss: 2.01461
+EarlyStopping counter: 10 out of 1000
+[ 421/3500] train_loss: 13.05698 valid_loss: 1.78142
+EarlyStopping counter: 11 out of 1000
+[ 422/3500] train_loss: 13.04816 valid_loss: 1.83528
+EarlyStopping counter: 12 out of 1000
+[ 423/3500] train_loss: 13.16023 valid_loss: 1.79948
+EarlyStopping counter: 13 out of 1000
+[ 424/3500] train_loss: 13.05456 valid_loss: 1.71570
+EarlyStopping counter: 14 out of 1000
+[ 425/3500] train_loss: 12.96767 valid_loss: 1.84379
+EarlyStopping counter: 15 out of 1000
+[ 426/3500] train_loss: 13.38795 valid_loss: 1.74461
+EarlyStopping counter: 16 out of 1000
+[ 427/3500] train_loss: 13.15928 valid_loss: 1.92772
+EarlyStopping counter: 17 out of 1000
+[ 428/3500] train_loss: 13.06130 valid_loss: 1.75163
+EarlyStopping counter: 18 out of 1000
+[ 429/3500] train_loss: 13.13766 valid_loss: 1.95588
+EarlyStopping counter: 19 out of 1000
+[ 430/3500] train_loss: 13.07402 valid_loss: 1.69380
+Validation loss decreased (1.694917 --> 1.693799).  Saving model ...
+[ 431/3500] train_loss: 13.14452 valid_loss: 1.97052
+EarlyStopping counter: 1 out of 1000
+[ 432/3500] train_loss: 13.12471 valid_loss: 1.86403
+EarlyStopping counter: 2 out of 1000
+[ 433/3500] train_loss: 13.03796 valid_loss: 1.94583
+EarlyStopping counter: 3 out of 1000
+[ 434/3500] train_loss: 13.14587 valid_loss: 1.91524
+EarlyStopping counter: 4 out of 1000
+[ 435/3500] train_loss: 13.09750 valid_loss: 1.77224
+EarlyStopping counter: 5 out of 1000
+[ 436/3500] train_loss: 13.24965 valid_loss: 1.85196
+EarlyStopping counter: 6 out of 1000
+[ 437/3500] train_loss: 13.10120 valid_loss: 1.69877
+EarlyStopping counter: 7 out of 1000
+[ 438/3500] train_loss: 12.96591 valid_loss: 1.81113
+EarlyStopping counter: 8 out of 1000
+[ 439/3500] train_loss: 12.92856 valid_loss: 1.88681
+EarlyStopping counter: 9 out of 1000
+[ 440/3500] train_loss: 13.01052 valid_loss: 1.73102
+EarlyStopping counter: 10 out of 1000
+[ 441/3500] train_loss: 12.98407 valid_loss: 1.90714
+EarlyStopping counter: 11 out of 1000
+[ 442/3500] train_loss: 12.89789 valid_loss: 1.85548
+EarlyStopping counter: 12 out of 1000
+[ 443/3500] train_loss: 13.01721 valid_loss: 1.83677
+EarlyStopping counter: 13 out of 1000
+[ 444/3500] train_loss: 13.09093 valid_loss: 1.83065
+EarlyStopping counter: 14 out of 1000
+[ 445/3500] train_loss: 13.24034 valid_loss: 1.71092
+EarlyStopping counter: 15 out of 1000
+[ 446/3500] train_loss: 12.94902 valid_loss: 1.79761
+EarlyStopping counter: 16 out of 1000
+[ 447/3500] train_loss: 13.11336 valid_loss: 1.85723
+EarlyStopping counter: 17 out of 1000
+[ 448/3500] train_loss: 12.99881 valid_loss: 1.89342
+EarlyStopping counter: 18 out of 1000
+[ 449/3500] train_loss: 13.03535 valid_loss: 1.80541
+EarlyStopping counter: 19 out of 1000
+[ 450/3500] train_loss: 13.01643 valid_loss: 1.81033
+EarlyStopping counter: 20 out of 1000
+[ 451/3500] train_loss: 12.95565 valid_loss: 1.86710
+EarlyStopping counter: 21 out of 1000
+[ 452/3500] train_loss: 13.00423 valid_loss: 1.75153
+EarlyStopping counter: 22 out of 1000
+[ 453/3500] train_loss: 13.04972 valid_loss: 2.05443
+EarlyStopping counter: 23 out of 1000
+[ 454/3500] train_loss: 12.90661 valid_loss: 1.90419
+EarlyStopping counter: 24 out of 1000
+[ 455/3500] train_loss: 13.09491 valid_loss: 1.90722
+EarlyStopping counter: 25 out of 1000
+[ 456/3500] train_loss: 12.87478 valid_loss: 1.85847
+EarlyStopping counter: 26 out of 1000
+[ 457/3500] train_loss: 12.96961 valid_loss: 1.83346
+EarlyStopping counter: 27 out of 1000
+[ 458/3500] train_loss: 13.02008 valid_loss: 1.64555
+Validation loss decreased (1.693799 --> 1.645555).  Saving model ...
+[ 459/3500] train_loss: 12.96917 valid_loss: 2.14483
+EarlyStopping counter: 1 out of 1000
+[ 460/3500] train_loss: 12.88292 valid_loss: 1.73361
+EarlyStopping counter: 2 out of 1000
+[ 461/3500] train_loss: 13.02150 valid_loss: 1.69855
+EarlyStopping counter: 3 out of 1000
+[ 462/3500] train_loss: 12.85068 valid_loss: 1.80068
+EarlyStopping counter: 4 out of 1000
+[ 463/3500] train_loss: 12.94474 valid_loss: 1.69573
+EarlyStopping counter: 5 out of 1000
+[ 464/3500] train_loss: 13.04365 valid_loss: 1.87058
+EarlyStopping counter: 6 out of 1000
+[ 465/3500] train_loss: 12.87570 valid_loss: 1.82303
+EarlyStopping counter: 7 out of 1000
+[ 466/3500] train_loss: 12.85056 valid_loss: 1.67594
+EarlyStopping counter: 8 out of 1000
+[ 467/3500] train_loss: 12.90843 valid_loss: 1.85231
+EarlyStopping counter: 9 out of 1000
+[ 468/3500] train_loss: 12.94799 valid_loss: 1.85364
+EarlyStopping counter: 10 out of 1000
+[ 469/3500] train_loss: 12.96916 valid_loss: 1.86124
+EarlyStopping counter: 11 out of 1000
+[ 470/3500] train_loss: 12.84407 valid_loss: 1.80908
+EarlyStopping counter: 12 out of 1000
+[ 471/3500] train_loss: 12.86215 valid_loss: 1.79485
+EarlyStopping counter: 13 out of 1000
+[ 472/3500] train_loss: 12.85569 valid_loss: 1.89396
+EarlyStopping counter: 14 out of 1000
+[ 473/3500] train_loss: 12.91964 valid_loss: 1.87013
+EarlyStopping counter: 15 out of 1000
+[ 474/3500] train_loss: 12.91001 valid_loss: 1.89021
+EarlyStopping counter: 16 out of 1000
+[ 475/3500] train_loss: 13.16990 valid_loss: 2.01642
+EarlyStopping counter: 17 out of 1000
+[ 476/3500] train_loss: 13.35505 valid_loss: 1.73485
+EarlyStopping counter: 18 out of 1000
+[ 477/3500] train_loss: 12.94505 valid_loss: 1.97020
+EarlyStopping counter: 19 out of 1000
+[ 478/3500] train_loss: 12.92014 valid_loss: 1.81563
+EarlyStopping counter: 20 out of 1000
+[ 479/3500] train_loss: 13.07874 valid_loss: 1.77327
+EarlyStopping counter: 21 out of 1000
+[ 480/3500] train_loss: 12.99400 valid_loss: 1.79136
+EarlyStopping counter: 22 out of 1000
+[ 481/3500] train_loss: 12.81865 valid_loss: 1.82191
+EarlyStopping counter: 23 out of 1000
+[ 482/3500] train_loss: 13.04344 valid_loss: 1.67849
+EarlyStopping counter: 24 out of 1000
+[ 483/3500] train_loss: 12.96038 valid_loss: 1.69584
+EarlyStopping counter: 25 out of 1000
+[ 484/3500] train_loss: 12.90501 valid_loss: 1.80486
+EarlyStopping counter: 26 out of 1000
+[ 485/3500] train_loss: 12.86211 valid_loss: 1.86407
+EarlyStopping counter: 27 out of 1000
+[ 486/3500] train_loss: 12.81903 valid_loss: 1.84797
+EarlyStopping counter: 28 out of 1000
+[ 487/3500] train_loss: 12.87974 valid_loss: 1.79081
+EarlyStopping counter: 29 out of 1000
+[ 488/3500] train_loss: 12.89789 valid_loss: 1.79213
+EarlyStopping counter: 30 out of 1000
+[ 489/3500] train_loss: 12.83253 valid_loss: 1.67433
+EarlyStopping counter: 31 out of 1000
+[ 490/3500] train_loss: 12.78821 valid_loss: 1.95789
+EarlyStopping counter: 32 out of 1000
+[ 491/3500] train_loss: 12.87857 valid_loss: 1.86987
+EarlyStopping counter: 33 out of 1000
+[ 492/3500] train_loss: 12.93685 valid_loss: 1.79960
+EarlyStopping counter: 34 out of 1000
+[ 493/3500] train_loss: 12.96641 valid_loss: 1.79802
+EarlyStopping counter: 35 out of 1000
+[ 494/3500] train_loss: 12.94221 valid_loss: 1.77709
+EarlyStopping counter: 36 out of 1000
+[ 495/3500] train_loss: 12.97357 valid_loss: 1.91780
+EarlyStopping counter: 37 out of 1000
+[ 496/3500] train_loss: 12.87362 valid_loss: 1.81439
+EarlyStopping counter: 38 out of 1000
+[ 497/3500] train_loss: 12.82011 valid_loss: 1.75164
+EarlyStopping counter: 39 out of 1000
+[ 498/3500] train_loss: 12.97030 valid_loss: 1.75938
+EarlyStopping counter: 40 out of 1000
+[ 499/3500] train_loss: 12.86885 valid_loss: 1.77874
+EarlyStopping counter: 41 out of 1000
+[ 500/3500] train_loss: 12.88334 valid_loss: 1.80665
+EarlyStopping counter: 42 out of 1000
+[ 501/3500] train_loss: 12.93081 valid_loss: 1.69478
+EarlyStopping counter: 43 out of 1000
+[ 502/3500] train_loss: 12.88585 valid_loss: 1.73696
+EarlyStopping counter: 44 out of 1000
+[ 503/3500] train_loss: 12.95384 valid_loss: 1.91938
+EarlyStopping counter: 45 out of 1000
+[ 504/3500] train_loss: 12.87650 valid_loss: 2.04520
+EarlyStopping counter: 46 out of 1000
+[ 505/3500] train_loss: 12.85575 valid_loss: 1.91141
+EarlyStopping counter: 47 out of 1000
+[ 506/3500] train_loss: 12.75275 valid_loss: 1.82062
+EarlyStopping counter: 48 out of 1000
+[ 507/3500] train_loss: 12.93597 valid_loss: 1.75652
+EarlyStopping counter: 49 out of 1000
+[ 508/3500] train_loss: 12.68090 valid_loss: 1.79265
+EarlyStopping counter: 50 out of 1000
+[ 509/3500] train_loss: 12.85891 valid_loss: 1.74938
+EarlyStopping counter: 51 out of 1000
+[ 510/3500] train_loss: 12.89787 valid_loss: 1.81362
+EarlyStopping counter: 52 out of 1000
+[ 511/3500] train_loss: 12.79978 valid_loss: 1.66179
+EarlyStopping counter: 53 out of 1000
+[ 512/3500] train_loss: 12.87430 valid_loss: 1.78508
+EarlyStopping counter: 54 out of 1000
+[ 513/3500] train_loss: 12.90067 valid_loss: 1.89496
+EarlyStopping counter: 55 out of 1000
+[ 514/3500] train_loss: 12.79957 valid_loss: 1.73610
+EarlyStopping counter: 56 out of 1000
+[ 515/3500] train_loss: 12.87682 valid_loss: 1.95664
+EarlyStopping counter: 57 out of 1000
+[ 516/3500] train_loss: 13.06145 valid_loss: 1.71392
+EarlyStopping counter: 58 out of 1000
+[ 517/3500] train_loss: 12.98233 valid_loss: 1.66464
+EarlyStopping counter: 59 out of 1000
+[ 518/3500] train_loss: 12.79055 valid_loss: 1.71351
+EarlyStopping counter: 60 out of 1000
+[ 519/3500] train_loss: 12.80143 valid_loss: 1.85307
+EarlyStopping counter: 61 out of 1000
+[ 520/3500] train_loss: 12.91090 valid_loss: 1.75855
+EarlyStopping counter: 62 out of 1000
+[ 521/3500] train_loss: 12.98168 valid_loss: 2.01629
+EarlyStopping counter: 63 out of 1000
+[ 522/3500] train_loss: 12.84390 valid_loss: 1.96834
+EarlyStopping counter: 64 out of 1000
+[ 523/3500] train_loss: 12.66685 valid_loss: 1.78591
+EarlyStopping counter: 65 out of 1000
+[ 524/3500] train_loss: 12.90802 valid_loss: 1.87487
+EarlyStopping counter: 66 out of 1000
+[ 525/3500] train_loss: 12.76387 valid_loss: 1.63304
+Validation loss decreased (1.645555 --> 1.633037).  Saving model ...
+[ 526/3500] train_loss: 12.76789 valid_loss: 1.79943
+EarlyStopping counter: 1 out of 1000
+[ 527/3500] train_loss: 12.68277 valid_loss: 1.69469
+EarlyStopping counter: 2 out of 1000
+[ 528/3500] train_loss: 12.83411 valid_loss: 1.89702
+EarlyStopping counter: 3 out of 1000
+[ 529/3500] train_loss: 12.66376 valid_loss: 1.83433
+EarlyStopping counter: 4 out of 1000
+[ 530/3500] train_loss: 12.94376 valid_loss: 1.74785
+EarlyStopping counter: 5 out of 1000
+[ 531/3500] train_loss: 12.68091 valid_loss: 1.68658
+EarlyStopping counter: 6 out of 1000
+[ 532/3500] train_loss: 12.67357 valid_loss: 1.76582
+EarlyStopping counter: 7 out of 1000
+[ 533/3500] train_loss: 12.91040 valid_loss: 1.78435
+EarlyStopping counter: 8 out of 1000
+[ 534/3500] train_loss: 12.78434 valid_loss: 1.99409
+EarlyStopping counter: 9 out of 1000
+[ 535/3500] train_loss: 12.65114 valid_loss: 1.76376
+EarlyStopping counter: 10 out of 1000
+[ 536/3500] train_loss: 12.71668 valid_loss: 1.82355
+EarlyStopping counter: 11 out of 1000
+[ 537/3500] train_loss: 12.59486 valid_loss: 1.84813
+EarlyStopping counter: 12 out of 1000
+[ 538/3500] train_loss: 12.72254 valid_loss: 1.90068
+EarlyStopping counter: 13 out of 1000
+[ 539/3500] train_loss: 12.58095 valid_loss: 1.73747
+EarlyStopping counter: 14 out of 1000
+[ 540/3500] train_loss: 12.99816 valid_loss: 1.77209
+EarlyStopping counter: 15 out of 1000
+[ 541/3500] train_loss: 12.84905 valid_loss: 1.83553
+EarlyStopping counter: 16 out of 1000
+[ 542/3500] train_loss: 12.81401 valid_loss: 1.71650
+EarlyStopping counter: 17 out of 1000
+[ 543/3500] train_loss: 12.72758 valid_loss: 1.99755
+EarlyStopping counter: 18 out of 1000
+[ 544/3500] train_loss: 12.70882 valid_loss: 1.72758
+EarlyStopping counter: 19 out of 1000
+[ 545/3500] train_loss: 12.77880 valid_loss: 1.83227
+EarlyStopping counter: 20 out of 1000
+[ 546/3500] train_loss: 12.69521 valid_loss: 1.92721
+EarlyStopping counter: 21 out of 1000
+[ 547/3500] train_loss: 12.74679 valid_loss: 1.90236
+EarlyStopping counter: 22 out of 1000
+[ 548/3500] train_loss: 12.69066 valid_loss: 1.67587
+EarlyStopping counter: 23 out of 1000
+[ 549/3500] train_loss: 12.72302 valid_loss: 1.79040
+EarlyStopping counter: 24 out of 1000
+[ 550/3500] train_loss: 12.74963 valid_loss: 1.72476
+EarlyStopping counter: 25 out of 1000
+[ 551/3500] train_loss: 12.82913 valid_loss: 1.78496
+EarlyStopping counter: 26 out of 1000
+[ 552/3500] train_loss: 12.97380 valid_loss: 1.72605
+EarlyStopping counter: 27 out of 1000
+[ 553/3500] train_loss: 12.80550 valid_loss: 1.95784
+EarlyStopping counter: 28 out of 1000
+[ 554/3500] train_loss: 12.61994 valid_loss: 1.65237
+EarlyStopping counter: 29 out of 1000
+[ 555/3500] train_loss: 12.71038 valid_loss: 2.04518
+EarlyStopping counter: 30 out of 1000
+[ 556/3500] train_loss: 12.84678 valid_loss: 1.84365
+EarlyStopping counter: 31 out of 1000
+[ 557/3500] train_loss: 12.79697 valid_loss: 1.74908
+EarlyStopping counter: 32 out of 1000
+[ 558/3500] train_loss: 12.78515 valid_loss: 1.85003
+EarlyStopping counter: 33 out of 1000
+[ 559/3500] train_loss: 12.61916 valid_loss: 1.88384
+EarlyStopping counter: 34 out of 1000
+[ 560/3500] train_loss: 12.81754 valid_loss: 1.69226
+EarlyStopping counter: 35 out of 1000
+[ 561/3500] train_loss: 12.71151 valid_loss: 1.89645
+EarlyStopping counter: 36 out of 1000
+[ 562/3500] train_loss: 12.65297 valid_loss: 1.82253
+EarlyStopping counter: 37 out of 1000
+[ 563/3500] train_loss: 12.70478 valid_loss: 1.74716
+EarlyStopping counter: 38 out of 1000
+[ 564/3500] train_loss: 12.80504 valid_loss: 1.71771
+EarlyStopping counter: 39 out of 1000
+[ 565/3500] train_loss: 12.75406 valid_loss: 1.89882
+EarlyStopping counter: 40 out of 1000
+[ 566/3500] train_loss: 12.88587 valid_loss: 1.70615
+EarlyStopping counter: 41 out of 1000
+[ 567/3500] train_loss: 12.68371 valid_loss: 1.71152
+EarlyStopping counter: 42 out of 1000
+[ 568/3500] train_loss: 12.71540 valid_loss: 1.81175
+EarlyStopping counter: 43 out of 1000
+[ 569/3500] train_loss: 12.82565 valid_loss: 1.74859
+EarlyStopping counter: 44 out of 1000
+[ 570/3500] train_loss: 12.90985 valid_loss: 1.62626
+Validation loss decreased (1.633037 --> 1.626262).  Saving model ...
+[ 571/3500] train_loss: 12.68574 valid_loss: 1.83890
+EarlyStopping counter: 1 out of 1000
+[ 572/3500] train_loss: 12.61120 valid_loss: 1.76985
+EarlyStopping counter: 2 out of 1000
+[ 573/3500] train_loss: 12.61458 valid_loss: 1.70373
+EarlyStopping counter: 3 out of 1000
+[ 574/3500] train_loss: 12.64031 valid_loss: 1.94144
+EarlyStopping counter: 4 out of 1000
+[ 575/3500] train_loss: 12.65654 valid_loss: 1.83759
+EarlyStopping counter: 5 out of 1000
+[ 576/3500] train_loss: 12.56536 valid_loss: 1.69227
+EarlyStopping counter: 6 out of 1000
+[ 577/3500] train_loss: 12.62632 valid_loss: 1.81726
+EarlyStopping counter: 7 out of 1000
+[ 578/3500] train_loss: 12.74741 valid_loss: 1.95486
+EarlyStopping counter: 8 out of 1000
+[ 579/3500] train_loss: 12.78701 valid_loss: 1.64099
+EarlyStopping counter: 9 out of 1000
+[ 580/3500] train_loss: 12.92173 valid_loss: 1.78190
+EarlyStopping counter: 10 out of 1000
+[ 581/3500] train_loss: 12.67704 valid_loss: 1.72515
+EarlyStopping counter: 11 out of 1000
+[ 582/3500] train_loss: 12.67848 valid_loss: 1.68557
+EarlyStopping counter: 12 out of 1000
+[ 583/3500] train_loss: 12.62496 valid_loss: 1.95838
+EarlyStopping counter: 13 out of 1000
+[ 584/3500] train_loss: 12.75727 valid_loss: 1.75587
+EarlyStopping counter: 14 out of 1000
+[ 585/3500] train_loss: 12.79296 valid_loss: 1.88690
+EarlyStopping counter: 15 out of 1000
+[ 586/3500] train_loss: 12.72230 valid_loss: 1.84865
+EarlyStopping counter: 16 out of 1000
+[ 587/3500] train_loss: 12.62855 valid_loss: 1.70552
+EarlyStopping counter: 17 out of 1000
+[ 588/3500] train_loss: 12.56359 valid_loss: 1.76622
+EarlyStopping counter: 18 out of 1000
+[ 589/3500] train_loss: 12.67955 valid_loss: 1.64028
+EarlyStopping counter: 19 out of 1000
+[ 590/3500] train_loss: 12.65204 valid_loss: 1.94210
+EarlyStopping counter: 20 out of 1000
+[ 591/3500] train_loss: 12.60300 valid_loss: 1.87959
+EarlyStopping counter: 21 out of 1000
+[ 592/3500] train_loss: 12.64229 valid_loss: 1.91438
+EarlyStopping counter: 22 out of 1000
+[ 593/3500] train_loss: 12.57176 valid_loss: 1.75130
+EarlyStopping counter: 23 out of 1000
+[ 594/3500] train_loss: 12.70310 valid_loss: 1.81762
+EarlyStopping counter: 24 out of 1000
+[ 595/3500] train_loss: 12.63917 valid_loss: 1.67837
+EarlyStopping counter: 25 out of 1000
+[ 596/3500] train_loss: 12.62566 valid_loss: 2.00514
+EarlyStopping counter: 26 out of 1000
+[ 597/3500] train_loss: 12.78145 valid_loss: 1.78524
+EarlyStopping counter: 27 out of 1000
+[ 598/3500] train_loss: 12.64341 valid_loss: 1.91816
+EarlyStopping counter: 28 out of 1000
+[ 599/3500] train_loss: 12.69381 valid_loss: 1.72065
+EarlyStopping counter: 29 out of 1000
+[ 600/3500] train_loss: 12.65129 valid_loss: 1.99597
+EarlyStopping counter: 30 out of 1000
+[ 601/3500] train_loss: 12.70410 valid_loss: 1.68783
+EarlyStopping counter: 31 out of 1000
+[ 602/3500] train_loss: 12.78555 valid_loss: 1.73752
+EarlyStopping counter: 32 out of 1000
+[ 603/3500] train_loss: 12.76986 valid_loss: 1.79239
+EarlyStopping counter: 33 out of 1000
+[ 604/3500] train_loss: 12.68291 valid_loss: 1.67694
+EarlyStopping counter: 34 out of 1000
+[ 605/3500] train_loss: 12.64321 valid_loss: 1.77901
+EarlyStopping counter: 35 out of 1000
+[ 606/3500] train_loss: 12.64729 valid_loss: 1.78513
+EarlyStopping counter: 36 out of 1000
+[ 607/3500] train_loss: 12.70644 valid_loss: 1.62574
+Validation loss decreased (1.626262 --> 1.625739).  Saving model ...
+[ 608/3500] train_loss: 12.70679 valid_loss: 1.67783
+EarlyStopping counter: 1 out of 1000
+[ 609/3500] train_loss: 12.59864 valid_loss: 1.79792
+EarlyStopping counter: 2 out of 1000
+[ 610/3500] train_loss: 12.63266 valid_loss: 1.70724
+EarlyStopping counter: 3 out of 1000
+[ 611/3500] train_loss: 12.55401 valid_loss: 1.90041
+EarlyStopping counter: 4 out of 1000
+[ 612/3500] train_loss: 12.56273 valid_loss: 1.72857
+EarlyStopping counter: 5 out of 1000
+[ 613/3500] train_loss: 12.52572 valid_loss: 1.66303
+EarlyStopping counter: 6 out of 1000
+[ 614/3500] train_loss: 12.63780 valid_loss: 1.86947
+EarlyStopping counter: 7 out of 1000
+[ 615/3500] train_loss: 12.65852 valid_loss: 1.73305
+EarlyStopping counter: 8 out of 1000
+[ 616/3500] train_loss: 12.38137 valid_loss: 1.90492
+EarlyStopping counter: 9 out of 1000
+[ 617/3500] train_loss: 12.64121 valid_loss: 1.88006
+EarlyStopping counter: 10 out of 1000
+[ 618/3500] train_loss: 12.57824 valid_loss: 1.62533
+Validation loss decreased (1.625739 --> 1.625328).  Saving model ...
+[ 619/3500] train_loss: 12.69174 valid_loss: 1.77622
+EarlyStopping counter: 1 out of 1000
+[ 620/3500] train_loss: 12.62296 valid_loss: 1.97322
+EarlyStopping counter: 2 out of 1000
+[ 621/3500] train_loss: 12.60341 valid_loss: 1.67954
+EarlyStopping counter: 3 out of 1000
+[ 622/3500] train_loss: 12.59692 valid_loss: 1.70567
+EarlyStopping counter: 4 out of 1000
+[ 623/3500] train_loss: 12.50872 valid_loss: 1.68475
+EarlyStopping counter: 5 out of 1000
+[ 624/3500] train_loss: 12.59240 valid_loss: 1.70748
+EarlyStopping counter: 6 out of 1000
+[ 625/3500] train_loss: 12.66547 valid_loss: 1.76606
+EarlyStopping counter: 7 out of 1000
+[ 626/3500] train_loss: 12.73711 valid_loss: 1.82150
+EarlyStopping counter: 8 out of 1000
+[ 627/3500] train_loss: 12.69052 valid_loss: 1.73530
+EarlyStopping counter: 9 out of 1000
+[ 628/3500] train_loss: 12.58932 valid_loss: 1.77925
+EarlyStopping counter: 10 out of 1000
+[ 629/3500] train_loss: 12.51595 valid_loss: 1.79943
+EarlyStopping counter: 11 out of 1000
+[ 630/3500] train_loss: 12.73710 valid_loss: 1.65553
+EarlyStopping counter: 12 out of 1000
+[ 631/3500] train_loss: 12.68322 valid_loss: 1.71751
+EarlyStopping counter: 13 out of 1000
+[ 632/3500] train_loss: 12.63477 valid_loss: 1.70915
+EarlyStopping counter: 14 out of 1000
+[ 633/3500] train_loss: 12.43298 valid_loss: 1.75153
+EarlyStopping counter: 15 out of 1000
+[ 634/3500] train_loss: 12.47755 valid_loss: 1.81888
+EarlyStopping counter: 16 out of 1000
+[ 635/3500] train_loss: 12.47679 valid_loss: 1.81316
+EarlyStopping counter: 17 out of 1000
+[ 636/3500] train_loss: 12.54048 valid_loss: 1.73005
+EarlyStopping counter: 18 out of 1000
+[ 637/3500] train_loss: 12.68249 valid_loss: 1.69063
+EarlyStopping counter: 19 out of 1000
+[ 638/3500] train_loss: 12.64028 valid_loss: 1.84140
+EarlyStopping counter: 20 out of 1000
+[ 639/3500] train_loss: 12.62281 valid_loss: 1.74824
+EarlyStopping counter: 21 out of 1000
+[ 640/3500] train_loss: 12.65808 valid_loss: 1.72230
+EarlyStopping counter: 22 out of 1000
+[ 641/3500] train_loss: 12.63495 valid_loss: 1.65565
+EarlyStopping counter: 23 out of 1000
+[ 642/3500] train_loss: 12.48604 valid_loss: 1.76521
+EarlyStopping counter: 24 out of 1000
+[ 643/3500] train_loss: 12.75484 valid_loss: 1.78131
+EarlyStopping counter: 25 out of 1000
+[ 644/3500] train_loss: 12.66450 valid_loss: 1.77795
+EarlyStopping counter: 26 out of 1000
+[ 645/3500] train_loss: 12.54331 valid_loss: 1.61970
+Validation loss decreased (1.625328 --> 1.619701).  Saving model ...
+[ 646/3500] train_loss: 12.58525 valid_loss: 1.86965
+EarlyStopping counter: 1 out of 1000
+[ 647/3500] train_loss: 12.49568 valid_loss: 1.79670
+EarlyStopping counter: 2 out of 1000
+[ 648/3500] train_loss: 12.71526 valid_loss: 1.70890
+EarlyStopping counter: 3 out of 1000
+[ 649/3500] train_loss: 12.74964 valid_loss: 1.70730
+EarlyStopping counter: 4 out of 1000
+[ 650/3500] train_loss: 12.65785 valid_loss: 1.75375
+EarlyStopping counter: 5 out of 1000
+[ 651/3500] train_loss: 12.62907 valid_loss: 1.81160
+EarlyStopping counter: 6 out of 1000
+[ 652/3500] train_loss: 12.52650 valid_loss: 1.70313
+EarlyStopping counter: 7 out of 1000
+[ 653/3500] train_loss: 12.56921 valid_loss: 1.78237
+EarlyStopping counter: 8 out of 1000
+[ 654/3500] train_loss: 12.64912 valid_loss: 1.75444
+EarlyStopping counter: 9 out of 1000
+[ 655/3500] train_loss: 12.45819 valid_loss: 1.80851
+EarlyStopping counter: 10 out of 1000
+[ 656/3500] train_loss: 12.52735 valid_loss: 1.76037
+EarlyStopping counter: 11 out of 1000
+[ 657/3500] train_loss: 12.60208 valid_loss: 1.69173
+EarlyStopping counter: 12 out of 1000
+[ 658/3500] train_loss: 12.50288 valid_loss: 1.78300
+EarlyStopping counter: 13 out of 1000
+[ 659/3500] train_loss: 12.57385 valid_loss: 1.90794
+EarlyStopping counter: 14 out of 1000
+[ 660/3500] train_loss: 12.49003 valid_loss: 1.88270
+EarlyStopping counter: 15 out of 1000
+[ 661/3500] train_loss: 12.52873 valid_loss: 1.77437
+EarlyStopping counter: 16 out of 1000
+[ 662/3500] train_loss: 12.38175 valid_loss: 1.79401
+EarlyStopping counter: 17 out of 1000
+[ 663/3500] train_loss: 12.65788 valid_loss: 1.67396
+EarlyStopping counter: 18 out of 1000
+[ 664/3500] train_loss: 12.55588 valid_loss: 1.80218
+EarlyStopping counter: 19 out of 1000
+[ 665/3500] train_loss: 12.66862 valid_loss: 1.93023
+EarlyStopping counter: 20 out of 1000
+[ 666/3500] train_loss: 12.55805 valid_loss: 2.05117
+EarlyStopping counter: 21 out of 1000
+[ 667/3500] train_loss: 12.46713 valid_loss: 1.74061
+EarlyStopping counter: 22 out of 1000
+[ 668/3500] train_loss: 12.41233 valid_loss: 1.82478
+EarlyStopping counter: 23 out of 1000
+[ 669/3500] train_loss: 12.51479 valid_loss: 1.79324
+EarlyStopping counter: 24 out of 1000
+[ 670/3500] train_loss: 12.56056 valid_loss: 1.79477
+EarlyStopping counter: 25 out of 1000
+[ 671/3500] train_loss: 12.66145 valid_loss: 1.89905
+EarlyStopping counter: 26 out of 1000
+[ 672/3500] train_loss: 12.50962 valid_loss: 1.76132
+EarlyStopping counter: 27 out of 1000
+[ 673/3500] train_loss: 12.41548 valid_loss: 1.68869
+EarlyStopping counter: 28 out of 1000
+[ 674/3500] train_loss: 12.60042 valid_loss: 1.72712
+EarlyStopping counter: 29 out of 1000
+[ 675/3500] train_loss: 12.52694 valid_loss: 1.92524
+EarlyStopping counter: 30 out of 1000
+[ 676/3500] train_loss: 12.52672 valid_loss: 1.77748
+EarlyStopping counter: 31 out of 1000
+[ 677/3500] train_loss: 12.41518 valid_loss: 1.97259
+EarlyStopping counter: 32 out of 1000
+[ 678/3500] train_loss: 12.58725 valid_loss: 1.86688
+EarlyStopping counter: 33 out of 1000
+[ 679/3500] train_loss: 12.37543 valid_loss: 1.84396
+EarlyStopping counter: 34 out of 1000
+[ 680/3500] train_loss: 12.56199 valid_loss: 1.81055
+EarlyStopping counter: 35 out of 1000
+[ 681/3500] train_loss: 12.47985 valid_loss: 1.87134
+EarlyStopping counter: 36 out of 1000
+[ 682/3500] train_loss: 12.60986 valid_loss: 1.88996
+EarlyStopping counter: 37 out of 1000
+[ 683/3500] train_loss: 12.39677 valid_loss: 1.65938
+EarlyStopping counter: 38 out of 1000
+[ 684/3500] train_loss: 12.37743 valid_loss: 1.68630
+EarlyStopping counter: 39 out of 1000
+[ 685/3500] train_loss: 12.35326 valid_loss: 1.80396
+EarlyStopping counter: 40 out of 1000
+[ 686/3500] train_loss: 12.32589 valid_loss: 1.76607
+EarlyStopping counter: 41 out of 1000
+[ 687/3500] train_loss: 12.50940 valid_loss: 1.65393
+EarlyStopping counter: 42 out of 1000
+[ 688/3500] train_loss: 12.55884 valid_loss: 1.76912
+EarlyStopping counter: 43 out of 1000
+[ 689/3500] train_loss: 12.58218 valid_loss: 1.65411
+EarlyStopping counter: 44 out of 1000
+[ 690/3500] train_loss: 12.38149 valid_loss: 1.77683
+EarlyStopping counter: 45 out of 1000
+[ 691/3500] train_loss: 12.65608 valid_loss: 1.76239
+EarlyStopping counter: 46 out of 1000
+[ 692/3500] train_loss: 12.65222 valid_loss: 1.69254
+EarlyStopping counter: 47 out of 1000
+[ 693/3500] train_loss: 12.39001 valid_loss: 1.64165
+EarlyStopping counter: 48 out of 1000
+[ 694/3500] train_loss: 12.45991 valid_loss: 1.77056
+EarlyStopping counter: 49 out of 1000
+[ 695/3500] train_loss: 12.68046 valid_loss: 1.77047
+EarlyStopping counter: 50 out of 1000
+[ 696/3500] train_loss: 12.64566 valid_loss: 1.94599
+EarlyStopping counter: 51 out of 1000
+[ 697/3500] train_loss: 12.59818 valid_loss: 1.84373
+EarlyStopping counter: 52 out of 1000
+[ 698/3500] train_loss: 12.43125 valid_loss: 1.74535
+EarlyStopping counter: 53 out of 1000
+[ 699/3500] train_loss: 12.44057 valid_loss: 2.00004
+EarlyStopping counter: 54 out of 1000
+[ 700/3500] train_loss: 12.42175 valid_loss: 1.60794
+Validation loss decreased (1.619701 --> 1.607940).  Saving model ...
+[ 701/3500] train_loss: 12.40611 valid_loss: 1.66665
+EarlyStopping counter: 1 out of 1000
+[ 702/3500] train_loss: 12.39949 valid_loss: 1.94299
+EarlyStopping counter: 2 out of 1000
+[ 703/3500] train_loss: 12.42272 valid_loss: 1.71624
+EarlyStopping counter: 3 out of 1000
+[ 704/3500] train_loss: 12.37272 valid_loss: 1.62460
+EarlyStopping counter: 4 out of 1000
+[ 705/3500] train_loss: 12.40552 valid_loss: 1.79942
+EarlyStopping counter: 5 out of 1000
+[ 706/3500] train_loss: 12.38274 valid_loss: 1.79438
+EarlyStopping counter: 6 out of 1000
+[ 707/3500] train_loss: 12.49236 valid_loss: 1.78798
+EarlyStopping counter: 7 out of 1000
+[ 708/3500] train_loss: 12.35749 valid_loss: 1.79673
+EarlyStopping counter: 8 out of 1000
+[ 709/3500] train_loss: 12.63349 valid_loss: 1.62885
+EarlyStopping counter: 9 out of 1000
+[ 710/3500] train_loss: 12.36851 valid_loss: 1.77483
+EarlyStopping counter: 10 out of 1000
+[ 711/3500] train_loss: 12.39430 valid_loss: 1.84062
+EarlyStopping counter: 11 out of 1000
+[ 712/3500] train_loss: 12.44518 valid_loss: 1.73644
+EarlyStopping counter: 12 out of 1000
+[ 713/3500] train_loss: 12.31823 valid_loss: 1.68790
+EarlyStopping counter: 13 out of 1000
+[ 714/3500] train_loss: 12.49356 valid_loss: 1.82550
+EarlyStopping counter: 14 out of 1000
+[ 715/3500] train_loss: 12.47168 valid_loss: 2.10111
+EarlyStopping counter: 15 out of 1000
+[ 716/3500] train_loss: 12.54403 valid_loss: 1.79290
+EarlyStopping counter: 16 out of 1000
+[ 717/3500] train_loss: 12.50282 valid_loss: 1.82780
+EarlyStopping counter: 17 out of 1000
+[ 718/3500] train_loss: 12.42678 valid_loss: 1.68851
+EarlyStopping counter: 18 out of 1000
+[ 719/3500] train_loss: 12.39283 valid_loss: 1.71870
+EarlyStopping counter: 19 out of 1000
+[ 720/3500] train_loss: 12.50431 valid_loss: 1.84498
+EarlyStopping counter: 20 out of 1000
+[ 721/3500] train_loss: 12.46288 valid_loss: 1.81090
+EarlyStopping counter: 21 out of 1000
+[ 722/3500] train_loss: 12.45939 valid_loss: 1.84194
+EarlyStopping counter: 22 out of 1000
+[ 723/3500] train_loss: 12.34817 valid_loss: 1.75587
+EarlyStopping counter: 23 out of 1000
+[ 724/3500] train_loss: 12.36612 valid_loss: 1.67676
+EarlyStopping counter: 24 out of 1000
+[ 725/3500] train_loss: 12.36446 valid_loss: 1.70624
+EarlyStopping counter: 25 out of 1000
+[ 726/3500] train_loss: 12.44616 valid_loss: 1.72941
+EarlyStopping counter: 26 out of 1000
+[ 727/3500] train_loss: 12.35770 valid_loss: 1.78557
+EarlyStopping counter: 27 out of 1000
+[ 728/3500] train_loss: 12.30552 valid_loss: 1.95451
+EarlyStopping counter: 28 out of 1000
+[ 729/3500] train_loss: 12.51970 valid_loss: 1.87251
+EarlyStopping counter: 29 out of 1000
+[ 730/3500] train_loss: 12.44718 valid_loss: 1.69215
+EarlyStopping counter: 30 out of 1000
+[ 731/3500] train_loss: 12.35875 valid_loss: 1.81950
+EarlyStopping counter: 31 out of 1000
+[ 732/3500] train_loss: 12.44436 valid_loss: 1.75522
+EarlyStopping counter: 32 out of 1000
+[ 733/3500] train_loss: 12.33137 valid_loss: 1.88403
+EarlyStopping counter: 33 out of 1000
+[ 734/3500] train_loss: 12.51481 valid_loss: 1.66017
+EarlyStopping counter: 34 out of 1000
+[ 735/3500] train_loss: 12.53677 valid_loss: 1.87650
+EarlyStopping counter: 35 out of 1000
+[ 736/3500] train_loss: 12.45006 valid_loss: 1.82953
+EarlyStopping counter: 36 out of 1000
+[ 737/3500] train_loss: 12.32518 valid_loss: 1.87831
+EarlyStopping counter: 37 out of 1000
+[ 738/3500] train_loss: 12.40631 valid_loss: 1.72024
+EarlyStopping counter: 38 out of 1000
+[ 739/3500] train_loss: 12.27543 valid_loss: 1.85967
+EarlyStopping counter: 39 out of 1000
+[ 740/3500] train_loss: 12.44068 valid_loss: 1.80084
+EarlyStopping counter: 40 out of 1000
+[ 741/3500] train_loss: 12.37516 valid_loss: 1.79594
+EarlyStopping counter: 41 out of 1000
+[ 742/3500] train_loss: 12.43489 valid_loss: 2.05158
+EarlyStopping counter: 42 out of 1000
+[ 743/3500] train_loss: 12.36798 valid_loss: 1.69126
+EarlyStopping counter: 43 out of 1000
+[ 744/3500] train_loss: 12.37200 valid_loss: 2.01650
+EarlyStopping counter: 44 out of 1000
+[ 745/3500] train_loss: 12.37478 valid_loss: 1.80306
+EarlyStopping counter: 45 out of 1000
+[ 746/3500] train_loss: 12.48721 valid_loss: 1.97315
+EarlyStopping counter: 46 out of 1000
+[ 747/3500] train_loss: 12.41364 valid_loss: 1.76168
+EarlyStopping counter: 47 out of 1000
+[ 748/3500] train_loss: 12.49388 valid_loss: 1.80340
+EarlyStopping counter: 48 out of 1000
+[ 749/3500] train_loss: 12.45122 valid_loss: 1.85520
+EarlyStopping counter: 49 out of 1000
+[ 750/3500] train_loss: 12.43495 valid_loss: 1.58823
+Validation loss decreased (1.607940 --> 1.588233).  Saving model ...
+[ 751/3500] train_loss: 12.45321 valid_loss: 1.64991
+EarlyStopping counter: 1 out of 1000
+[ 752/3500] train_loss: 12.25451 valid_loss: 1.80176
+EarlyStopping counter: 2 out of 1000
+[ 753/3500] train_loss: 12.27073 valid_loss: 1.75360
+EarlyStopping counter: 3 out of 1000
+[ 754/3500] train_loss: 12.21598 valid_loss: 1.68320
+EarlyStopping counter: 4 out of 1000
+[ 755/3500] train_loss: 12.32406 valid_loss: 1.85569
+EarlyStopping counter: 5 out of 1000
+[ 756/3500] train_loss: 12.36515 valid_loss: 1.87868
+EarlyStopping counter: 6 out of 1000
+[ 757/3500] train_loss: 12.23342 valid_loss: 1.76587
+EarlyStopping counter: 7 out of 1000
+[ 758/3500] train_loss: 12.51588 valid_loss: 1.69097
+EarlyStopping counter: 8 out of 1000
+[ 759/3500] train_loss: 12.45587 valid_loss: 1.71725
+EarlyStopping counter: 9 out of 1000
+[ 760/3500] train_loss: 12.27217 valid_loss: 2.01153
+EarlyStopping counter: 10 out of 1000
+[ 761/3500] train_loss: 12.24490 valid_loss: 1.78132
+EarlyStopping counter: 11 out of 1000
+[ 762/3500] train_loss: 12.35010 valid_loss: 1.85366
+EarlyStopping counter: 12 out of 1000
+[ 763/3500] train_loss: 12.30792 valid_loss: 1.95341
+EarlyStopping counter: 13 out of 1000
+[ 764/3500] train_loss: 12.30259 valid_loss: 1.82340
+EarlyStopping counter: 14 out of 1000
+[ 765/3500] train_loss: 12.25539 valid_loss: 1.70404
+EarlyStopping counter: 15 out of 1000
+[ 766/3500] train_loss: 12.30859 valid_loss: 1.71147
+EarlyStopping counter: 16 out of 1000
+[ 767/3500] train_loss: 12.20097 valid_loss: 1.82718
+EarlyStopping counter: 17 out of 1000
+[ 768/3500] train_loss: 12.26876 valid_loss: 1.89801
+EarlyStopping counter: 18 out of 1000
+[ 769/3500] train_loss: 12.46066 valid_loss: 1.69813
+EarlyStopping counter: 19 out of 1000
+[ 770/3500] train_loss: 12.28572 valid_loss: 1.66934
+EarlyStopping counter: 20 out of 1000
+[ 771/3500] train_loss: 12.29323 valid_loss: 1.70606
+EarlyStopping counter: 21 out of 1000
+[ 772/3500] train_loss: 12.40230 valid_loss: 1.77017
+EarlyStopping counter: 22 out of 1000
+[ 773/3500] train_loss: 12.33042 valid_loss: 1.81640
+EarlyStopping counter: 23 out of 1000
+[ 774/3500] train_loss: 12.35782 valid_loss: 1.69700
+EarlyStopping counter: 24 out of 1000
+[ 775/3500] train_loss: 12.28003 valid_loss: 1.66990
+EarlyStopping counter: 25 out of 1000
+[ 776/3500] train_loss: 12.32391 valid_loss: 1.75790
+EarlyStopping counter: 26 out of 1000
+[ 777/3500] train_loss: 12.32472 valid_loss: 1.87183
+EarlyStopping counter: 27 out of 1000
+[ 778/3500] train_loss: 12.30188 valid_loss: 1.73149
+EarlyStopping counter: 28 out of 1000
+[ 779/3500] train_loss: 12.32827 valid_loss: 1.90548
+EarlyStopping counter: 29 out of 1000
+[ 780/3500] train_loss: 12.24298 valid_loss: 1.85727
+EarlyStopping counter: 30 out of 1000
+[ 781/3500] train_loss: 12.26618 valid_loss: 1.69733
+EarlyStopping counter: 31 out of 1000
+[ 782/3500] train_loss: 12.34872 valid_loss: 1.62227
+EarlyStopping counter: 32 out of 1000
+[ 783/3500] train_loss: 12.35058 valid_loss: 1.75975
+EarlyStopping counter: 33 out of 1000
+[ 784/3500] train_loss: 12.28231 valid_loss: 2.06331
+EarlyStopping counter: 34 out of 1000
+[ 785/3500] train_loss: 12.32454 valid_loss: 1.84935
+EarlyStopping counter: 35 out of 1000
+[ 786/3500] train_loss: 12.33516 valid_loss: 1.65175
+EarlyStopping counter: 36 out of 1000
+[ 787/3500] train_loss: 12.32309 valid_loss: 1.65233
+EarlyStopping counter: 37 out of 1000
+[ 788/3500] train_loss: 12.31850 valid_loss: 1.84814
+EarlyStopping counter: 38 out of 1000
+[ 789/3500] train_loss: 12.37653 valid_loss: 1.78595
+EarlyStopping counter: 39 out of 1000
+[ 790/3500] train_loss: 12.48413 valid_loss: 1.84666
+EarlyStopping counter: 40 out of 1000
+[ 791/3500] train_loss: 12.34113 valid_loss: 1.73691
+EarlyStopping counter: 41 out of 1000
+[ 792/3500] train_loss: 12.14877 valid_loss: 1.71152
+EarlyStopping counter: 42 out of 1000
+[ 793/3500] train_loss: 12.20612 valid_loss: 1.83771
+EarlyStopping counter: 43 out of 1000
+[ 794/3500] train_loss: 12.24185 valid_loss: 1.72701
+EarlyStopping counter: 44 out of 1000
+[ 795/3500] train_loss: 12.35235 valid_loss: 1.94577
+EarlyStopping counter: 45 out of 1000
+[ 796/3500] train_loss: 12.27016 valid_loss: 1.70984
+EarlyStopping counter: 46 out of 1000
+[ 797/3500] train_loss: 12.39030 valid_loss: 1.90900
+EarlyStopping counter: 47 out of 1000
+[ 798/3500] train_loss: 12.29694 valid_loss: 1.87347
+EarlyStopping counter: 48 out of 1000
+[ 799/3500] train_loss: 12.41582 valid_loss: 1.79603
+EarlyStopping counter: 49 out of 1000
+[ 800/3500] train_loss: 12.32552 valid_loss: 1.79680
+EarlyStopping counter: 50 out of 1000
+[ 801/3500] train_loss: 12.30102 valid_loss: 1.69535
+EarlyStopping counter: 51 out of 1000
+[ 802/3500] train_loss: 12.34897 valid_loss: 1.70803
+EarlyStopping counter: 52 out of 1000
+[ 803/3500] train_loss: 12.30961 valid_loss: 1.67966
+EarlyStopping counter: 53 out of 1000
+[ 804/3500] train_loss: 12.34641 valid_loss: 1.77506
+EarlyStopping counter: 54 out of 1000
+[ 805/3500] train_loss: 12.18553 valid_loss: 1.73495
+EarlyStopping counter: 55 out of 1000
+[ 806/3500] train_loss: 12.45441 valid_loss: 1.78486
+EarlyStopping counter: 56 out of 1000
+[ 807/3500] train_loss: 12.48761 valid_loss: 1.79317
+EarlyStopping counter: 57 out of 1000
+[ 808/3500] train_loss: 12.36915 valid_loss: 1.84031
+EarlyStopping counter: 58 out of 1000
+[ 809/3500] train_loss: 12.48419 valid_loss: 1.83998
+EarlyStopping counter: 59 out of 1000
+[ 810/3500] train_loss: 12.20069 valid_loss: 1.80769
+EarlyStopping counter: 60 out of 1000
+[ 811/3500] train_loss: 12.29290 valid_loss: 1.95884
+EarlyStopping counter: 61 out of 1000
+[ 812/3500] train_loss: 12.29441 valid_loss: 1.73324
+EarlyStopping counter: 62 out of 1000
+[ 813/3500] train_loss: 12.31859 valid_loss: 1.82629
+EarlyStopping counter: 63 out of 1000
+[ 814/3500] train_loss: 12.29192 valid_loss: 1.77125
+EarlyStopping counter: 64 out of 1000
+[ 815/3500] train_loss: 12.41385 valid_loss: 1.69183
+EarlyStopping counter: 65 out of 1000
+[ 816/3500] train_loss: 12.23654 valid_loss: 1.88461
+EarlyStopping counter: 66 out of 1000
+[ 817/3500] train_loss: 12.28969 valid_loss: 1.67216
+EarlyStopping counter: 67 out of 1000
+[ 818/3500] train_loss: 12.37022 valid_loss: 1.75453
+EarlyStopping counter: 68 out of 1000
+[ 819/3500] train_loss: 12.25675 valid_loss: 1.80423
+EarlyStopping counter: 69 out of 1000
+[ 820/3500] train_loss: 12.34743 valid_loss: 1.64632
+EarlyStopping counter: 70 out of 1000
+[ 821/3500] train_loss: 12.21038 valid_loss: 1.70122
+EarlyStopping counter: 71 out of 1000
+[ 822/3500] train_loss: 12.21550 valid_loss: 1.68706
+EarlyStopping counter: 72 out of 1000
+[ 823/3500] train_loss: 12.15277 valid_loss: 1.73840
+EarlyStopping counter: 73 out of 1000
+[ 824/3500] train_loss: 12.20558 valid_loss: 1.93375
+EarlyStopping counter: 74 out of 1000
+[ 825/3500] train_loss: 12.28083 valid_loss: 1.76967
+EarlyStopping counter: 75 out of 1000
+[ 826/3500] train_loss: 12.30533 valid_loss: 1.72129
+EarlyStopping counter: 76 out of 1000
+[ 827/3500] train_loss: 12.46522 valid_loss: 1.79084
+EarlyStopping counter: 77 out of 1000
+[ 828/3500] train_loss: 12.24031 valid_loss: 1.77155
+EarlyStopping counter: 78 out of 1000
+[ 829/3500] train_loss: 12.32176 valid_loss: 1.70856
+EarlyStopping counter: 79 out of 1000
+[ 830/3500] train_loss: 12.34662 valid_loss: 1.78796
+EarlyStopping counter: 80 out of 1000
+[ 831/3500] train_loss: 12.25648 valid_loss: 1.70968
+EarlyStopping counter: 81 out of 1000
+[ 832/3500] train_loss: 12.22367 valid_loss: 1.65778
+EarlyStopping counter: 82 out of 1000
+[ 833/3500] train_loss: 12.24765 valid_loss: 1.79811
+EarlyStopping counter: 83 out of 1000
+[ 834/3500] train_loss: 12.35487 valid_loss: 1.73366
+EarlyStopping counter: 84 out of 1000
+[ 835/3500] train_loss: 12.28905 valid_loss: 1.77008
+EarlyStopping counter: 85 out of 1000
+[ 836/3500] train_loss: 12.15686 valid_loss: 1.89753
+EarlyStopping counter: 86 out of 1000
+[ 837/3500] train_loss: 12.39375 valid_loss: 1.79744
+EarlyStopping counter: 87 out of 1000
+[ 838/3500] train_loss: 12.24062 valid_loss: 1.81983
+EarlyStopping counter: 88 out of 1000
+[ 839/3500] train_loss: 12.41515 valid_loss: 1.80150
+EarlyStopping counter: 89 out of 1000
+[ 840/3500] train_loss: 12.31338 valid_loss: 1.78657
+EarlyStopping counter: 90 out of 1000
+[ 841/3500] train_loss: 12.46679 valid_loss: 1.80825
+EarlyStopping counter: 91 out of 1000
+[ 842/3500] train_loss: 12.38197 valid_loss: 1.66829
+EarlyStopping counter: 92 out of 1000
+[ 843/3500] train_loss: 12.21086 valid_loss: 1.76022
+EarlyStopping counter: 93 out of 1000
+[ 844/3500] train_loss: 12.16937 valid_loss: 1.84030
+EarlyStopping counter: 94 out of 1000
+[ 845/3500] train_loss: 12.15926 valid_loss: 1.80541
+EarlyStopping counter: 95 out of 1000
+[ 846/3500] train_loss: 12.23884 valid_loss: 1.75965
+EarlyStopping counter: 96 out of 1000
+[ 847/3500] train_loss: 12.26369 valid_loss: 1.67042
+EarlyStopping counter: 97 out of 1000
+[ 848/3500] train_loss: 12.36133 valid_loss: 1.77514
+EarlyStopping counter: 98 out of 1000
+[ 849/3500] train_loss: 12.35736 valid_loss: 1.62742
+EarlyStopping counter: 99 out of 1000
+[ 850/3500] train_loss: 12.35080 valid_loss: 1.68920
+EarlyStopping counter: 100 out of 1000
+[ 851/3500] train_loss: 12.40873 valid_loss: 2.04849
+EarlyStopping counter: 101 out of 1000
+[ 852/3500] train_loss: 12.42184 valid_loss: 1.71780
+EarlyStopping counter: 102 out of 1000
+[ 853/3500] train_loss: 12.23706 valid_loss: 1.76830
+EarlyStopping counter: 103 out of 1000
+[ 854/3500] train_loss: 12.19242 valid_loss: 1.75432
+EarlyStopping counter: 104 out of 1000
+[ 855/3500] train_loss: 12.34553 valid_loss: 1.71334
+EarlyStopping counter: 105 out of 1000
+[ 856/3500] train_loss: 12.52821 valid_loss: 1.66440
+EarlyStopping counter: 106 out of 1000
+[ 857/3500] train_loss: 12.59445 valid_loss: 1.81662
+EarlyStopping counter: 107 out of 1000
+[ 858/3500] train_loss: 12.42002 valid_loss: 1.68721
+EarlyStopping counter: 108 out of 1000
+[ 859/3500] train_loss: 12.22244 valid_loss: 1.77391
+EarlyStopping counter: 109 out of 1000
+[ 860/3500] train_loss: 12.22743 valid_loss: 1.79098
+EarlyStopping counter: 110 out of 1000
+[ 861/3500] train_loss: 12.14418 valid_loss: 1.71532
+EarlyStopping counter: 111 out of 1000
+[ 862/3500] train_loss: 12.34569 valid_loss: 1.90558
+EarlyStopping counter: 112 out of 1000
+[ 863/3500] train_loss: 12.48945 valid_loss: 1.75111
+EarlyStopping counter: 113 out of 1000
+[ 864/3500] train_loss: 12.47203 valid_loss: 1.74742
+EarlyStopping counter: 114 out of 1000
+[ 865/3500] train_loss: 12.27002 valid_loss: 1.74721
+EarlyStopping counter: 115 out of 1000
+[ 866/3500] train_loss: 12.15949 valid_loss: 1.67820
+EarlyStopping counter: 116 out of 1000
+[ 867/3500] train_loss: 12.16514 valid_loss: 1.66865
+EarlyStopping counter: 117 out of 1000
+[ 868/3500] train_loss: 12.19249 valid_loss: 1.73363
+EarlyStopping counter: 118 out of 1000
+[ 869/3500] train_loss: 12.17342 valid_loss: 1.70754
+EarlyStopping counter: 119 out of 1000
+[ 870/3500] train_loss: 12.22682 valid_loss: 1.72994
+EarlyStopping counter: 120 out of 1000
+[ 871/3500] train_loss: 12.12641 valid_loss: 1.91233
+EarlyStopping counter: 121 out of 1000
+[ 872/3500] train_loss: 12.19056 valid_loss: 1.88603
+EarlyStopping counter: 122 out of 1000
+[ 873/3500] train_loss: 12.26182 valid_loss: 1.76614
+EarlyStopping counter: 123 out of 1000
+[ 874/3500] train_loss: 12.22647 valid_loss: 1.82901
+EarlyStopping counter: 124 out of 1000
+[ 875/3500] train_loss: 12.13678 valid_loss: 1.83713
+EarlyStopping counter: 125 out of 1000
+[ 876/3500] train_loss: 12.17612 valid_loss: 1.63010
+EarlyStopping counter: 126 out of 1000
+[ 877/3500] train_loss: 12.28559 valid_loss: 1.81593
+EarlyStopping counter: 127 out of 1000
+[ 878/3500] train_loss: 12.15192 valid_loss: 1.73126
+EarlyStopping counter: 128 out of 1000
+[ 879/3500] train_loss: 12.26508 valid_loss: 1.85298
+EarlyStopping counter: 129 out of 1000
+[ 880/3500] train_loss: 12.23764 valid_loss: 2.03865
+EarlyStopping counter: 130 out of 1000
+[ 881/3500] train_loss: 12.07253 valid_loss: 1.79971
+EarlyStopping counter: 131 out of 1000
+[ 882/3500] train_loss: 12.27059 valid_loss: 1.59375
+EarlyStopping counter: 132 out of 1000
+[ 883/3500] train_loss: 12.17186 valid_loss: 1.81329
+EarlyStopping counter: 133 out of 1000
+[ 884/3500] train_loss: 12.20579 valid_loss: 1.87807
+EarlyStopping counter: 134 out of 1000
+[ 885/3500] train_loss: 12.21562 valid_loss: 1.73083
+EarlyStopping counter: 135 out of 1000
+[ 886/3500] train_loss: 12.19683 valid_loss: 1.60817
+EarlyStopping counter: 136 out of 1000
+[ 887/3500] train_loss: 12.22374 valid_loss: 1.69935
+EarlyStopping counter: 137 out of 1000
+[ 888/3500] train_loss: 12.14646 valid_loss: 1.62865
+EarlyStopping counter: 138 out of 1000
+[ 889/3500] train_loss: 12.17142 valid_loss: 1.82512
+EarlyStopping counter: 139 out of 1000
+[ 890/3500] train_loss: 12.27429 valid_loss: 1.78183
+EarlyStopping counter: 140 out of 1000
+[ 891/3500] train_loss: 12.26524 valid_loss: 1.61001
+EarlyStopping counter: 141 out of 1000
+[ 892/3500] train_loss: 12.20293 valid_loss: 1.75363
+EarlyStopping counter: 142 out of 1000
+[ 893/3500] train_loss: 12.16428 valid_loss: 1.81235
+EarlyStopping counter: 143 out of 1000
+[ 894/3500] train_loss: 12.27947 valid_loss: 1.64796
+EarlyStopping counter: 144 out of 1000
+[ 895/3500] train_loss: 12.17602 valid_loss: 1.90489
+EarlyStopping counter: 145 out of 1000
+[ 896/3500] train_loss: 12.28707 valid_loss: 1.66441
+EarlyStopping counter: 146 out of 1000
+[ 897/3500] train_loss: 12.22443 valid_loss: 1.78367
+EarlyStopping counter: 147 out of 1000
+[ 898/3500] train_loss: 12.15041 valid_loss: 1.61770
+EarlyStopping counter: 148 out of 1000
+[ 899/3500] train_loss: 12.16323 valid_loss: 1.74624
+EarlyStopping counter: 149 out of 1000
+[ 900/3500] train_loss: 12.17094 valid_loss: 1.67619
+EarlyStopping counter: 150 out of 1000
+[ 901/3500] train_loss: 12.17430 valid_loss: 2.03640
+EarlyStopping counter: 151 out of 1000
+[ 902/3500] train_loss: 12.31825 valid_loss: 1.69717
+EarlyStopping counter: 152 out of 1000
+[ 903/3500] train_loss: 12.25977 valid_loss: 1.68500
+EarlyStopping counter: 153 out of 1000
+[ 904/3500] train_loss: 12.28541 valid_loss: 1.61858
+EarlyStopping counter: 154 out of 1000
+[ 905/3500] train_loss: 12.17895 valid_loss: 1.91466
+EarlyStopping counter: 155 out of 1000
+[ 906/3500] train_loss: 12.21253 valid_loss: 1.75327
+EarlyStopping counter: 156 out of 1000
+[ 907/3500] train_loss: 12.23054 valid_loss: 1.71403
+EarlyStopping counter: 157 out of 1000
+[ 908/3500] train_loss: 12.26207 valid_loss: 1.70526
+EarlyStopping counter: 158 out of 1000
+[ 909/3500] train_loss: 12.12461 valid_loss: 1.79984
+EarlyStopping counter: 159 out of 1000
+[ 910/3500] train_loss: 12.19711 valid_loss: 1.83064
+EarlyStopping counter: 160 out of 1000
+[ 911/3500] train_loss: 12.19463 valid_loss: 1.70956
+EarlyStopping counter: 161 out of 1000
+[ 912/3500] train_loss: 12.11940 valid_loss: 1.63964
+EarlyStopping counter: 162 out of 1000
+[ 913/3500] train_loss: 12.20064 valid_loss: 1.87373
+EarlyStopping counter: 163 out of 1000
+[ 914/3500] train_loss: 12.13478 valid_loss: 1.79568
+EarlyStopping counter: 164 out of 1000
+[ 915/3500] train_loss: 12.24362 valid_loss: 1.66166
+EarlyStopping counter: 165 out of 1000
+[ 916/3500] train_loss: 12.14013 valid_loss: 1.74869
+EarlyStopping counter: 166 out of 1000
+[ 917/3500] train_loss: 12.20384 valid_loss: 1.76266
+EarlyStopping counter: 167 out of 1000
+[ 918/3500] train_loss: 12.11849 valid_loss: 1.72593
+EarlyStopping counter: 168 out of 1000
+[ 919/3500] train_loss: 12.08626 valid_loss: 1.78621
+EarlyStopping counter: 169 out of 1000
+[ 920/3500] train_loss: 12.33028 valid_loss: 1.67077
+EarlyStopping counter: 170 out of 1000
+[ 921/3500] train_loss: 12.17864 valid_loss: 1.86630
+EarlyStopping counter: 171 out of 1000
+[ 922/3500] train_loss: 12.24097 valid_loss: 1.82387
+EarlyStopping counter: 172 out of 1000
+[ 923/3500] train_loss: 12.50097 valid_loss: 1.87692
+EarlyStopping counter: 173 out of 1000
+[ 924/3500] train_loss: 12.12605 valid_loss: 1.75439
+EarlyStopping counter: 174 out of 1000
+[ 925/3500] train_loss: 12.34161 valid_loss: 1.69390
+EarlyStopping counter: 175 out of 1000
+[ 926/3500] train_loss: 12.09841 valid_loss: 1.77454
+EarlyStopping counter: 176 out of 1000
+[ 927/3500] train_loss: 12.24126 valid_loss: 1.70237
+EarlyStopping counter: 177 out of 1000
+[ 928/3500] train_loss: 12.19508 valid_loss: 1.76117
+EarlyStopping counter: 178 out of 1000
+[ 929/3500] train_loss: 12.12714 valid_loss: 1.73571
+EarlyStopping counter: 179 out of 1000
+[ 930/3500] train_loss: 12.07920 valid_loss: 1.82604
+EarlyStopping counter: 180 out of 1000
+[ 931/3500] train_loss: 12.02027 valid_loss: 1.88798
+EarlyStopping counter: 181 out of 1000
+[ 932/3500] train_loss: 12.16254 valid_loss: 1.93042
+EarlyStopping counter: 182 out of 1000
+[ 933/3500] train_loss: 12.14541 valid_loss: 1.85267
+EarlyStopping counter: 183 out of 1000
+[ 934/3500] train_loss: 12.11325 valid_loss: 1.83126
+EarlyStopping counter: 184 out of 1000
+[ 935/3500] train_loss: 12.14603 valid_loss: 1.63737
+EarlyStopping counter: 185 out of 1000
+[ 936/3500] train_loss: 12.31675 valid_loss: 1.76786
+EarlyStopping counter: 186 out of 1000
+[ 937/3500] train_loss: 12.36453 valid_loss: 1.70883
+EarlyStopping counter: 187 out of 1000
+[ 938/3500] train_loss: 12.18703 valid_loss: 2.04301
+EarlyStopping counter: 188 out of 1000
+[ 939/3500] train_loss: 12.33305 valid_loss: 1.64343
+EarlyStopping counter: 189 out of 1000
+[ 940/3500] train_loss: 12.11640 valid_loss: 1.66953
+EarlyStopping counter: 190 out of 1000
+[ 941/3500] train_loss: 12.10284 valid_loss: 1.77648
+EarlyStopping counter: 191 out of 1000
+[ 942/3500] train_loss: 12.13965 valid_loss: 1.63566
+EarlyStopping counter: 192 out of 1000
+[ 943/3500] train_loss: 12.26509 valid_loss: 1.67122
+EarlyStopping counter: 193 out of 1000
+[ 944/3500] train_loss: 12.04716 valid_loss: 1.94631
+EarlyStopping counter: 194 out of 1000
+[ 945/3500] train_loss: 12.10464 valid_loss: 1.95611
+EarlyStopping counter: 195 out of 1000
+[ 946/3500] train_loss: 12.19354 valid_loss: 1.65806
+EarlyStopping counter: 196 out of 1000
+[ 947/3500] train_loss: 12.24716 valid_loss: 1.73632
+EarlyStopping counter: 197 out of 1000
+[ 948/3500] train_loss: 12.07619 valid_loss: 1.73405
+EarlyStopping counter: 198 out of 1000
+[ 949/3500] train_loss: 12.19177 valid_loss: 1.71601
+EarlyStopping counter: 199 out of 1000
+[ 950/3500] train_loss: 12.34888 valid_loss: 1.92182
+EarlyStopping counter: 200 out of 1000
+[ 951/3500] train_loss: 12.37907 valid_loss: 1.65473
+EarlyStopping counter: 201 out of 1000
+[ 952/3500] train_loss: 12.03436 valid_loss: 1.87094
+EarlyStopping counter: 202 out of 1000
+[ 953/3500] train_loss: 12.22627 valid_loss: 1.73158
+EarlyStopping counter: 203 out of 1000
+[ 954/3500] train_loss: 12.28425 valid_loss: 1.75384
+EarlyStopping counter: 204 out of 1000
+[ 955/3500] train_loss: 12.18621 valid_loss: 1.78795
+EarlyStopping counter: 205 out of 1000
+[ 956/3500] train_loss: 12.26617 valid_loss: 1.65071
+EarlyStopping counter: 206 out of 1000
+[ 957/3500] train_loss: 12.14620 valid_loss: 1.75464
+EarlyStopping counter: 207 out of 1000
+[ 958/3500] train_loss: 12.18659 valid_loss: 1.82708
+EarlyStopping counter: 208 out of 1000
+[ 959/3500] train_loss: 12.21701 valid_loss: 1.78253
+EarlyStopping counter: 209 out of 1000
+[ 960/3500] train_loss: 12.21557 valid_loss: 1.68359
+EarlyStopping counter: 210 out of 1000
+[ 961/3500] train_loss: 12.11822 valid_loss: 1.78835
+EarlyStopping counter: 211 out of 1000
+[ 962/3500] train_loss: 12.03220 valid_loss: 1.72865
+EarlyStopping counter: 212 out of 1000
+[ 963/3500] train_loss: 12.17895 valid_loss: 1.70589
+EarlyStopping counter: 213 out of 1000
+[ 964/3500] train_loss: 12.32871 valid_loss: 1.86234
+EarlyStopping counter: 214 out of 1000
+[ 965/3500] train_loss: 12.36260 valid_loss: 1.72269
+EarlyStopping counter: 215 out of 1000
+[ 966/3500] train_loss: 12.34945 valid_loss: 1.76843
+EarlyStopping counter: 216 out of 1000
+[ 967/3500] train_loss: 12.38802 valid_loss: 1.67256
+EarlyStopping counter: 217 out of 1000
+[ 968/3500] train_loss: 12.31538 valid_loss: 1.78672
+EarlyStopping counter: 218 out of 1000
+[ 969/3500] train_loss: 12.16989 valid_loss: 1.81315
+EarlyStopping counter: 219 out of 1000
+[ 970/3500] train_loss: 12.02475 valid_loss: 1.71429
+EarlyStopping counter: 220 out of 1000
+[ 971/3500] train_loss: 12.20912 valid_loss: 1.89956
+EarlyStopping counter: 221 out of 1000
+[ 972/3500] train_loss: 12.23468 valid_loss: 1.83920
+EarlyStopping counter: 222 out of 1000
+[ 973/3500] train_loss: 12.11426 valid_loss: 1.63052
+EarlyStopping counter: 223 out of 1000
+[ 974/3500] train_loss: 12.11574 valid_loss: 1.84292
+EarlyStopping counter: 224 out of 1000
+[ 975/3500] train_loss: 12.07713 valid_loss: 1.76316
+EarlyStopping counter: 225 out of 1000
+[ 976/3500] train_loss: 12.06958 valid_loss: 1.89888
+EarlyStopping counter: 226 out of 1000
+[ 977/3500] train_loss: 12.26684 valid_loss: 1.73335
+EarlyStopping counter: 227 out of 1000
+[ 978/3500] train_loss: 12.02871 valid_loss: 1.62274
+EarlyStopping counter: 228 out of 1000
+[ 979/3500] train_loss: 12.05964 valid_loss: 1.88160
+EarlyStopping counter: 229 out of 1000
+[ 980/3500] train_loss: 12.19707 valid_loss: 1.74686
+EarlyStopping counter: 230 out of 1000
+[ 981/3500] train_loss: 12.33126 valid_loss: 1.82025
+EarlyStopping counter: 231 out of 1000
+[ 982/3500] train_loss: 12.22230 valid_loss: 1.74237
+EarlyStopping counter: 232 out of 1000
+[ 983/3500] train_loss: 12.08496 valid_loss: 1.72745
+EarlyStopping counter: 233 out of 1000
+[ 984/3500] train_loss: 12.18398 valid_loss: 1.87636
+EarlyStopping counter: 234 out of 1000
+[ 985/3500] train_loss: 12.12840 valid_loss: 1.65688
+EarlyStopping counter: 235 out of 1000
+[ 986/3500] train_loss: 12.13149 valid_loss: 1.76666
+EarlyStopping counter: 236 out of 1000
+[ 987/3500] train_loss: 12.24912 valid_loss: 1.81481
+EarlyStopping counter: 237 out of 1000
+[ 988/3500] train_loss: 12.07353 valid_loss: 1.90335
+EarlyStopping counter: 238 out of 1000
+[ 989/3500] train_loss: 12.06924 valid_loss: 1.65727
+EarlyStopping counter: 239 out of 1000
+[ 990/3500] train_loss: 12.09372 valid_loss: 1.69717
+EarlyStopping counter: 240 out of 1000
+[ 991/3500] train_loss: 12.11926 valid_loss: 1.70321
+EarlyStopping counter: 241 out of 1000
+[ 992/3500] train_loss: 12.12775 valid_loss: 1.85640
+EarlyStopping counter: 242 out of 1000
+[ 993/3500] train_loss: 12.08363 valid_loss: 1.81113
+EarlyStopping counter: 243 out of 1000
+[ 994/3500] train_loss: 12.16228 valid_loss: 1.61774
+EarlyStopping counter: 244 out of 1000
+[ 995/3500] train_loss: 12.05466 valid_loss: 1.77314
+EarlyStopping counter: 245 out of 1000
+[ 996/3500] train_loss: 12.06117 valid_loss: 1.72634
+EarlyStopping counter: 246 out of 1000
+[ 997/3500] train_loss: 12.13956 valid_loss: 1.74446
+EarlyStopping counter: 247 out of 1000
+[ 998/3500] train_loss: 12.16637 valid_loss: 1.78468
+EarlyStopping counter: 248 out of 1000
+[ 999/3500] train_loss: 12.16465 valid_loss: 1.77168
+EarlyStopping counter: 249 out of 1000
+[1000/3500] train_loss: 12.20676 valid_loss: 1.79853
+EarlyStopping counter: 250 out of 1000
+[1001/3500] train_loss: 12.24689 valid_loss: 1.71313
+EarlyStopping counter: 251 out of 1000
+[1002/3500] train_loss: 12.04473 valid_loss: 1.89464
+EarlyStopping counter: 252 out of 1000
+[1003/3500] train_loss: 12.22747 valid_loss: 1.72090
+EarlyStopping counter: 253 out of 1000
+[1004/3500] train_loss: 12.31070 valid_loss: 1.85739
+EarlyStopping counter: 254 out of 1000
+[1005/3500] train_loss: 12.13106 valid_loss: 1.66054
+EarlyStopping counter: 255 out of 1000
+[1006/3500] train_loss: 12.27064 valid_loss: 1.97765
+EarlyStopping counter: 256 out of 1000
+[1007/3500] train_loss: 12.01808 valid_loss: 1.81982
+EarlyStopping counter: 257 out of 1000
+[1008/3500] train_loss: 12.10031 valid_loss: 1.68458
+EarlyStopping counter: 258 out of 1000
+[1009/3500] train_loss: 12.00753 valid_loss: 1.79865
+EarlyStopping counter: 259 out of 1000
+[1010/3500] train_loss: 12.08620 valid_loss: 1.95007
+EarlyStopping counter: 260 out of 1000
+[1011/3500] train_loss: 12.12673 valid_loss: 1.82626
+EarlyStopping counter: 261 out of 1000
+[1012/3500] train_loss: 12.09947 valid_loss: 1.87036
+EarlyStopping counter: 262 out of 1000
+[1013/3500] train_loss: 12.40400 valid_loss: 1.83895
+EarlyStopping counter: 263 out of 1000
+[1014/3500] train_loss: 12.20212 valid_loss: 1.92847
+EarlyStopping counter: 264 out of 1000
+[1015/3500] train_loss: 12.06034 valid_loss: 1.82478
+EarlyStopping counter: 265 out of 1000
+[1016/3500] train_loss: 11.93622 valid_loss: 1.74402
+EarlyStopping counter: 266 out of 1000
+[1017/3500] train_loss: 12.09359 valid_loss: 1.67728
+EarlyStopping counter: 267 out of 1000
+[1018/3500] train_loss: 12.12043 valid_loss: 1.70529
+EarlyStopping counter: 268 out of 1000
+[1019/3500] train_loss: 11.95122 valid_loss: 1.72504
+EarlyStopping counter: 269 out of 1000
+[1020/3500] train_loss: 12.15319 valid_loss: 1.72429
+EarlyStopping counter: 270 out of 1000
+[1021/3500] train_loss: 12.04533 valid_loss: 1.69114
+EarlyStopping counter: 271 out of 1000
+[1022/3500] train_loss: 12.22230 valid_loss: 2.00226
+EarlyStopping counter: 272 out of 1000
+[1023/3500] train_loss: 12.11911 valid_loss: 1.70113
+EarlyStopping counter: 273 out of 1000
+[1024/3500] train_loss: 12.10745 valid_loss: 2.02745
+EarlyStopping counter: 274 out of 1000
+[1025/3500] train_loss: 12.04452 valid_loss: 1.84947
+EarlyStopping counter: 275 out of 1000
+[1026/3500] train_loss: 12.14379 valid_loss: 1.61328
+EarlyStopping counter: 276 out of 1000
+[1027/3500] train_loss: 12.03951 valid_loss: 1.80143
+EarlyStopping counter: 277 out of 1000
+[1028/3500] train_loss: 12.08863 valid_loss: 1.75162
+EarlyStopping counter: 278 out of 1000
+[1029/3500] train_loss: 12.15856 valid_loss: 1.77516
+EarlyStopping counter: 279 out of 1000
+[1030/3500] train_loss: 12.11536 valid_loss: 1.66814
+EarlyStopping counter: 280 out of 1000
+[1031/3500] train_loss: 12.11535 valid_loss: 1.68583
+EarlyStopping counter: 281 out of 1000
+[1032/3500] train_loss: 12.04035 valid_loss: 1.75991
+EarlyStopping counter: 282 out of 1000
+[1033/3500] train_loss: 12.10107 valid_loss: 1.71094
+EarlyStopping counter: 283 out of 1000
+[1034/3500] train_loss: 12.01911 valid_loss: 1.66151
+EarlyStopping counter: 284 out of 1000
+[1035/3500] train_loss: 12.15532 valid_loss: 1.93711
+EarlyStopping counter: 285 out of 1000
+[1036/3500] train_loss: 12.09553 valid_loss: 1.63508
+EarlyStopping counter: 286 out of 1000
+[1037/3500] train_loss: 12.08369 valid_loss: 1.69316
+EarlyStopping counter: 287 out of 1000
+[1038/3500] train_loss: 11.96291 valid_loss: 1.79194
+EarlyStopping counter: 288 out of 1000
+[1039/3500] train_loss: 12.12229 valid_loss: 1.73702
+EarlyStopping counter: 289 out of 1000
+[1040/3500] train_loss: 12.25871 valid_loss: 1.84789
+EarlyStopping counter: 290 out of 1000
+[1041/3500] train_loss: 12.06153 valid_loss: 1.71154
+EarlyStopping counter: 291 out of 1000
+[1042/3500] train_loss: 12.00998 valid_loss: 1.87861
+EarlyStopping counter: 292 out of 1000
+[1043/3500] train_loss: 12.13464 valid_loss: 1.85685
+EarlyStopping counter: 293 out of 1000
+[1044/3500] train_loss: 12.24502 valid_loss: 1.77996
+EarlyStopping counter: 294 out of 1000
+[1045/3500] train_loss: 12.13145 valid_loss: 1.80000
+EarlyStopping counter: 295 out of 1000
+[1046/3500] train_loss: 11.95955 valid_loss: 1.78130
+EarlyStopping counter: 296 out of 1000
+[1047/3500] train_loss: 12.03152 valid_loss: 1.62406
+EarlyStopping counter: 297 out of 1000
+[1048/3500] train_loss: 11.99367 valid_loss: 1.70318
+EarlyStopping counter: 298 out of 1000
+[1049/3500] train_loss: 12.07739 valid_loss: 1.73944
+EarlyStopping counter: 299 out of 1000
+[1050/3500] train_loss: 12.24999 valid_loss: 1.76463
+EarlyStopping counter: 300 out of 1000
+[1051/3500] train_loss: 12.17168 valid_loss: 1.81999
+EarlyStopping counter: 301 out of 1000
+[1052/3500] train_loss: 12.10990 valid_loss: 1.69401
+EarlyStopping counter: 302 out of 1000
+[1053/3500] train_loss: 12.07138 valid_loss: 1.67171
+EarlyStopping counter: 303 out of 1000
+[1054/3500] train_loss: 11.99891 valid_loss: 1.72014
+EarlyStopping counter: 304 out of 1000
+[1055/3500] train_loss: 12.15392 valid_loss: 1.68675
+EarlyStopping counter: 305 out of 1000
+[1056/3500] train_loss: 12.20100 valid_loss: 1.60177
+EarlyStopping counter: 306 out of 1000
+[1057/3500] train_loss: 12.06325 valid_loss: 1.64405
+EarlyStopping counter: 307 out of 1000
+[1058/3500] train_loss: 12.05370 valid_loss: 1.66707
+EarlyStopping counter: 308 out of 1000
+[1059/3500] train_loss: 12.03390 valid_loss: 1.77343
+EarlyStopping counter: 309 out of 1000
+[1060/3500] train_loss: 12.16980 valid_loss: 1.95008
+EarlyStopping counter: 310 out of 1000
+[1061/3500] train_loss: 12.08564 valid_loss: 1.85615
+EarlyStopping counter: 311 out of 1000
+[1062/3500] train_loss: 12.01032 valid_loss: 1.69156
+EarlyStopping counter: 312 out of 1000
+[1063/3500] train_loss: 12.00616 valid_loss: 1.94869
+EarlyStopping counter: 313 out of 1000
+[1064/3500] train_loss: 12.22075 valid_loss: 1.89215
+EarlyStopping counter: 314 out of 1000
+[1065/3500] train_loss: 12.21887 valid_loss: 1.74349
+EarlyStopping counter: 315 out of 1000
+[1066/3500] train_loss: 12.15230 valid_loss: 1.65996
+EarlyStopping counter: 316 out of 1000
+[1067/3500] train_loss: 12.07370 valid_loss: 1.69015
+EarlyStopping counter: 317 out of 1000
+[1068/3500] train_loss: 11.96783 valid_loss: 1.87023
+EarlyStopping counter: 318 out of 1000
+[1069/3500] train_loss: 11.93702 valid_loss: 1.73880
+EarlyStopping counter: 319 out of 1000
+[1070/3500] train_loss: 12.00852 valid_loss: 1.76581
+EarlyStopping counter: 320 out of 1000
+[1071/3500] train_loss: 12.11783 valid_loss: 1.76543
+EarlyStopping counter: 321 out of 1000
+[1072/3500] train_loss: 12.00809 valid_loss: 1.76327
+EarlyStopping counter: 322 out of 1000
+[1073/3500] train_loss: 12.05351 valid_loss: 1.76097
+EarlyStopping counter: 323 out of 1000
+[1074/3500] train_loss: 12.12556 valid_loss: 1.76673
+EarlyStopping counter: 324 out of 1000
+[1075/3500] train_loss: 12.12949 valid_loss: 1.68281
+EarlyStopping counter: 325 out of 1000
+[1076/3500] train_loss: 12.17425 valid_loss: 1.73548
+EarlyStopping counter: 326 out of 1000
+[1077/3500] train_loss: 12.03524 valid_loss: 1.70459
+EarlyStopping counter: 327 out of 1000
+[1078/3500] train_loss: 12.12881 valid_loss: 1.71701
+EarlyStopping counter: 328 out of 1000
+[1079/3500] train_loss: 12.06140 valid_loss: 1.90460
+EarlyStopping counter: 329 out of 1000
+[1080/3500] train_loss: 11.87322 valid_loss: 1.78020
+EarlyStopping counter: 330 out of 1000
+[1081/3500] train_loss: 12.10266 valid_loss: 1.71527
+EarlyStopping counter: 331 out of 1000
+[1082/3500] train_loss: 12.03168 valid_loss: 1.62076
+EarlyStopping counter: 332 out of 1000
+[1083/3500] train_loss: 12.10986 valid_loss: 1.79052
+EarlyStopping counter: 333 out of 1000
+[1084/3500] train_loss: 12.07141 valid_loss: 1.81912
+EarlyStopping counter: 334 out of 1000
+[1085/3500] train_loss: 12.03786 valid_loss: 1.65130
+EarlyStopping counter: 335 out of 1000
+[1086/3500] train_loss: 12.09740 valid_loss: 1.95487
+EarlyStopping counter: 336 out of 1000
+[1087/3500] train_loss: 12.14359 valid_loss: 1.84953
+EarlyStopping counter: 337 out of 1000
+[1088/3500] train_loss: 12.09700 valid_loss: 1.74819
+EarlyStopping counter: 338 out of 1000
+[1089/3500] train_loss: 12.00826 valid_loss: 1.72723
+EarlyStopping counter: 339 out of 1000
+[1090/3500] train_loss: 12.03416 valid_loss: 1.96984
+EarlyStopping counter: 340 out of 1000
+[1091/3500] train_loss: 12.04126 valid_loss: 1.65764
+EarlyStopping counter: 341 out of 1000
+[1092/3500] train_loss: 12.00714 valid_loss: 1.74764
+EarlyStopping counter: 342 out of 1000
+[1093/3500] train_loss: 12.00969 valid_loss: 1.82241
+EarlyStopping counter: 343 out of 1000
+[1094/3500] train_loss: 12.16015 valid_loss: 1.79763
+EarlyStopping counter: 344 out of 1000
+[1095/3500] train_loss: 12.16714 valid_loss: 1.81021
+EarlyStopping counter: 345 out of 1000
+[1096/3500] train_loss: 12.11733 valid_loss: 1.83337
+EarlyStopping counter: 346 out of 1000
+[1097/3500] train_loss: 12.06323 valid_loss: 1.83752
+EarlyStopping counter: 347 out of 1000
+[1098/3500] train_loss: 12.01644 valid_loss: 1.76509
+EarlyStopping counter: 348 out of 1000
+[1099/3500] train_loss: 12.18070 valid_loss: 1.68009
+EarlyStopping counter: 349 out of 1000
+[1100/3500] train_loss: 12.09163 valid_loss: 1.85887
+EarlyStopping counter: 350 out of 1000
+[1101/3500] train_loss: 12.11765 valid_loss: 1.72503
+EarlyStopping counter: 351 out of 1000
+[1102/3500] train_loss: 12.19288 valid_loss: 2.01848
+EarlyStopping counter: 352 out of 1000
+[1103/3500] train_loss: 12.06072 valid_loss: 1.83025
+EarlyStopping counter: 353 out of 1000
+[1104/3500] train_loss: 11.99868 valid_loss: 1.71914
+EarlyStopping counter: 354 out of 1000
+[1105/3500] train_loss: 12.09564 valid_loss: 1.79913
+EarlyStopping counter: 355 out of 1000
+[1106/3500] train_loss: 12.03274 valid_loss: 1.95220
+EarlyStopping counter: 356 out of 1000
+[1107/3500] train_loss: 12.11408 valid_loss: 1.67533
+EarlyStopping counter: 357 out of 1000
+[1108/3500] train_loss: 12.01721 valid_loss: 1.70140
+EarlyStopping counter: 358 out of 1000
+[1109/3500] train_loss: 12.00068 valid_loss: 1.70897
+EarlyStopping counter: 359 out of 1000
+[1110/3500] train_loss: 12.08655 valid_loss: 1.77015
+EarlyStopping counter: 360 out of 1000
+[1111/3500] train_loss: 11.98121 valid_loss: 1.84235
+EarlyStopping counter: 361 out of 1000
+[1112/3500] train_loss: 11.93823 valid_loss: 1.85971
+EarlyStopping counter: 362 out of 1000
+[1113/3500] train_loss: 12.05575 valid_loss: 1.80800
+EarlyStopping counter: 363 out of 1000
+[1114/3500] train_loss: 12.06707 valid_loss: 1.81714
+EarlyStopping counter: 364 out of 1000
+[1115/3500] train_loss: 11.98862 valid_loss: 1.73123
+EarlyStopping counter: 365 out of 1000
+[1116/3500] train_loss: 12.03712 valid_loss: 1.81133
+EarlyStopping counter: 366 out of 1000
+[1117/3500] train_loss: 12.05853 valid_loss: 1.83000
+EarlyStopping counter: 367 out of 1000
+[1118/3500] train_loss: 12.07805 valid_loss: 1.72643
+EarlyStopping counter: 368 out of 1000
+[1119/3500] train_loss: 12.10224 valid_loss: 1.71146
+EarlyStopping counter: 369 out of 1000
+[1120/3500] train_loss: 12.09781 valid_loss: 1.68917
+EarlyStopping counter: 370 out of 1000
+[1121/3500] train_loss: 11.91549 valid_loss: 1.84354
+EarlyStopping counter: 371 out of 1000
+[1122/3500] train_loss: 12.06222 valid_loss: 1.80504
+EarlyStopping counter: 372 out of 1000
+[1123/3500] train_loss: 12.12779 valid_loss: 1.79375
+EarlyStopping counter: 373 out of 1000
+[1124/3500] train_loss: 12.03091 valid_loss: 1.77710
+EarlyStopping counter: 374 out of 1000
+[1125/3500] train_loss: 12.07095 valid_loss: 1.74616
+EarlyStopping counter: 375 out of 1000
+[1126/3500] train_loss: 12.00962 valid_loss: 1.64833
+EarlyStopping counter: 376 out of 1000
+[1127/3500] train_loss: 11.96427 valid_loss: 1.73112
+EarlyStopping counter: 377 out of 1000
+[1128/3500] train_loss: 11.91066 valid_loss: 1.63251
+EarlyStopping counter: 378 out of 1000
+[1129/3500] train_loss: 12.06113 valid_loss: 1.65678
+EarlyStopping counter: 379 out of 1000
+[1130/3500] train_loss: 12.06118 valid_loss: 1.81145
+EarlyStopping counter: 380 out of 1000
+[1131/3500] train_loss: 12.04084 valid_loss: 1.82155
+EarlyStopping counter: 381 out of 1000
+[1132/3500] train_loss: 12.09843 valid_loss: 1.71336
+EarlyStopping counter: 382 out of 1000
+[1133/3500] train_loss: 12.03288 valid_loss: 1.88397
+EarlyStopping counter: 383 out of 1000
+[1134/3500] train_loss: 12.14236 valid_loss: 1.93815
+EarlyStopping counter: 384 out of 1000
+[1135/3500] train_loss: 12.05732 valid_loss: 1.77629
+EarlyStopping counter: 385 out of 1000
+[1136/3500] train_loss: 11.84851 valid_loss: 1.79131
+EarlyStopping counter: 386 out of 1000
+[1137/3500] train_loss: 11.98395 valid_loss: 2.30723
+EarlyStopping counter: 387 out of 1000
+[1138/3500] train_loss: 11.95942 valid_loss: 1.79827
+EarlyStopping counter: 388 out of 1000
+[1139/3500] train_loss: 12.04488 valid_loss: 1.91136
+EarlyStopping counter: 389 out of 1000
+[1140/3500] train_loss: 11.98909 valid_loss: 1.88399
+EarlyStopping counter: 390 out of 1000
+[1141/3500] train_loss: 12.16101 valid_loss: 1.76737
+EarlyStopping counter: 391 out of 1000
+[1142/3500] train_loss: 12.03901 valid_loss: 1.75991
+EarlyStopping counter: 392 out of 1000
+[1143/3500] train_loss: 11.94648 valid_loss: 1.89051
+EarlyStopping counter: 393 out of 1000
+[1144/3500] train_loss: 11.94847 valid_loss: 1.70157
+EarlyStopping counter: 394 out of 1000
+[1145/3500] train_loss: 12.03077 valid_loss: 1.78075
+EarlyStopping counter: 395 out of 1000
+[1146/3500] train_loss: 12.16455 valid_loss: 1.72860
+EarlyStopping counter: 396 out of 1000
+[1147/3500] train_loss: 12.19019 valid_loss: 1.71775
+EarlyStopping counter: 397 out of 1000
+[1148/3500] train_loss: 12.02391 valid_loss: 1.69759
+EarlyStopping counter: 398 out of 1000
+[1149/3500] train_loss: 12.01544 valid_loss: 1.71986
+EarlyStopping counter: 399 out of 1000
+[1150/3500] train_loss: 11.88735 valid_loss: 1.81912
+EarlyStopping counter: 400 out of 1000
+[1151/3500] train_loss: 11.83128 valid_loss: 1.70800
+EarlyStopping counter: 401 out of 1000
+[1152/3500] train_loss: 11.98481 valid_loss: 1.89655
+EarlyStopping counter: 402 out of 1000
+[1153/3500] train_loss: 11.99245 valid_loss: 1.93112
+EarlyStopping counter: 403 out of 1000
+[1154/3500] train_loss: 12.15150 valid_loss: 1.86756
+EarlyStopping counter: 404 out of 1000
+[1155/3500] train_loss: 12.00823 valid_loss: 1.80786
+EarlyStopping counter: 405 out of 1000
+[1156/3500] train_loss: 12.00192 valid_loss: 1.75722
+EarlyStopping counter: 406 out of 1000
+[1157/3500] train_loss: 11.96336 valid_loss: 1.72130
+EarlyStopping counter: 407 out of 1000
+[1158/3500] train_loss: 12.15821 valid_loss: 1.93510
+EarlyStopping counter: 408 out of 1000
+[1159/3500] train_loss: 12.09141 valid_loss: 1.78487
+EarlyStopping counter: 409 out of 1000
+[1160/3500] train_loss: 12.01468 valid_loss: 1.71842
+EarlyStopping counter: 410 out of 1000
+[1161/3500] train_loss: 11.95659 valid_loss: 1.72467
+EarlyStopping counter: 411 out of 1000
+[1162/3500] train_loss: 11.92046 valid_loss: 1.76907
+EarlyStopping counter: 412 out of 1000
+[1163/3500] train_loss: 12.00120 valid_loss: 1.76711
+EarlyStopping counter: 413 out of 1000
+[1164/3500] train_loss: 12.03735 valid_loss: 1.70649
+EarlyStopping counter: 414 out of 1000
+[1165/3500] train_loss: 11.80106 valid_loss: 1.76134
+EarlyStopping counter: 415 out of 1000
+[1166/3500] train_loss: 12.04547 valid_loss: 1.80664
+EarlyStopping counter: 416 out of 1000
+[1167/3500] train_loss: 12.02778 valid_loss: 1.75949
+EarlyStopping counter: 417 out of 1000
+[1168/3500] train_loss: 12.06568 valid_loss: 1.73458
+EarlyStopping counter: 418 out of 1000
+[1169/3500] train_loss: 12.22856 valid_loss: 1.74117
+EarlyStopping counter: 419 out of 1000
+[1170/3500] train_loss: 12.29132 valid_loss: 1.71666
+EarlyStopping counter: 420 out of 1000
+[1171/3500] train_loss: 12.14982 valid_loss: 1.76985
+EarlyStopping counter: 421 out of 1000
+[1172/3500] train_loss: 11.93467 valid_loss: 1.77625
+EarlyStopping counter: 422 out of 1000
+[1173/3500] train_loss: 11.95018 valid_loss: 1.75366
+EarlyStopping counter: 423 out of 1000
+[1174/3500] train_loss: 11.98210 valid_loss: 2.01205
+EarlyStopping counter: 424 out of 1000
+[1175/3500] train_loss: 12.04805 valid_loss: 1.73805
+EarlyStopping counter: 425 out of 1000
+[1176/3500] train_loss: 12.08613 valid_loss: 1.74806
+EarlyStopping counter: 426 out of 1000
+[1177/3500] train_loss: 11.86004 valid_loss: 1.85350
+EarlyStopping counter: 427 out of 1000
+[1178/3500] train_loss: 11.90000 valid_loss: 1.68363
+EarlyStopping counter: 428 out of 1000
+[1179/3500] train_loss: 11.96330 valid_loss: 1.75859
+EarlyStopping counter: 429 out of 1000
+[1180/3500] train_loss: 11.95334 valid_loss: 1.81368
+EarlyStopping counter: 430 out of 1000
+[1181/3500] train_loss: 11.99420 valid_loss: 1.64206
+EarlyStopping counter: 431 out of 1000
+[1182/3500] train_loss: 11.99161 valid_loss: 1.79586
+EarlyStopping counter: 432 out of 1000
+[1183/3500] train_loss: 11.92141 valid_loss: 1.76160
+EarlyStopping counter: 433 out of 1000
+[1184/3500] train_loss: 11.87250 valid_loss: 1.71875
+EarlyStopping counter: 434 out of 1000
+[1185/3500] train_loss: 11.92880 valid_loss: 1.67814
+EarlyStopping counter: 435 out of 1000
+[1186/3500] train_loss: 11.93301 valid_loss: 1.82744
+EarlyStopping counter: 436 out of 1000
+[1187/3500] train_loss: 11.92084 valid_loss: 1.77196
+EarlyStopping counter: 437 out of 1000
+[1188/3500] train_loss: 12.28101 valid_loss: 1.80153
+EarlyStopping counter: 438 out of 1000
+[1189/3500] train_loss: 11.92015 valid_loss: 1.64665
+EarlyStopping counter: 439 out of 1000
+[1190/3500] train_loss: 12.09635 valid_loss: 1.82541
+EarlyStopping counter: 440 out of 1000
+[1191/3500] train_loss: 12.02039 valid_loss: 1.64571
+EarlyStopping counter: 441 out of 1000
+[1192/3500] train_loss: 11.88849 valid_loss: 1.85664
+EarlyStopping counter: 442 out of 1000
+[1193/3500] train_loss: 11.92126 valid_loss: 1.73607
+EarlyStopping counter: 443 out of 1000
+[1194/3500] train_loss: 11.78897 valid_loss: 1.70389
+EarlyStopping counter: 444 out of 1000
+[1195/3500] train_loss: 11.89690 valid_loss: 1.79201
+EarlyStopping counter: 445 out of 1000
+[1196/3500] train_loss: 11.86591 valid_loss: 1.82505
+EarlyStopping counter: 446 out of 1000
+[1197/3500] train_loss: 11.86450 valid_loss: 1.90168
+EarlyStopping counter: 447 out of 1000
+[1198/3500] train_loss: 11.84111 valid_loss: 1.98893
+EarlyStopping counter: 448 out of 1000
+[1199/3500] train_loss: 11.96647 valid_loss: 1.69600
+EarlyStopping counter: 449 out of 1000
+[1200/3500] train_loss: 11.90420 valid_loss: 1.72132
+EarlyStopping counter: 450 out of 1000
+[1201/3500] train_loss: 11.94662 valid_loss: 1.80067
+EarlyStopping counter: 451 out of 1000
+[1202/3500] train_loss: 12.00401 valid_loss: 1.82859
+EarlyStopping counter: 452 out of 1000
+[1203/3500] train_loss: 12.02158 valid_loss: 1.91939
+EarlyStopping counter: 453 out of 1000
+[1204/3500] train_loss: 11.93030 valid_loss: 1.84407
+EarlyStopping counter: 454 out of 1000
+[1205/3500] train_loss: 12.05297 valid_loss: 1.91165
+EarlyStopping counter: 455 out of 1000
+[1206/3500] train_loss: 11.90038 valid_loss: 1.68450
+EarlyStopping counter: 456 out of 1000
+[1207/3500] train_loss: 11.83585 valid_loss: 1.95181
+EarlyStopping counter: 457 out of 1000
+[1208/3500] train_loss: 12.02415 valid_loss: 1.72707
+EarlyStopping counter: 458 out of 1000
+[1209/3500] train_loss: 11.95375 valid_loss: 1.86047
+EarlyStopping counter: 459 out of 1000
+[1210/3500] train_loss: 12.00493 valid_loss: 1.83517
+EarlyStopping counter: 460 out of 1000
+[1211/3500] train_loss: 11.98723 valid_loss: 1.71693
+EarlyStopping counter: 461 out of 1000
+[1212/3500] train_loss: 11.85839 valid_loss: 1.65348
+EarlyStopping counter: 462 out of 1000
+[1213/3500] train_loss: 11.94225 valid_loss: 1.68481
+EarlyStopping counter: 463 out of 1000
+[1214/3500] train_loss: 11.97287 valid_loss: 1.89907
+EarlyStopping counter: 464 out of 1000
+[1215/3500] train_loss: 11.95365 valid_loss: 1.70071
+EarlyStopping counter: 465 out of 1000
+[1216/3500] train_loss: 11.97619 valid_loss: 1.84390
+EarlyStopping counter: 466 out of 1000
+[1217/3500] train_loss: 11.88100 valid_loss: 1.77167
+EarlyStopping counter: 467 out of 1000
+[1218/3500] train_loss: 11.98926 valid_loss: 1.76388
+EarlyStopping counter: 468 out of 1000
+[1219/3500] train_loss: 11.93788 valid_loss: 1.75555
+EarlyStopping counter: 469 out of 1000
+[1220/3500] train_loss: 12.01309 valid_loss: 1.82381
+EarlyStopping counter: 470 out of 1000
+[1221/3500] train_loss: 12.04407 valid_loss: 1.83386
+EarlyStopping counter: 471 out of 1000
+[1222/3500] train_loss: 12.13546 valid_loss: 1.76071
+EarlyStopping counter: 472 out of 1000
+[1223/3500] train_loss: 12.03345 valid_loss: 1.61081
+EarlyStopping counter: 473 out of 1000
+[1224/3500] train_loss: 11.96979 valid_loss: 1.79692
+EarlyStopping counter: 474 out of 1000
+[1225/3500] train_loss: 11.89399 valid_loss: 1.80312
+EarlyStopping counter: 475 out of 1000
+[1226/3500] train_loss: 11.92514 valid_loss: 1.85117
+EarlyStopping counter: 476 out of 1000
+[1227/3500] train_loss: 12.09368 valid_loss: 2.29394
+EarlyStopping counter: 477 out of 1000
+[1228/3500] train_loss: 11.91284 valid_loss: 1.73869
+EarlyStopping counter: 478 out of 1000
+[1229/3500] train_loss: 11.95831 valid_loss: 1.79384
+EarlyStopping counter: 479 out of 1000
+[1230/3500] train_loss: 11.93074 valid_loss: 1.97939
+EarlyStopping counter: 480 out of 1000
+[1231/3500] train_loss: 11.95040 valid_loss: 1.75696
+EarlyStopping counter: 481 out of 1000
+[1232/3500] train_loss: 11.88936 valid_loss: 1.76858
+EarlyStopping counter: 482 out of 1000
+[1233/3500] train_loss: 11.98747 valid_loss: 1.72414
+EarlyStopping counter: 483 out of 1000
+[1234/3500] train_loss: 11.88476 valid_loss: 1.61869
+EarlyStopping counter: 484 out of 1000
+[1235/3500] train_loss: 11.88949 valid_loss: 1.81568
+EarlyStopping counter: 485 out of 1000
+[1236/3500] train_loss: 11.90107 valid_loss: 1.76994
+EarlyStopping counter: 486 out of 1000
+[1237/3500] train_loss: 11.87659 valid_loss: 1.76187
+EarlyStopping counter: 487 out of 1000
+[1238/3500] train_loss: 11.84221 valid_loss: 1.70540
+EarlyStopping counter: 488 out of 1000
+[1239/3500] train_loss: 12.03165 valid_loss: 1.66811
+EarlyStopping counter: 489 out of 1000
+[1240/3500] train_loss: 11.99803 valid_loss: 1.69153
+EarlyStopping counter: 490 out of 1000
+[1241/3500] train_loss: 11.87631 valid_loss: 1.85704
+EarlyStopping counter: 491 out of 1000
+[1242/3500] train_loss: 11.89974 valid_loss: 1.68958
+EarlyStopping counter: 492 out of 1000
+[1243/3500] train_loss: 11.98991 valid_loss: 1.91536
+EarlyStopping counter: 493 out of 1000
+[1244/3500] train_loss: 12.13449 valid_loss: 1.76526
+EarlyStopping counter: 494 out of 1000
+[1245/3500] train_loss: 11.97047 valid_loss: 1.88489
+EarlyStopping counter: 495 out of 1000
+[1246/3500] train_loss: 11.98453 valid_loss: 1.88326
+EarlyStopping counter: 496 out of 1000
+[1247/3500] train_loss: 11.98146 valid_loss: 1.69939
+EarlyStopping counter: 497 out of 1000
+[1248/3500] train_loss: 11.77170 valid_loss: 1.74606
+EarlyStopping counter: 498 out of 1000
+[1249/3500] train_loss: 11.85770 valid_loss: 1.80286
+EarlyStopping counter: 499 out of 1000
+[1250/3500] train_loss: 11.88733 valid_loss: 1.76606
+EarlyStopping counter: 500 out of 1000
+[1251/3500] train_loss: 11.94466 valid_loss: 1.78498
+EarlyStopping counter: 501 out of 1000
+[1252/3500] train_loss: 11.89772 valid_loss: 1.80992
+EarlyStopping counter: 502 out of 1000
+[1253/3500] train_loss: 12.08881 valid_loss: 1.70178
+EarlyStopping counter: 503 out of 1000
+[1254/3500] train_loss: 12.02149 valid_loss: 1.86723
+EarlyStopping counter: 504 out of 1000
+[1255/3500] train_loss: 11.95536 valid_loss: 1.71319
+EarlyStopping counter: 505 out of 1000
+[1256/3500] train_loss: 11.73777 valid_loss: 1.87206
+EarlyStopping counter: 506 out of 1000
+[1257/3500] train_loss: 11.77010 valid_loss: 1.65773
+EarlyStopping counter: 507 out of 1000
+[1258/3500] train_loss: 11.88262 valid_loss: 1.70635
+EarlyStopping counter: 508 out of 1000
+[1259/3500] train_loss: 11.93498 valid_loss: 1.69096
+EarlyStopping counter: 509 out of 1000
+[1260/3500] train_loss: 11.86450 valid_loss: 1.75426
+EarlyStopping counter: 510 out of 1000
+[1261/3500] train_loss: 11.88793 valid_loss: 1.67206
+EarlyStopping counter: 511 out of 1000
+[1262/3500] train_loss: 11.99079 valid_loss: 1.81245
+EarlyStopping counter: 512 out of 1000
+[1263/3500] train_loss: 11.92650 valid_loss: 1.80046
+EarlyStopping counter: 513 out of 1000
+[1264/3500] train_loss: 11.85160 valid_loss: 1.69210
+EarlyStopping counter: 514 out of 1000
+[1265/3500] train_loss: 11.90565 valid_loss: 1.69330
+EarlyStopping counter: 515 out of 1000
+[1266/3500] train_loss: 11.79503 valid_loss: 1.68748
+EarlyStopping counter: 516 out of 1000
+[1267/3500] train_loss: 11.86473 valid_loss: 1.62240
+EarlyStopping counter: 517 out of 1000
+[1268/3500] train_loss: 11.81657 valid_loss: 1.91419
+EarlyStopping counter: 518 out of 1000
+[1269/3500] train_loss: 11.91686 valid_loss: 1.83506
+EarlyStopping counter: 519 out of 1000
+[1270/3500] train_loss: 12.00112 valid_loss: 1.73693
+EarlyStopping counter: 520 out of 1000
+[1271/3500] train_loss: 11.81337 valid_loss: 1.72776
+EarlyStopping counter: 521 out of 1000
+[1272/3500] train_loss: 11.88700 valid_loss: 1.83264
+EarlyStopping counter: 522 out of 1000
+[1273/3500] train_loss: 11.86730 valid_loss: 1.73852
+EarlyStopping counter: 523 out of 1000
+[1274/3500] train_loss: 11.94200 valid_loss: 1.78539
+EarlyStopping counter: 524 out of 1000
+[1275/3500] train_loss: 11.86585 valid_loss: 1.92327
+EarlyStopping counter: 525 out of 1000
+[1276/3500] train_loss: 11.86231 valid_loss: 1.86967
+EarlyStopping counter: 526 out of 1000
+[1277/3500] train_loss: 11.84079 valid_loss: 1.64941
+EarlyStopping counter: 527 out of 1000
+[1278/3500] train_loss: 11.98930 valid_loss: 1.81815
+EarlyStopping counter: 528 out of 1000
+[1279/3500] train_loss: 11.89289 valid_loss: 1.92764
+EarlyStopping counter: 529 out of 1000
+[1280/3500] train_loss: 11.91621 valid_loss: 1.85533
+EarlyStopping counter: 530 out of 1000
+[1281/3500] train_loss: 11.84507 valid_loss: 1.69664
+EarlyStopping counter: 531 out of 1000
+[1282/3500] train_loss: 11.87222 valid_loss: 1.97074
+EarlyStopping counter: 532 out of 1000
+[1283/3500] train_loss: 11.90964 valid_loss: 1.96816
+EarlyStopping counter: 533 out of 1000
+[1284/3500] train_loss: 11.97874 valid_loss: 1.69061
+EarlyStopping counter: 534 out of 1000
+[1285/3500] train_loss: 11.72878 valid_loss: 1.87150
+EarlyStopping counter: 535 out of 1000
+[1286/3500] train_loss: 11.97612 valid_loss: 1.86775
+EarlyStopping counter: 536 out of 1000
+[1287/3500] train_loss: 11.82622 valid_loss: 1.90582
+EarlyStopping counter: 537 out of 1000
+[1288/3500] train_loss: 12.06226 valid_loss: 1.91963
+EarlyStopping counter: 538 out of 1000
+[1289/3500] train_loss: 12.04369 valid_loss: 1.75420
+EarlyStopping counter: 539 out of 1000
+[1290/3500] train_loss: 11.93010 valid_loss: 1.78581
+EarlyStopping counter: 540 out of 1000
+[1291/3500] train_loss: 11.71420 valid_loss: 1.84002
+EarlyStopping counter: 541 out of 1000
+[1292/3500] train_loss: 11.97602 valid_loss: 1.77259
+EarlyStopping counter: 542 out of 1000
+[1293/3500] train_loss: 11.94989 valid_loss: 1.83653
+EarlyStopping counter: 543 out of 1000
+[1294/3500] train_loss: 11.94775 valid_loss: 1.78582
+EarlyStopping counter: 544 out of 1000
+[1295/3500] train_loss: 11.95753 valid_loss: 1.71063
+EarlyStopping counter: 545 out of 1000
+[1296/3500] train_loss: 11.79174 valid_loss: 1.85286
+EarlyStopping counter: 546 out of 1000
+[1297/3500] train_loss: 12.01528 valid_loss: 1.69293
+EarlyStopping counter: 547 out of 1000
+[1298/3500] train_loss: 12.04255 valid_loss: 1.82767
+EarlyStopping counter: 548 out of 1000
+[1299/3500] train_loss: 11.87726 valid_loss: 1.82117
+EarlyStopping counter: 549 out of 1000
+[1300/3500] train_loss: 11.88657 valid_loss: 1.82092
+EarlyStopping counter: 550 out of 1000
+[1301/3500] train_loss: 11.97226 valid_loss: 1.69043
+EarlyStopping counter: 551 out of 1000
+[1302/3500] train_loss: 11.93743 valid_loss: 1.87892
+EarlyStopping counter: 552 out of 1000
+[1303/3500] train_loss: 11.94168 valid_loss: 1.70937
+EarlyStopping counter: 553 out of 1000
+[1304/3500] train_loss: 11.80458 valid_loss: 1.79076
+EarlyStopping counter: 554 out of 1000
+[1305/3500] train_loss: 11.78211 valid_loss: 1.60861
+EarlyStopping counter: 555 out of 1000
+[1306/3500] train_loss: 11.77070 valid_loss: 1.90889
+EarlyStopping counter: 556 out of 1000
+[1307/3500] train_loss: 12.07480 valid_loss: 1.83623
+EarlyStopping counter: 557 out of 1000
+[1308/3500] train_loss: 11.82623 valid_loss: 1.62941
+EarlyStopping counter: 558 out of 1000
+[1309/3500] train_loss: 11.85988 valid_loss: 1.77835
+EarlyStopping counter: 559 out of 1000
+[1310/3500] train_loss: 12.10289 valid_loss: 1.81522
+EarlyStopping counter: 560 out of 1000
+[1311/3500] train_loss: 11.85285 valid_loss: 1.96733
+EarlyStopping counter: 561 out of 1000
+[1312/3500] train_loss: 11.89328 valid_loss: 1.80506
+EarlyStopping counter: 562 out of 1000
+[1313/3500] train_loss: 11.81258 valid_loss: 1.72843
+EarlyStopping counter: 563 out of 1000
+[1314/3500] train_loss: 11.91938 valid_loss: 1.86924
+EarlyStopping counter: 564 out of 1000
+[1315/3500] train_loss: 11.90136 valid_loss: 1.63886
+EarlyStopping counter: 565 out of 1000
+[1316/3500] train_loss: 11.82859 valid_loss: 1.89551
+EarlyStopping counter: 566 out of 1000
+[1317/3500] train_loss: 11.94180 valid_loss: 1.73153
+EarlyStopping counter: 567 out of 1000
+[1318/3500] train_loss: 11.79733 valid_loss: 1.71113
+EarlyStopping counter: 568 out of 1000
+[1319/3500] train_loss: 11.89647 valid_loss: 1.67627
+EarlyStopping counter: 569 out of 1000
+[1320/3500] train_loss: 11.91005 valid_loss: 1.87372
+EarlyStopping counter: 570 out of 1000
+[1321/3500] train_loss: 11.81739 valid_loss: 1.70395
+EarlyStopping counter: 571 out of 1000
+[1322/3500] train_loss: 11.77150 valid_loss: 2.01287
+EarlyStopping counter: 572 out of 1000
+[1323/3500] train_loss: 11.87632 valid_loss: 1.89164
+EarlyStopping counter: 573 out of 1000
+[1324/3500] train_loss: 11.74796 valid_loss: 1.76665
+EarlyStopping counter: 574 out of 1000
+[1325/3500] train_loss: 11.88487 valid_loss: 1.87268
+EarlyStopping counter: 575 out of 1000
+[1326/3500] train_loss: 11.81962 valid_loss: 1.81793
+EarlyStopping counter: 576 out of 1000
+[1327/3500] train_loss: 11.82406 valid_loss: 2.04203
+EarlyStopping counter: 577 out of 1000
+[1328/3500] train_loss: 12.07090 valid_loss: 1.73653
+EarlyStopping counter: 578 out of 1000
+[1329/3500] train_loss: 11.93819 valid_loss: 1.72411
+EarlyStopping counter: 579 out of 1000
+[1330/3500] train_loss: 11.75998 valid_loss: 1.65216
+EarlyStopping counter: 580 out of 1000
+[1331/3500] train_loss: 11.93516 valid_loss: 1.86034
+EarlyStopping counter: 581 out of 1000
+[1332/3500] train_loss: 11.86784 valid_loss: 1.69210
+EarlyStopping counter: 582 out of 1000
+[1333/3500] train_loss: 11.82024 valid_loss: 1.69361
+EarlyStopping counter: 583 out of 1000
+[1334/3500] train_loss: 11.71597 valid_loss: 1.69567
+EarlyStopping counter: 584 out of 1000
+[1335/3500] train_loss: 11.85033 valid_loss: 1.74574
+EarlyStopping counter: 585 out of 1000
+[1336/3500] train_loss: 11.85891 valid_loss: 1.80705
+EarlyStopping counter: 586 out of 1000
+[1337/3500] train_loss: 11.84223 valid_loss: 1.80838
+EarlyStopping counter: 587 out of 1000
+[1338/3500] train_loss: 11.92739 valid_loss: 1.93388
+EarlyStopping counter: 588 out of 1000
+[1339/3500] train_loss: 11.77986 valid_loss: 1.70126
+EarlyStopping counter: 589 out of 1000
+[1340/3500] train_loss: 12.08312 valid_loss: 1.78134
+EarlyStopping counter: 590 out of 1000
+[1341/3500] train_loss: 11.80933 valid_loss: 1.72397
+EarlyStopping counter: 591 out of 1000
+[1342/3500] train_loss: 11.84138 valid_loss: 1.82539
+EarlyStopping counter: 592 out of 1000
+[1343/3500] train_loss: 11.85120 valid_loss: 1.69889
+EarlyStopping counter: 593 out of 1000
+[1344/3500] train_loss: 11.85960 valid_loss: 1.78128
+EarlyStopping counter: 594 out of 1000
+[1345/3500] train_loss: 11.89163 valid_loss: 1.94173
+EarlyStopping counter: 595 out of 1000
+[1346/3500] train_loss: 11.89016 valid_loss: 1.81218
+EarlyStopping counter: 596 out of 1000
+[1347/3500] train_loss: 11.92710 valid_loss: 1.71198
+EarlyStopping counter: 597 out of 1000
+[1348/3500] train_loss: 11.73960 valid_loss: 1.85596
+EarlyStopping counter: 598 out of 1000
+[1349/3500] train_loss: 11.73321 valid_loss: 1.73402
+EarlyStopping counter: 599 out of 1000
+[1350/3500] train_loss: 11.92254 valid_loss: 1.92937
+EarlyStopping counter: 600 out of 1000
+[1351/3500] train_loss: 11.82027 valid_loss: 1.74325
+EarlyStopping counter: 601 out of 1000
+[1352/3500] train_loss: 11.86489 valid_loss: 1.70587
+EarlyStopping counter: 602 out of 1000
+[1353/3500] train_loss: 11.72271 valid_loss: 1.78761
+EarlyStopping counter: 603 out of 1000
+[1354/3500] train_loss: 11.94804 valid_loss: 1.73994
+EarlyStopping counter: 604 out of 1000
+[1355/3500] train_loss: 12.06271 valid_loss: 1.82594
+EarlyStopping counter: 605 out of 1000
+[1356/3500] train_loss: 12.07065 valid_loss: 1.79502
+EarlyStopping counter: 606 out of 1000
+[1357/3500] train_loss: 11.79882 valid_loss: 1.78181
+EarlyStopping counter: 607 out of 1000
+[1358/3500] train_loss: 11.87536 valid_loss: 1.87096
+EarlyStopping counter: 608 out of 1000
+[1359/3500] train_loss: 11.81480 valid_loss: 1.84565
+EarlyStopping counter: 609 out of 1000
+[1360/3500] train_loss: 11.89003 valid_loss: 1.78285
+EarlyStopping counter: 610 out of 1000
+[1361/3500] train_loss: 11.97049 valid_loss: 1.74511
+EarlyStopping counter: 611 out of 1000
+[1362/3500] train_loss: 11.81115 valid_loss: 1.91323
+EarlyStopping counter: 612 out of 1000
+[1363/3500] train_loss: 11.90248 valid_loss: 1.69947
+EarlyStopping counter: 613 out of 1000
+[1364/3500] train_loss: 11.77986 valid_loss: 1.91130
+EarlyStopping counter: 614 out of 1000
+[1365/3500] train_loss: 11.77393 valid_loss: 1.77864
+EarlyStopping counter: 615 out of 1000
+[1366/3500] train_loss: 11.84755 valid_loss: 1.67535
+EarlyStopping counter: 616 out of 1000
+[1367/3500] train_loss: 11.77491 valid_loss: 1.82047
+EarlyStopping counter: 617 out of 1000
+[1368/3500] train_loss: 11.86557 valid_loss: 2.01106
+EarlyStopping counter: 618 out of 1000
+[1369/3500] train_loss: 11.88530 valid_loss: 1.70996
+EarlyStopping counter: 619 out of 1000
+[1370/3500] train_loss: 11.86186 valid_loss: 1.81305
+EarlyStopping counter: 620 out of 1000
+[1371/3500] train_loss: 11.94243 valid_loss: 1.96965
+EarlyStopping counter: 621 out of 1000
+[1372/3500] train_loss: 11.88535 valid_loss: 1.73399
+EarlyStopping counter: 622 out of 1000
+[1373/3500] train_loss: 11.78116 valid_loss: 1.71029
+EarlyStopping counter: 623 out of 1000
+[1374/3500] train_loss: 11.88948 valid_loss: 2.31409
+EarlyStopping counter: 624 out of 1000
+[1375/3500] train_loss: 11.94955 valid_loss: 1.67730
+EarlyStopping counter: 625 out of 1000
+[1376/3500] train_loss: 11.82334 valid_loss: 1.71488
+EarlyStopping counter: 626 out of 1000
+[1377/3500] train_loss: 11.83916 valid_loss: 1.91492
+EarlyStopping counter: 627 out of 1000
+[1378/3500] train_loss: 11.82575 valid_loss: 1.85454
+EarlyStopping counter: 628 out of 1000
+[1379/3500] train_loss: 11.91464 valid_loss: 1.69086
+EarlyStopping counter: 629 out of 1000
+[1380/3500] train_loss: 11.91471 valid_loss: 1.75171
+EarlyStopping counter: 630 out of 1000
+[1381/3500] train_loss: 11.76980 valid_loss: 1.75778
+EarlyStopping counter: 631 out of 1000
+[1382/3500] train_loss: 11.81864 valid_loss: 1.73641
+EarlyStopping counter: 632 out of 1000
+[1383/3500] train_loss: 11.75967 valid_loss: 1.74540
+EarlyStopping counter: 633 out of 1000
+[1384/3500] train_loss: 11.83004 valid_loss: 1.96648
+EarlyStopping counter: 634 out of 1000
+[1385/3500] train_loss: 11.83831 valid_loss: 1.70731
+EarlyStopping counter: 635 out of 1000
+[1386/3500] train_loss: 11.86263 valid_loss: 1.86214
+EarlyStopping counter: 636 out of 1000
+[1387/3500] train_loss: 11.82927 valid_loss: 1.74111
+EarlyStopping counter: 637 out of 1000
+[1388/3500] train_loss: 11.96640 valid_loss: 1.72468
+EarlyStopping counter: 638 out of 1000
+[1389/3500] train_loss: 11.94818 valid_loss: 1.77485
+EarlyStopping counter: 639 out of 1000
+[1390/3500] train_loss: 11.87821 valid_loss: 1.89418
+EarlyStopping counter: 640 out of 1000
+[1391/3500] train_loss: 11.81399 valid_loss: 1.75637
+EarlyStopping counter: 641 out of 1000
+[1392/3500] train_loss: 11.81198 valid_loss: 1.83274
+EarlyStopping counter: 642 out of 1000
+[1393/3500] train_loss: 11.79182 valid_loss: 1.75862
+EarlyStopping counter: 643 out of 1000
+[1394/3500] train_loss: 11.94561 valid_loss: 1.91259
+EarlyStopping counter: 644 out of 1000
+[1395/3500] train_loss: 11.74219 valid_loss: 1.88399
+EarlyStopping counter: 645 out of 1000
+[1396/3500] train_loss: 11.73757 valid_loss: 1.82610
+EarlyStopping counter: 646 out of 1000
+[1397/3500] train_loss: 11.88605 valid_loss: 1.72260
+EarlyStopping counter: 647 out of 1000
+[1398/3500] train_loss: 11.76516 valid_loss: 1.69843
+EarlyStopping counter: 648 out of 1000
+[1399/3500] train_loss: 11.78507 valid_loss: 2.05458
+EarlyStopping counter: 649 out of 1000
+[1400/3500] train_loss: 11.78526 valid_loss: 1.81546
+EarlyStopping counter: 650 out of 1000
+[1401/3500] train_loss: 11.86184 valid_loss: 1.89105
+EarlyStopping counter: 651 out of 1000
+[1402/3500] train_loss: 11.86291 valid_loss: 1.76945
+EarlyStopping counter: 652 out of 1000
+[1403/3500] train_loss: 11.87875 valid_loss: 1.85287
+EarlyStopping counter: 653 out of 1000
+[1404/3500] train_loss: 11.90149 valid_loss: 1.86143
+EarlyStopping counter: 654 out of 1000
+[1405/3500] train_loss: 11.81251 valid_loss: 1.87353
+EarlyStopping counter: 655 out of 1000
+[1406/3500] train_loss: 11.71060 valid_loss: 1.77889
+EarlyStopping counter: 656 out of 1000
+[1407/3500] train_loss: 11.79867 valid_loss: 1.80442
+EarlyStopping counter: 657 out of 1000
+[1408/3500] train_loss: 11.81651 valid_loss: 1.82235
+EarlyStopping counter: 658 out of 1000
+[1409/3500] train_loss: 11.70285 valid_loss: 1.73593
+EarlyStopping counter: 659 out of 1000
+[1410/3500] train_loss: 11.72561 valid_loss: 2.22554
+EarlyStopping counter: 660 out of 1000
+[1411/3500] train_loss: 11.97839 valid_loss: 1.87632
+EarlyStopping counter: 661 out of 1000
+[1412/3500] train_loss: 11.94719 valid_loss: 1.85322
+EarlyStopping counter: 662 out of 1000
+[1413/3500] train_loss: 11.85177 valid_loss: 1.97731
+EarlyStopping counter: 663 out of 1000
+[1414/3500] train_loss: 11.80430 valid_loss: 1.73694
+EarlyStopping counter: 664 out of 1000
+[1415/3500] train_loss: 11.79878 valid_loss: 1.70502
+EarlyStopping counter: 665 out of 1000
+[1416/3500] train_loss: 11.86162 valid_loss: 1.81296
+EarlyStopping counter: 666 out of 1000
+[1417/3500] train_loss: 11.68028 valid_loss: 1.73227
+EarlyStopping counter: 667 out of 1000
+[1418/3500] train_loss: 11.68141 valid_loss: 1.79671
+EarlyStopping counter: 668 out of 1000
+[1419/3500] train_loss: 11.85209 valid_loss: 1.88784
+EarlyStopping counter: 669 out of 1000
+[1420/3500] train_loss: 11.77564 valid_loss: 1.79004
+EarlyStopping counter: 670 out of 1000
+[1421/3500] train_loss: 11.77528 valid_loss: 1.71753
+EarlyStopping counter: 671 out of 1000
+[1422/3500] train_loss: 11.88589 valid_loss: 1.73174
+EarlyStopping counter: 672 out of 1000
+[1423/3500] train_loss: 11.78966 valid_loss: 2.89700
+EarlyStopping counter: 673 out of 1000
+[1424/3500] train_loss: 11.75656 valid_loss: 1.90406
+EarlyStopping counter: 674 out of 1000
+[1425/3500] train_loss: 11.77851 valid_loss: 1.84335
+EarlyStopping counter: 675 out of 1000
+[1426/3500] train_loss: 11.86520 valid_loss: 1.76842
+EarlyStopping counter: 676 out of 1000
+[1427/3500] train_loss: 11.78206 valid_loss: 1.59041
+EarlyStopping counter: 677 out of 1000
+[1428/3500] train_loss: 11.83642 valid_loss: 2.10533
+EarlyStopping counter: 678 out of 1000
+[1429/3500] train_loss: 11.90423 valid_loss: 2.11910
+EarlyStopping counter: 679 out of 1000
+[1430/3500] train_loss: 11.84500 valid_loss: 2.04123
+EarlyStopping counter: 680 out of 1000
+[1431/3500] train_loss: 11.99242 valid_loss: 1.98740
+EarlyStopping counter: 681 out of 1000
+[1432/3500] train_loss: 11.88351 valid_loss: 2.09633
+EarlyStopping counter: 682 out of 1000
+[1433/3500] train_loss: 11.77328 valid_loss: 2.11899
+EarlyStopping counter: 683 out of 1000
+[1434/3500] train_loss: 11.78524 valid_loss: 2.02710
+EarlyStopping counter: 684 out of 1000
+[1435/3500] train_loss: 11.76543 valid_loss: 2.31201
+EarlyStopping counter: 685 out of 1000
+[1436/3500] train_loss: 11.79568 valid_loss: 2.03434
+EarlyStopping counter: 686 out of 1000
+[1437/3500] train_loss: 11.69439 valid_loss: 1.95138
+EarlyStopping counter: 687 out of 1000
+[1438/3500] train_loss: 11.73268 valid_loss: 2.15189
+EarlyStopping counter: 688 out of 1000
+[1439/3500] train_loss: 11.72867 valid_loss: 2.08829
+EarlyStopping counter: 689 out of 1000
+[1440/3500] train_loss: 11.73262 valid_loss: 2.03637
+EarlyStopping counter: 690 out of 1000
+[1441/3500] train_loss: 11.85136 valid_loss: 2.17904
+EarlyStopping counter: 691 out of 1000
+[1442/3500] train_loss: 11.75618 valid_loss: 1.90624
+EarlyStopping counter: 692 out of 1000
+[1443/3500] train_loss: 11.76611 valid_loss: 2.02109
+EarlyStopping counter: 693 out of 1000
+[1444/3500] train_loss: 11.79834 valid_loss: 1.92543
+EarlyStopping counter: 694 out of 1000
+[1445/3500] train_loss: 11.80843 valid_loss: 1.91383
+EarlyStopping counter: 695 out of 1000
+[1446/3500] train_loss: 11.81948 valid_loss: 2.07531
+EarlyStopping counter: 696 out of 1000
+[1447/3500] train_loss: 11.77180 valid_loss: 2.07037
+EarlyStopping counter: 697 out of 1000
+[1448/3500] train_loss: 11.76931 valid_loss: 2.12972
+EarlyStopping counter: 698 out of 1000
+[1449/3500] train_loss: 11.78941 valid_loss: 2.08330
+EarlyStopping counter: 699 out of 1000
+[1450/3500] train_loss: 11.79566 valid_loss: 2.32558
+EarlyStopping counter: 700 out of 1000
+[1451/3500] train_loss: 11.73845 valid_loss: 2.22410
+EarlyStopping counter: 701 out of 1000
+[1452/3500] train_loss: 11.86859 valid_loss: 2.15367
+EarlyStopping counter: 702 out of 1000
+[1453/3500] train_loss: 11.79271 valid_loss: 1.98645
+EarlyStopping counter: 703 out of 1000
+[1454/3500] train_loss: 11.69649 valid_loss: 2.11493
+EarlyStopping counter: 704 out of 1000
+[1455/3500] train_loss: 11.85690 valid_loss: 1.93300
+EarlyStopping counter: 705 out of 1000
+[1456/3500] train_loss: 11.81256 valid_loss: 1.95465
+EarlyStopping counter: 706 out of 1000
+[1457/3500] train_loss: 11.76025 valid_loss: 1.85518
+EarlyStopping counter: 707 out of 1000
+[1458/3500] train_loss: 11.71455 valid_loss: 1.67838
+EarlyStopping counter: 708 out of 1000
+[1459/3500] train_loss: 11.71054 valid_loss: 2.21131
+EarlyStopping counter: 709 out of 1000
+[1460/3500] train_loss: 11.88656 valid_loss: 2.09294
+EarlyStopping counter: 710 out of 1000
+[1461/3500] train_loss: 11.90134 valid_loss: 2.06910
+EarlyStopping counter: 711 out of 1000
+[1462/3500] train_loss: 11.94078 valid_loss: 2.10283
+EarlyStopping counter: 712 out of 1000
+[1463/3500] train_loss: 11.79133 valid_loss: 2.20733
+EarlyStopping counter: 713 out of 1000
+[1464/3500] train_loss: 11.79429 valid_loss: 1.98213
+EarlyStopping counter: 714 out of 1000
+[1465/3500] train_loss: 11.78464 valid_loss: 1.98797
+EarlyStopping counter: 715 out of 1000
+[1466/3500] train_loss: 11.74175 valid_loss: 2.47247
+EarlyStopping counter: 716 out of 1000
+[1467/3500] train_loss: 11.74126 valid_loss: 1.90418
+EarlyStopping counter: 717 out of 1000
+[1468/3500] train_loss: 11.70772 valid_loss: 2.28952
+EarlyStopping counter: 718 out of 1000
+[1469/3500] train_loss: 11.88661 valid_loss: 2.16102
+EarlyStopping counter: 719 out of 1000
+[1470/3500] train_loss: 11.77183 valid_loss: 2.64288
+EarlyStopping counter: 720 out of 1000
+[1471/3500] train_loss: 11.83994 valid_loss: 2.22954
+EarlyStopping counter: 721 out of 1000
+[1472/3500] train_loss: 11.72334 valid_loss: 1.95445
+EarlyStopping counter: 722 out of 1000
+[1473/3500] train_loss: 11.87423 valid_loss: 2.13977
+EarlyStopping counter: 723 out of 1000
+[1474/3500] train_loss: 11.67240 valid_loss: 1.99861
+EarlyStopping counter: 724 out of 1000
+[1475/3500] train_loss: 11.82043 valid_loss: 2.04420
+EarlyStopping counter: 725 out of 1000
+[1476/3500] train_loss: 11.76534 valid_loss: 2.05261
+EarlyStopping counter: 726 out of 1000
+[1477/3500] train_loss: 11.71085 valid_loss: 2.17248
+EarlyStopping counter: 727 out of 1000
+[1478/3500] train_loss: 11.77450 valid_loss: 2.01514
+EarlyStopping counter: 728 out of 1000
+[1479/3500] train_loss: 11.74260 valid_loss: 2.27673
+EarlyStopping counter: 729 out of 1000
+[1480/3500] train_loss: 11.82853 valid_loss: 2.55660
+EarlyStopping counter: 730 out of 1000
+[1481/3500] train_loss: 11.77984 valid_loss: 2.12555
+EarlyStopping counter: 731 out of 1000
+[1482/3500] train_loss: 11.69824 valid_loss: 2.01838
+EarlyStopping counter: 732 out of 1000
+[1483/3500] train_loss: 11.72937 valid_loss: 2.01837
+EarlyStopping counter: 733 out of 1000
+[1484/3500] train_loss: 11.82160 valid_loss: 1.97041
+EarlyStopping counter: 734 out of 1000
+[1485/3500] train_loss: 11.73667 valid_loss: 2.06478
+EarlyStopping counter: 735 out of 1000
+[1486/3500] train_loss: 11.73625 valid_loss: 1.94411
+EarlyStopping counter: 736 out of 1000
+[1487/3500] train_loss: 11.85486 valid_loss: 2.06040
+EarlyStopping counter: 737 out of 1000
+[1488/3500] train_loss: 11.73278 valid_loss: 2.10130
+EarlyStopping counter: 738 out of 1000
+[1489/3500] train_loss: 11.79283 valid_loss: 2.09653
+EarlyStopping counter: 739 out of 1000
+[1490/3500] train_loss: 11.78134 valid_loss: 2.01556
+EarlyStopping counter: 740 out of 1000
+[1491/3500] train_loss: 11.71122 valid_loss: 2.06245
+EarlyStopping counter: 741 out of 1000
+[1492/3500] train_loss: 11.88304 valid_loss: 2.03228
+EarlyStopping counter: 742 out of 1000
+[1493/3500] train_loss: 11.99345 valid_loss: 1.90949
+EarlyStopping counter: 743 out of 1000
+[1494/3500] train_loss: 11.86311 valid_loss: 2.09756
+EarlyStopping counter: 744 out of 1000
+[1495/3500] train_loss: 11.81921 valid_loss: 2.00582
+EarlyStopping counter: 745 out of 1000
+[1496/3500] train_loss: 11.62596 valid_loss: 2.04613
+EarlyStopping counter: 746 out of 1000
+[1497/3500] train_loss: 11.67592 valid_loss: 2.11715
+EarlyStopping counter: 747 out of 1000
+[1498/3500] train_loss: 11.73473 valid_loss: 1.96845
+EarlyStopping counter: 748 out of 1000
+[1499/3500] train_loss: 11.84260 valid_loss: 2.09075
+EarlyStopping counter: 749 out of 1000
+[1500/3500] train_loss: 11.69400 valid_loss: 2.02727
+EarlyStopping counter: 750 out of 1000
+[1501/3500] train_loss: 11.72146 valid_loss: 1.96175
+EarlyStopping counter: 751 out of 1000
+[1502/3500] train_loss: 11.85032 valid_loss: 2.01004
+EarlyStopping counter: 752 out of 1000
+[1503/3500] train_loss: 11.76613 valid_loss: 2.44005
+EarlyStopping counter: 753 out of 1000
+[1504/3500] train_loss: 11.70618 valid_loss: 1.97929
+EarlyStopping counter: 754 out of 1000
+[1505/3500] train_loss: 11.70392 valid_loss: 2.01614
+EarlyStopping counter: 755 out of 1000
+[1506/3500] train_loss: 11.62845 valid_loss: 2.25553
+EarlyStopping counter: 756 out of 1000
+[1507/3500] train_loss: 11.68841 valid_loss: 2.49670
+EarlyStopping counter: 757 out of 1000
+[1508/3500] train_loss: 11.74360 valid_loss: 2.57360
+EarlyStopping counter: 758 out of 1000
+[1509/3500] train_loss: 11.78869 valid_loss: 1.95327
+EarlyStopping counter: 759 out of 1000
+[1510/3500] train_loss: 11.79882 valid_loss: 1.95616
+EarlyStopping counter: 760 out of 1000
+[1511/3500] train_loss: 11.57113 valid_loss: 2.08675
+EarlyStopping counter: 761 out of 1000
+[1512/3500] train_loss: 11.65480 valid_loss: 1.90548
+EarlyStopping counter: 762 out of 1000
+[1513/3500] train_loss: 11.80728 valid_loss: 2.07915
+EarlyStopping counter: 763 out of 1000
+[1514/3500] train_loss: 11.75563 valid_loss: 1.96141
+EarlyStopping counter: 764 out of 1000
+[1515/3500] train_loss: 11.84471 valid_loss: 2.01791
+EarlyStopping counter: 765 out of 1000
+[1516/3500] train_loss: 11.68469 valid_loss: 2.30688
+EarlyStopping counter: 766 out of 1000
+[1517/3500] train_loss: 11.81034 valid_loss: 2.00407
+EarlyStopping counter: 767 out of 1000
+[1518/3500] train_loss: 11.70213 valid_loss: 2.06973
+EarlyStopping counter: 768 out of 1000
+[1519/3500] train_loss: 11.69163 valid_loss: 1.89791
+EarlyStopping counter: 769 out of 1000
+[1520/3500] train_loss: 11.66170 valid_loss: 2.08091
+EarlyStopping counter: 770 out of 1000
+[1521/3500] train_loss: 11.76064 valid_loss: 2.11065
+EarlyStopping counter: 771 out of 1000
+[1522/3500] train_loss: 11.91516 valid_loss: 2.63040
+EarlyStopping counter: 772 out of 1000
+[1523/3500] train_loss: 11.73932 valid_loss: 2.00311
+EarlyStopping counter: 773 out of 1000
+[1524/3500] train_loss: 11.76356 valid_loss: 2.07294
+EarlyStopping counter: 774 out of 1000
+[1525/3500] train_loss: 11.85970 valid_loss: 2.07812
+EarlyStopping counter: 775 out of 1000
+[1526/3500] train_loss: 11.83390 valid_loss: 1.99863
+EarlyStopping counter: 776 out of 1000
+[1527/3500] train_loss: 11.68973 valid_loss: 2.10494
+EarlyStopping counter: 777 out of 1000
+[1528/3500] train_loss: 11.86392 valid_loss: 2.77125
+EarlyStopping counter: 778 out of 1000
+[1529/3500] train_loss: 11.88111 valid_loss: 1.98395
+EarlyStopping counter: 779 out of 1000
+[1530/3500] train_loss: 11.74058 valid_loss: 2.88878
+EarlyStopping counter: 780 out of 1000
+[1531/3500] train_loss: 11.70777 valid_loss: 2.00918
+EarlyStopping counter: 781 out of 1000
+[1532/3500] train_loss: 11.67069 valid_loss: 2.00532
+EarlyStopping counter: 782 out of 1000
+[1533/3500] train_loss: 11.69254 valid_loss: 2.08046
+EarlyStopping counter: 783 out of 1000
+[1534/3500] train_loss: 11.73371 valid_loss: 2.02561
+EarlyStopping counter: 784 out of 1000
+[1535/3500] train_loss: 11.69490 valid_loss: 2.02210
+EarlyStopping counter: 785 out of 1000
+[1536/3500] train_loss: 11.89776 valid_loss: 2.03364
+EarlyStopping counter: 786 out of 1000
+[1537/3500] train_loss: 11.78923 valid_loss: 2.00312
+EarlyStopping counter: 787 out of 1000
+[1538/3500] train_loss: 11.74627 valid_loss: 2.13061
+EarlyStopping counter: 788 out of 1000
+[1539/3500] train_loss: 11.59692 valid_loss: 2.14929
+EarlyStopping counter: 789 out of 1000
+[1540/3500] train_loss: 11.73291 valid_loss: 2.00475
+EarlyStopping counter: 790 out of 1000
+[1541/3500] train_loss: 11.80243 valid_loss: 2.15680
+EarlyStopping counter: 791 out of 1000
+[1542/3500] train_loss: 11.70527 valid_loss: 2.11743
+EarlyStopping counter: 792 out of 1000
+[1543/3500] train_loss: 11.67550 valid_loss: 2.05527
+EarlyStopping counter: 793 out of 1000
+[1544/3500] train_loss: 11.78161 valid_loss: 2.07607
+EarlyStopping counter: 794 out of 1000
+[1545/3500] train_loss: 11.79399 valid_loss: 1.90527
+EarlyStopping counter: 795 out of 1000
+[1546/3500] train_loss: 11.67611 valid_loss: 1.94875
+EarlyStopping counter: 796 out of 1000
+[1547/3500] train_loss: 11.75909 valid_loss: 2.22267
+EarlyStopping counter: 797 out of 1000
+[1548/3500] train_loss: 11.81597 valid_loss: 2.23008
+EarlyStopping counter: 798 out of 1000
+[1549/3500] train_loss: 11.76146 valid_loss: 3.08562
+EarlyStopping counter: 799 out of 1000
+[1550/3500] train_loss: 11.75583 valid_loss: 2.08616
+EarlyStopping counter: 800 out of 1000
+[1551/3500] train_loss: 11.79574 valid_loss: 1.97132
+EarlyStopping counter: 801 out of 1000
+[1552/3500] train_loss: 11.78669 valid_loss: 2.00040
+EarlyStopping counter: 802 out of 1000
+[1553/3500] train_loss: 11.60422 valid_loss: 2.02648
+EarlyStopping counter: 803 out of 1000
+[1554/3500] train_loss: 11.72146 valid_loss: 2.20869
+EarlyStopping counter: 804 out of 1000
+[1555/3500] train_loss: 11.76176 valid_loss: 2.04394
+EarlyStopping counter: 805 out of 1000
+[1556/3500] train_loss: 11.69123 valid_loss: 2.57759
+EarlyStopping counter: 806 out of 1000
+[1557/3500] train_loss: 11.71370 valid_loss: 2.04008
+EarlyStopping counter: 807 out of 1000
+[1558/3500] train_loss: 11.77146 valid_loss: 2.09146
+EarlyStopping counter: 808 out of 1000
+[1559/3500] train_loss: 11.73244 valid_loss: 1.93983
+EarlyStopping counter: 809 out of 1000
+[1560/3500] train_loss: 11.72721 valid_loss: 2.15595
+EarlyStopping counter: 810 out of 1000
+[1561/3500] train_loss: 11.63058 valid_loss: 1.99896
+EarlyStopping counter: 811 out of 1000
+[1562/3500] train_loss: 11.74363 valid_loss: 2.01123
+EarlyStopping counter: 812 out of 1000
+[1563/3500] train_loss: 11.78475 valid_loss: 2.23044
+EarlyStopping counter: 813 out of 1000
+[1564/3500] train_loss: 11.58369 valid_loss: 2.06782
+EarlyStopping counter: 814 out of 1000
+[1565/3500] train_loss: 11.69845 valid_loss: 2.14050
+EarlyStopping counter: 815 out of 1000
+[1566/3500] train_loss: 11.75950 valid_loss: 1.99481
+EarlyStopping counter: 816 out of 1000
+[1567/3500] train_loss: 11.65817 valid_loss: 2.03168
+EarlyStopping counter: 817 out of 1000
+[1568/3500] train_loss: 11.69565 valid_loss: 2.20650
+EarlyStopping counter: 818 out of 1000
+[1569/3500] train_loss: 11.67076 valid_loss: 1.98353
+EarlyStopping counter: 819 out of 1000
+[1570/3500] train_loss: 11.72921 valid_loss: 2.57599
+EarlyStopping counter: 820 out of 1000
+[1571/3500] train_loss: 11.59337 valid_loss: 1.93616
+EarlyStopping counter: 821 out of 1000
+[1572/3500] train_loss: 11.56868 valid_loss: 2.04004
+EarlyStopping counter: 822 out of 1000
+[1573/3500] train_loss: 11.65881 valid_loss: 2.05165
+EarlyStopping counter: 823 out of 1000
+[1574/3500] train_loss: 11.74000 valid_loss: 2.19040
+EarlyStopping counter: 824 out of 1000
+[1575/3500] train_loss: 11.83859 valid_loss: 2.00866
+EarlyStopping counter: 825 out of 1000
+[1576/3500] train_loss: 11.74561 valid_loss: 2.00415
+EarlyStopping counter: 826 out of 1000
+[1577/3500] train_loss: 11.59087 valid_loss: 2.59413
+EarlyStopping counter: 827 out of 1000
+[1578/3500] train_loss: 11.70905 valid_loss: 2.09135
+EarlyStopping counter: 828 out of 1000
+[1579/3500] train_loss: 11.65125 valid_loss: 2.03465
+EarlyStopping counter: 829 out of 1000
+[1580/3500] train_loss: 11.66387 valid_loss: 2.21041
+EarlyStopping counter: 830 out of 1000
+[1581/3500] train_loss: 11.67346 valid_loss: 2.06606
+EarlyStopping counter: 831 out of 1000
+[1582/3500] train_loss: 11.77217 valid_loss: 2.07696
+EarlyStopping counter: 832 out of 1000
+[1583/3500] train_loss: 11.79462 valid_loss: 2.05245
+EarlyStopping counter: 833 out of 1000
+[1584/3500] train_loss: 11.69430 valid_loss: 1.89780
+EarlyStopping counter: 834 out of 1000
+[1585/3500] train_loss: 11.78191 valid_loss: 1.98842
+EarlyStopping counter: 835 out of 1000
+[1586/3500] train_loss: 11.71913 valid_loss: 1.96853
+EarlyStopping counter: 836 out of 1000
+[1587/3500] train_loss: 11.58522 valid_loss: 2.01541
+EarlyStopping counter: 837 out of 1000
+[1588/3500] train_loss: 11.69567 valid_loss: 2.08217
+EarlyStopping counter: 838 out of 1000
+[1589/3500] train_loss: 11.78204 valid_loss: 1.97035
+EarlyStopping counter: 839 out of 1000
+[1590/3500] train_loss: 11.67792 valid_loss: 1.97728
+EarlyStopping counter: 840 out of 1000
+[1591/3500] train_loss: 11.62287 valid_loss: 1.95676
+EarlyStopping counter: 841 out of 1000
+[1592/3500] train_loss: 11.65594 valid_loss: 2.16094
+EarlyStopping counter: 842 out of 1000
+[1593/3500] train_loss: 11.68735 valid_loss: 2.06087
+EarlyStopping counter: 843 out of 1000
+[1594/3500] train_loss: 11.75279 valid_loss: 1.92219
+EarlyStopping counter: 844 out of 1000
+[1595/3500] train_loss: 11.70292 valid_loss: 2.14093
+EarlyStopping counter: 845 out of 1000
+[1596/3500] train_loss: 11.73520 valid_loss: 1.90894
+EarlyStopping counter: 846 out of 1000
+[1597/3500] train_loss: 11.71740 valid_loss: 2.13793
+EarlyStopping counter: 847 out of 1000
+[1598/3500] train_loss: 11.83943 valid_loss: 2.07527
+EarlyStopping counter: 848 out of 1000
+[1599/3500] train_loss: 11.50150 valid_loss: 2.56494
+EarlyStopping counter: 849 out of 1000
+[1600/3500] train_loss: 11.63435 valid_loss: 2.02701
+EarlyStopping counter: 850 out of 1000
+[1601/3500] train_loss: 11.63077 valid_loss: 2.10603
+EarlyStopping counter: 851 out of 1000
+[1602/3500] train_loss: 11.71975 valid_loss: 2.27685
+EarlyStopping counter: 852 out of 1000
+[1603/3500] train_loss: 11.75802 valid_loss: 2.07778
+EarlyStopping counter: 853 out of 1000
+[1604/3500] train_loss: 11.79511 valid_loss: 2.15781
+EarlyStopping counter: 854 out of 1000
+[1605/3500] train_loss: 11.73497 valid_loss: 1.99507
+EarlyStopping counter: 855 out of 1000
+[1606/3500] train_loss: 11.76764 valid_loss: 2.55204
+EarlyStopping counter: 856 out of 1000
+[1607/3500] train_loss: 11.68719 valid_loss: 2.18577
+EarlyStopping counter: 857 out of 1000
+[1608/3500] train_loss: 11.85217 valid_loss: 1.95594
+EarlyStopping counter: 858 out of 1000
+[1609/3500] train_loss: 11.59588 valid_loss: 1.97416
+EarlyStopping counter: 859 out of 1000
+[1610/3500] train_loss: 11.68698 valid_loss: 2.16358
+EarlyStopping counter: 860 out of 1000
+[1611/3500] train_loss: 11.64323 valid_loss: 1.93275
+EarlyStopping counter: 861 out of 1000
+[1612/3500] train_loss: 11.57082 valid_loss: 2.13552
+EarlyStopping counter: 862 out of 1000
+[1613/3500] train_loss: 11.72550 valid_loss: 1.89230
+EarlyStopping counter: 863 out of 1000
+[1614/3500] train_loss: 11.79334 valid_loss: 2.24934
+EarlyStopping counter: 864 out of 1000
+[1615/3500] train_loss: 11.75217 valid_loss: 2.25009
+EarlyStopping counter: 865 out of 1000
+[1616/3500] train_loss: 11.75609 valid_loss: 2.08977
+EarlyStopping counter: 866 out of 1000
+[1617/3500] train_loss: 11.59315 valid_loss: 2.16384
+EarlyStopping counter: 867 out of 1000
+[1618/3500] train_loss: 11.61059 valid_loss: 2.14175
+EarlyStopping counter: 868 out of 1000
+[1619/3500] train_loss: 11.65373 valid_loss: 1.96237
+EarlyStopping counter: 869 out of 1000
+[1620/3500] train_loss: 11.66763 valid_loss: 2.05331
+EarlyStopping counter: 870 out of 1000
+[1621/3500] train_loss: 11.74078 valid_loss: 2.00534
+EarlyStopping counter: 871 out of 1000
+[1622/3500] train_loss: 11.73953 valid_loss: 2.08345
+EarlyStopping counter: 872 out of 1000
+[1623/3500] train_loss: 11.53657 valid_loss: 2.67078
+EarlyStopping counter: 873 out of 1000
+[1624/3500] train_loss: 11.52397 valid_loss: 2.02227
+EarlyStopping counter: 874 out of 1000
+[1625/3500] train_loss: 11.69997 valid_loss: 2.15599
+EarlyStopping counter: 875 out of 1000
+[1626/3500] train_loss: 11.71487 valid_loss: 1.96676
+EarlyStopping counter: 876 out of 1000
+[1627/3500] train_loss: 11.62541 valid_loss: 2.01918
+EarlyStopping counter: 877 out of 1000
+[1628/3500] train_loss: 11.87222 valid_loss: 1.93482
+EarlyStopping counter: 878 out of 1000
+[1629/3500] train_loss: 11.78409 valid_loss: 2.15191
+EarlyStopping counter: 879 out of 1000
+[1630/3500] train_loss: 11.63144 valid_loss: 2.01630
+EarlyStopping counter: 880 out of 1000
+[1631/3500] train_loss: 11.67257 valid_loss: 2.55584
+EarlyStopping counter: 881 out of 1000
+[1632/3500] train_loss: 11.60861 valid_loss: 1.99763
+EarlyStopping counter: 882 out of 1000
+[1633/3500] train_loss: 11.62852 valid_loss: 2.61727
+EarlyStopping counter: 883 out of 1000
+[1634/3500] train_loss: 11.60678 valid_loss: 2.09069
+EarlyStopping counter: 884 out of 1000
+[1635/3500] train_loss: 11.58823 valid_loss: 2.12033
+EarlyStopping counter: 885 out of 1000
+[1636/3500] train_loss: 11.65970 valid_loss: 2.01558
+EarlyStopping counter: 886 out of 1000
+[1637/3500] train_loss: 11.67312 valid_loss: 2.01423
+EarlyStopping counter: 887 out of 1000
+[1638/3500] train_loss: 11.69177 valid_loss: 2.77729
+EarlyStopping counter: 888 out of 1000
+[1639/3500] train_loss: 11.65546 valid_loss: 1.96216
+EarlyStopping counter: 889 out of 1000
+[1640/3500] train_loss: 11.88282 valid_loss: 1.96901
+EarlyStopping counter: 890 out of 1000
+[1641/3500] train_loss: 11.68106 valid_loss: 2.10053
+EarlyStopping counter: 891 out of 1000
+[1642/3500] train_loss: 11.56554 valid_loss: 2.09053
+EarlyStopping counter: 892 out of 1000
+[1643/3500] train_loss: 11.53333 valid_loss: 2.14005
+EarlyStopping counter: 893 out of 1000
+[1644/3500] train_loss: 11.67077 valid_loss: 2.07427
+EarlyStopping counter: 894 out of 1000
+[1645/3500] train_loss: 11.71087 valid_loss: 1.92516
+EarlyStopping counter: 895 out of 1000
+[1646/3500] train_loss: 11.59065 valid_loss: 2.03514
+EarlyStopping counter: 896 out of 1000
+[1647/3500] train_loss: 11.82271 valid_loss: 2.00904
+EarlyStopping counter: 897 out of 1000
+[1648/3500] train_loss: 11.70432 valid_loss: 1.98451
+EarlyStopping counter: 898 out of 1000
+[1649/3500] train_loss: 11.62199 valid_loss: 2.44960
+EarlyStopping counter: 899 out of 1000
+[1650/3500] train_loss: 11.70155 valid_loss: 1.97959
+EarlyStopping counter: 900 out of 1000
+[1651/3500] train_loss: 11.70291 valid_loss: 2.67534
+EarlyStopping counter: 901 out of 1000
+[1652/3500] train_loss: 11.73207 valid_loss: 2.04879
+EarlyStopping counter: 902 out of 1000
+[1653/3500] train_loss: 11.70772 valid_loss: 1.94088
+EarlyStopping counter: 903 out of 1000
+[1654/3500] train_loss: 11.80900 valid_loss: 2.08962
+EarlyStopping counter: 904 out of 1000
+[1655/3500] train_loss: 11.74425 valid_loss: 2.65715
+EarlyStopping counter: 905 out of 1000
+[1656/3500] train_loss: 11.69883 valid_loss: 2.06067
+EarlyStopping counter: 906 out of 1000
+[1657/3500] train_loss: 11.78513 valid_loss: 1.98635
+EarlyStopping counter: 907 out of 1000
+[1658/3500] train_loss: 11.69224 valid_loss: 2.10793
+EarlyStopping counter: 908 out of 1000
+[1659/3500] train_loss: 11.85495 valid_loss: 2.18415
+EarlyStopping counter: 909 out of 1000
+[1660/3500] train_loss: 11.81342 valid_loss: 2.15925
+EarlyStopping counter: 910 out of 1000
+[1661/3500] train_loss: 11.62868 valid_loss: 2.48701
+EarlyStopping counter: 911 out of 1000
+[1662/3500] train_loss: 11.66838 valid_loss: 2.06886
+EarlyStopping counter: 912 out of 1000
+[1663/3500] train_loss: 11.64162 valid_loss: 2.10966
+EarlyStopping counter: 913 out of 1000
+[1664/3500] train_loss: 11.71675 valid_loss: 2.74597
+EarlyStopping counter: 914 out of 1000
+[1665/3500] train_loss: 11.58088 valid_loss: 2.29198
+EarlyStopping counter: 915 out of 1000
+[1666/3500] train_loss: 11.68651 valid_loss: 2.05347
+EarlyStopping counter: 916 out of 1000
+[1667/3500] train_loss: 11.75437 valid_loss: 2.03364
+EarlyStopping counter: 917 out of 1000
+[1668/3500] train_loss: 11.76473 valid_loss: 1.97766
+EarlyStopping counter: 918 out of 1000
+[1669/3500] train_loss: 11.65927 valid_loss: 2.08982
+EarlyStopping counter: 919 out of 1000
+[1670/3500] train_loss: 11.75375 valid_loss: 2.03690
+EarlyStopping counter: 920 out of 1000
+[1671/3500] train_loss: 11.72943 valid_loss: 2.05636
+EarlyStopping counter: 921 out of 1000
+[1672/3500] train_loss: 11.63863 valid_loss: 2.09009
+EarlyStopping counter: 922 out of 1000
+[1673/3500] train_loss: 11.57505 valid_loss: 2.56690
+EarlyStopping counter: 923 out of 1000
+[1674/3500] train_loss: 11.71567 valid_loss: 2.02624
+EarlyStopping counter: 924 out of 1000
+[1675/3500] train_loss: 11.69921 valid_loss: 1.99561
+EarlyStopping counter: 925 out of 1000
+[1676/3500] train_loss: 11.67890 valid_loss: 1.98085
+EarlyStopping counter: 926 out of 1000
+[1677/3500] train_loss: 11.67133 valid_loss: 2.25039
+EarlyStopping counter: 927 out of 1000
+[1678/3500] train_loss: 11.75081 valid_loss: 2.16853
+EarlyStopping counter: 928 out of 1000
+[1679/3500] train_loss: 11.69935 valid_loss: 2.08929
+EarlyStopping counter: 929 out of 1000
+[1680/3500] train_loss: 11.63882 valid_loss: 2.16259
+EarlyStopping counter: 930 out of 1000
+[1681/3500] train_loss: 11.56411 valid_loss: 2.25869
+EarlyStopping counter: 931 out of 1000
+[1682/3500] train_loss: 11.61660 valid_loss: 2.06391
+EarlyStopping counter: 932 out of 1000
+[1683/3500] train_loss: 11.64268 valid_loss: 1.98945
+EarlyStopping counter: 933 out of 1000
+[1684/3500] train_loss: 11.65744 valid_loss: 1.99006
+EarlyStopping counter: 934 out of 1000
+[1685/3500] train_loss: 11.65321 valid_loss: 1.96175
+EarlyStopping counter: 935 out of 1000
+[1686/3500] train_loss: 11.67034 valid_loss: 1.91746
+EarlyStopping counter: 936 out of 1000
+[1687/3500] train_loss: 11.63621 valid_loss: 2.05040
+EarlyStopping counter: 937 out of 1000
+[1688/3500] train_loss: 11.53911 valid_loss: 2.47727
+EarlyStopping counter: 938 out of 1000
+[1689/3500] train_loss: 11.63603 valid_loss: 2.06658
+EarlyStopping counter: 939 out of 1000
+[1690/3500] train_loss: 11.49629 valid_loss: 1.99351
+EarlyStopping counter: 940 out of 1000
+[1691/3500] train_loss: 11.48458 valid_loss: 2.22270
+EarlyStopping counter: 941 out of 1000
+[1692/3500] train_loss: 11.68159 valid_loss: 1.93711
+EarlyStopping counter: 942 out of 1000
+[1693/3500] train_loss: 11.57642 valid_loss: 2.04352
+EarlyStopping counter: 943 out of 1000
+[1694/3500] train_loss: 11.56543 valid_loss: 1.85416
+EarlyStopping counter: 944 out of 1000
+[1695/3500] train_loss: 11.53986 valid_loss: 2.01417
+EarlyStopping counter: 945 out of 1000
+[1696/3500] train_loss: 11.61691 valid_loss: 1.92405
+EarlyStopping counter: 946 out of 1000
+[1697/3500] train_loss: 11.59532 valid_loss: 2.29919
+EarlyStopping counter: 947 out of 1000
+[1698/3500] train_loss: 11.54121 valid_loss: 2.01934
+EarlyStopping counter: 948 out of 1000
+[1699/3500] train_loss: 11.50940 valid_loss: 1.98071
+EarlyStopping counter: 949 out of 1000
+[1700/3500] train_loss: 11.61975 valid_loss: 2.10745
+EarlyStopping counter: 950 out of 1000
+[1701/3500] train_loss: 11.52781 valid_loss: 2.04117
+EarlyStopping counter: 951 out of 1000
+[1702/3500] train_loss: 11.71174 valid_loss: 2.04070
+EarlyStopping counter: 952 out of 1000
+[1703/3500] train_loss: 11.69196 valid_loss: 2.62724
+EarlyStopping counter: 953 out of 1000
+[1704/3500] train_loss: 11.67924 valid_loss: 2.08198
+EarlyStopping counter: 954 out of 1000
+[1705/3500] train_loss: 11.63691 valid_loss: 2.09297
+EarlyStopping counter: 955 out of 1000
+[1706/3500] train_loss: 11.70513 valid_loss: 1.99849
+EarlyStopping counter: 956 out of 1000
+[1707/3500] train_loss: 11.59136 valid_loss: 2.05521
+EarlyStopping counter: 957 out of 1000
+[1708/3500] train_loss: 11.59269 valid_loss: 1.89949
+EarlyStopping counter: 958 out of 1000
+[1709/3500] train_loss: 11.72347 valid_loss: 2.06667
+EarlyStopping counter: 959 out of 1000
+[1710/3500] train_loss: 11.58968 valid_loss: 2.17988
+EarlyStopping counter: 960 out of 1000
+[1711/3500] train_loss: 11.60429 valid_loss: 1.87771
+EarlyStopping counter: 961 out of 1000
+[1712/3500] train_loss: 11.63962 valid_loss: 2.03818
+EarlyStopping counter: 962 out of 1000
+[1713/3500] train_loss: 11.48344 valid_loss: 1.98294
+EarlyStopping counter: 963 out of 1000
+[1714/3500] train_loss: 11.55783 valid_loss: 2.09433
+EarlyStopping counter: 964 out of 1000
+[1715/3500] train_loss: 11.59907 valid_loss: 2.08976
+EarlyStopping counter: 965 out of 1000
+[1716/3500] train_loss: 11.60176 valid_loss: 2.36951
+EarlyStopping counter: 966 out of 1000
+[1717/3500] train_loss: 11.75107 valid_loss: 1.99558
+EarlyStopping counter: 967 out of 1000
+[1718/3500] train_loss: 11.76623 valid_loss: 2.72004
+EarlyStopping counter: 968 out of 1000
+[1719/3500] train_loss: 11.63570 valid_loss: 1.96759
+EarlyStopping counter: 969 out of 1000
+[1720/3500] train_loss: 11.74787 valid_loss: 1.99100
+EarlyStopping counter: 970 out of 1000
+[1721/3500] train_loss: 11.61409 valid_loss: 2.02864
+EarlyStopping counter: 971 out of 1000
+[1722/3500] train_loss: 11.58539 valid_loss: 1.90850
+EarlyStopping counter: 972 out of 1000
+[1723/3500] train_loss: 11.63133 valid_loss: 2.02022
+EarlyStopping counter: 973 out of 1000
+[1724/3500] train_loss: 11.68251 valid_loss: 2.06830
+EarlyStopping counter: 974 out of 1000
+[1725/3500] train_loss: 11.72112 valid_loss: 2.14940
+EarlyStopping counter: 975 out of 1000
+[1726/3500] train_loss: 11.57655 valid_loss: 2.74907
+EarlyStopping counter: 976 out of 1000
+[1727/3500] train_loss: 11.48241 valid_loss: 1.93538
+EarlyStopping counter: 977 out of 1000
+[1728/3500] train_loss: 11.52066 valid_loss: 1.97405
+EarlyStopping counter: 978 out of 1000
+[1729/3500] train_loss: 11.60903 valid_loss: 2.15443
+EarlyStopping counter: 979 out of 1000
+[1730/3500] train_loss: 11.65316 valid_loss: 1.96261
+EarlyStopping counter: 980 out of 1000
+[1731/3500] train_loss: 11.80823 valid_loss: 2.16006
+EarlyStopping counter: 981 out of 1000
+[1732/3500] train_loss: 11.54510 valid_loss: 2.09724
+EarlyStopping counter: 982 out of 1000
+[1733/3500] train_loss: 11.60849 valid_loss: 2.11239
+EarlyStopping counter: 983 out of 1000
+[1734/3500] train_loss: 11.73335 valid_loss: 2.09324
+EarlyStopping counter: 984 out of 1000
+[1735/3500] train_loss: 11.68161 valid_loss: 2.09933
+EarlyStopping counter: 985 out of 1000
+[1736/3500] train_loss: 11.70787 valid_loss: 1.90811
+EarlyStopping counter: 986 out of 1000
+[1737/3500] train_loss: 11.62277 valid_loss: 2.01043
+EarlyStopping counter: 987 out of 1000
+[1738/3500] train_loss: 11.55282 valid_loss: 1.98566
+EarlyStopping counter: 988 out of 1000
+[1739/3500] train_loss: 11.54803 valid_loss: 1.96968
+EarlyStopping counter: 989 out of 1000
+[1740/3500] train_loss: 11.56254 valid_loss: 2.06403
+EarlyStopping counter: 990 out of 1000
+[1741/3500] train_loss: 11.62525 valid_loss: 2.85421
+EarlyStopping counter: 991 out of 1000
+[1742/3500] train_loss: 11.71727 valid_loss: 1.96687
+EarlyStopping counter: 992 out of 1000
+[1743/3500] train_loss: 11.63256 valid_loss: 2.24650
+EarlyStopping counter: 993 out of 1000
+[1744/3500] train_loss: 11.58859 valid_loss: 1.99447
+EarlyStopping counter: 994 out of 1000
+[1745/3500] train_loss: 11.61762 valid_loss: 2.02147
+EarlyStopping counter: 995 out of 1000
+[1746/3500] train_loss: 11.53104 valid_loss: 2.04982
+EarlyStopping counter: 996 out of 1000
+[1747/3500] train_loss: 11.55533 valid_loss: 2.16248
+EarlyStopping counter: 997 out of 1000
+[1748/3500] train_loss: 11.57135 valid_loss: 2.09132
+EarlyStopping counter: 998 out of 1000
+[1749/3500] train_loss: 11.45752 valid_loss: 2.03053
+EarlyStopping counter: 999 out of 1000
+[1750/3500] train_loss: 11.52977 valid_loss: 2.12120
+EarlyStopping counter: 1000 out of 1000
+Early stopping activated!
+Done!
+\begin{verbatim}
+***Evaluation report for pipeline A636_T_bc_LstmNeuralNet***
+\end{verbatim}
+\begin{verbatim}
+***Hyperparameters***
+BATCH_SIZE: 1024
+DROPOUT_RATE: 0.8
+LEARNING_RATE: 3.0e-06
+N_EPOCHS: 10000
+OUTPUT_SIZE: 5
+PATIENCE: 1000
+WEIGHT_DECAY: 0
+
+\end{verbatim}
+\begin{verbatim}
+***Model architecture***
+LstmNeuralNet(
+  (feature_extractor): Sequential(
+    (0): LSTM(10, 32, num_layers=2, batch_first=True)
+    (1): extract_tensor()
+    (2): ReLU()
+    (3): Dropout(p=0.5, inplace=False)
+  )
+  (classifier): Sequential(
+    (0): Linear(in_features=96, out_features=50, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=50, out_features=1, bias=True)
+    (3): Sigmoid()
+  )
+)
+\end{verbatim}
+\begin{verbatim}
+***Confusion matrix***
+\end{verbatim}
+Evaluating binary classifier...
+\begin{tabular}{lrr}
+\toprule
+ & NORAIN & RAIN \\
+true($\downarrow$)/pred($\rightarrow$) &  &  \\
+\midrule
+NORAIN & 8793 & 224 \\
+RAIN & 538 & 574 \\
+\bottomrule
+\end{tabular}
+
+\begin{verbatim}
+***Classification report***
+              precision    recall  f1-score   support
+
+         0.0       0.94      0.98      0.96      9017
+         1.0       0.72      0.52      0.60      1112
+
+    accuracy                           0.92     10129
+   macro avg       0.83      0.75      0.78     10129
+weighted avg       0.92      0.92      0.92     10129
+
+\end{verbatim}
+The execution time was 284.8076639175415 seconds.
