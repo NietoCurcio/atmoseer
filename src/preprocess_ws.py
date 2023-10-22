@@ -56,14 +56,14 @@ def preprocess_ws(ws_id, ws_filename, output_folder):
 
     logging.info(f"Loading datasource file {ws_filename}).")
     df = pd.read_parquet(ws_filename)
-    logging.info(df.columns)
+    logging.info(df.head())
     logging.info("Done!\n")
 
     #
     # Add index to dataframe using the timestamps.
     logging.info(f"Adding index to dataframe using the timestamps...")
     df = util.add_datetime_index(ws_id, df)
-    logging.info(df.columns)
+    logging.info(df.head())
     logging.info("Done!\n")
 
     #
@@ -92,13 +92,13 @@ def preprocess_ws(ws_id, ws_filename, output_folder):
     column_names = column_name_mapping.keys()
     df = util.get_dataframe_with_selected_columns(df, column_names)
     df = util.rename_dataframe_column_names(df, column_name_mapping)
-    logging.info(df.columns)
+    logging.info(df.head())
     logging.info("Done!\n")
 
     logging.info("Getting relevant variables...")
     predictor_names, target_name = util.get_relevant_variables(ws_id)
-    logging.info(f"Chosen predictors: {predictor_names}")
-    logging.info(f"Chosen target: {target_name}")
+    logging.info(f"Predictors: {predictor_names}")
+    logging.info(f"Target: {target_name}")
     logging.info("Done!\n")
 
     #
@@ -109,15 +109,20 @@ def preprocess_ws(ws_id, ws_filename, output_folder):
     n_obser_after_drop = len(df)
     logging.info(f"Number of observations before/after dropping entries with undefined target value: {n_obser_before_drop}/{n_obser_after_drop}.")
     logging.info(f"Range of timestamps after dropping entries with undefined target value: [{min(df.index)}, {max(df.index)}]")
+    logging.info(df.head())
     logging.info("Done!\n")
 
     #
     # Create wind-related features (U and V components of wind observations).
+    logging.info(f"Creating wind-related features...")
     df = util.add_wind_related_features(ws_id, df)
+    logging.info("Done!\n")
 
     #
-    # Create hour-related features (sin and cos components)
+    # Create time-related features (sin and cos components)
+    logging.info(f"Creating time-related features...")
     df = util.add_hour_related_features(df)
+    logging.info("Done!\n")
 
     df = df[predictor_names + [target_name]]
 
