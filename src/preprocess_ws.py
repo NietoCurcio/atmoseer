@@ -116,12 +116,14 @@ def preprocess_ws(ws_id, ws_filename, output_folder):
     # Create wind-related features (U and V components of wind observations).
     logging.info(f"Creating wind-related features...")
     df = util.add_wind_related_features(ws_id, df)
+    logging.info(df.head())
     logging.info("Done!\n")
 
     #
     # Create time-related features (sin and cos components)
     logging.info(f"Creating time-related features...")
     df = util.add_hour_related_features(df)
+    logging.info(df.head())
     logging.info("Done!\n")
 
     df = df[predictor_names + [target_name]]
