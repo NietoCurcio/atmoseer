@@ -162,21 +162,32 @@ python src/build_datasets.py -s A602 --train_test_threshold "2021-11-30" --train
 python src/build_datasets.py -s A652 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
 python src/build_datasets.py -s A627 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
 
-python src/build_datasets.py -s A636 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
-python src/build_datasets.py -s A621 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
 python src/build_datasets.py -s A602 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
-python src/build_datasets.py -s A652 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A621 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
 python src/build_datasets.py -s A627 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A636 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A652 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
 
-python src/train_model.py -p A636_T -t BINARY_CLASSIFICATION > A636_T.out
-python src/train_model.py -p A621_T -t BINARY_CLASSIFICATION > A621_T.out
-python src/train_model.py -p A602_T -t BINARY_CLASSIFICATION > A602_T.out
-python src/train_model.py -p A652_T -t BINARY_CLASSIFICATION > A652_T.out
-python src/train_model.py -p A627_T -t BINARY_CLASSIFICATION > A627_T.out
+python src/train_model.py -p A602_T -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A602_T_LstmNeuralNet.out
+python src/train_model.py -p A621_T -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A621_T_LstmNeuralNet.out
+python src/train_model.py -p A627_T -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A627_T_LstmNeuralNet.out
+python src/train_model.py -p A636_T -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A636_T_LstmNeuralNet.out
+python src/train_model.py -p A652_T -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A652_T_LstmNeuralNet.out
 
-python src/train_model.py -p A602 -t BINARY_CLASSIFICATION > train_model_A602.out
-python src/train_model.py -p A621 -t BINARY_CLASSIFICATION > train_model_A621.out
-python src/train_model.py -p A627 -t BINARY_CLASSIFICATION > train_model_A627.out
-python src/train_model.py -p A636 -t BINARY_CLASSIFICATION > train_model_A636.out
-python src/train_model.py -p A652 -t BINARY_CLASSIFICATION > train_model_A652.out
+python src/train_model.py -p A602 -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A602_LstmNeuralNet.out
+python src/train_model.py -p A621 -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A621_LstmNeuralNet.out
+python src/train_model.py -p A627 -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A627_LstmNeuralNet.out
+python src/train_model.py -p A636 -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A636_LstmNeuralNet.out
+python src/train_model.py -p A652 -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A652_LstmNeuralNet.out
 
+python src/train_model.py -p A602_T -t BINARY_CLASSIFICATION -l Conv1DNeuralNet > ./data/goes16/tpw/out_files/train_model_A602_T_Conv1DNeuralNet.out
+python src/train_model.py -p A621_T -t BINARY_CLASSIFICATION -l Conv1DNeuralNet > ./data/goes16/tpw/out_files/train_model_A621_T_Conv1DNeuralNet.out
+python src/train_model.py -p A627_T -t BINARY_CLASSIFICATION -l Conv1DNeuralNet > ./data/goes16/tpw/out_files/train_model_A627_T_Conv1DNeuralNet.out
+python src/train_model.py -p A636_T -t BINARY_CLASSIFICATION -l Conv1DNeuralNet > ./data/goes16/tpw/out_files/train_model_A636_T_Conv1DNeuralNet.out
+python src/train_model.py -p A652_T -t BINARY_CLASSIFICATION -l Conv1DNeuralNet > ./data/goes16/tpw/out_files/train_model_A652_T_Conv1DNeuralNet.out
+
+python src/train_model.py -p A602 -t BINARY_CLASSIFICATION -l Conv1DNeuralNet > ./data/goes16/tpw/out_files/train_model_A602_Conv1DNeuralNet.out
+python src/train_model.py -p A621 -t BINARY_CLASSIFICATION -l Conv1DNeuralNet > ./data/goes16/tpw/out_files/train_model_A621_Conv1DNeuralNet.out
+python src/train_model.py -p A627 -t BINARY_CLASSIFICATION -l Conv1DNeuralNet > ./data/goes16/tpw/out_files/train_model_A627_Conv1DNeuralNet.out
+python src/train_model.py -p A636 -t BINARY_CLASSIFICATION -l Conv1DNeuralNet > ./data/goes16/tpw/out_files/train_model_A636_Conv1DNeuralNet.out
+python src/train_model.py -p A652 -t BINARY_CLASSIFICATION -l Conv1DNeuralNet > ./data/goes16/tpw/out_files/train_model_A652_Conv1DNeuralNet.out

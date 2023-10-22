@@ -5,6 +5,7 @@ import sys
 import globals
 import util
 from sklearn.impute import KNNImputer
+import logging
 
 # list_valid_datasource_combinations = ("R", "N", "R+N")
 
@@ -52,19 +53,22 @@ from sklearn.impute import KNNImputer
 #     df.to_parquet(filename, compression='gzip')
 
 def preprocess_ws(ws_id, ws_filename, output_folder):
-    print(f"Loading datasource file {ws_filename}).")
-    df = pd.read_parquet(ws_filename)
 
-    print(df.head())
+    logging.info(f"Loading datasource file {ws_filename}).")
+    df = pd.read_parquet(ws_filename)
+    logging.info(df.columns)
+    logging.info("Done!\n")
 
     #
     # Add index to dataframe using the timestamps.
+    logging.info(f"Adding index to dataframe using the timestamps...")
     df = util.add_datetime_index(ws_id, df)
-
-    print(df.head())
+    logging.info(df.columns)
+    logging.info("Done!\n")
 
     #
     # Standardize column names.
+    logging.info(f"Standardizing column names...")
     if ws_id in globals.ALERTARIO_WEATHER_STATION_IDS:
         column_name_mapping = {
             "datetime": "datetime",
@@ -88,21 +92,24 @@ def preprocess_ws(ws_id, ws_filename, output_folder):
     column_names = column_name_mapping.keys()
     df = util.get_dataframe_with_selected_columns(df, column_names)
     df = util.rename_dataframe_column_names(df, column_name_mapping)
+    logging.info(df.columns)
+    logging.info("Done!\n")
 
-    print(df.head())
-
+    logging.info("Getting relevantevariables...")
     predictor_names, target_name = util.get_relevant_variables(ws_id)
-    print(f"Chosen predictors: {predictor_names}")
-    print(f"Chosen target: {target_name}")
+    logging.info(f"Chosen predictors: {predictor_names}")
+    logging.info(f"Chosen target: {target_name}")
+    logging.info("Done!\n")
 
     #
     # Drop observations in which the target variable is not defined.
-    print(f"Dropping entries with null target.")
+    logging.info(f"Dropping entries with null target...")
     n_obser_before_drop = len(df)
     df = df[df[target_name].notna()]
     n_obser_after_drop = len(df)
-    print(f"Number of observations before/after dropping entries with undefined target value: {n_obser_before_drop}/{n_obser_after_drop}.")
-    print(f"Range of timestamps after dropping entries with undefined target value: [{min(df.index)}, {max(df.index)}]")
+    logging.info(f"Number of observations before/after dropping entries with undefined target value: {n_obser_before_drop}/{n_obser_after_drop}.")
+    logging.info(f"Range of timestamps after dropping entries with undefined target value: [{min(df.index)}, {max(df.index)}]")
+    logging.info("Done!\n")
 
     #
     # Create wind-related features (U and V components of wind observations).
@@ -118,21 +125,21 @@ def preprocess_ws(ws_id, ws_filename, output_folder):
     # Normalize the weather station data. This step is necessary here due to the next step, which deals with missing values.
     # Notice that we drop the target column before normalizing, to avoid some kind of data leakage.
     # (see https://stats.stackexchange.com/questions/214728/should-data-be-normalized-before-or-after-imputation-of-missing-data)
-    print("Min-max normalizing data...", end='')
+    logging.info("Min-max normalizing data...")
     target_column = df[target_name]
     df = df.drop(columns=[target_name], axis=1)
     df = util.min_max_normalize(df)
-    print("Done!")
+    logging.info("Done!\n")
 
     # 
     # Imput missing values on some features.
-    print("Applying KNNImputer...", end='')
+    logging.info("Applying KNNImputer...")
     percentage_missing = (df.isna().mean() * 100).mean() # Compute the percentage of missing values
-    print(f"There are {df.isnull().sum().sum()} missing values ({percentage_missing:.2f}%). Going to fill them...", end = '')
+    logging.info(f"There are {df.isnull().sum().sum()} missing values ({percentage_missing:.2f}%). Going to fill them...", end = '')
     imputer = KNNImputer(n_neighbors=2)
     df[:] = imputer.fit_transform(df)
     assert (not df.isnull().values.any().any())
-    print("Done!")
+    logging.info("Done!\n")
 
     #
     # Add the target column back to the DataFrame.
@@ -142,8 +149,11 @@ def preprocess_ws(ws_id, ws_filename, output_folder):
     # Save preprocessed data to a parquet file.
     filename_and_extension = util.get_filename_and_extension(ws_filename)
     filename = output_folder + filename_and_extension[0] + '_preprocessed.parquet.gzip'
-    print(f"Saving preprocessed data to {filename}")
+    logging.info(f"Saving preprocessed data to {filename}...")
     df.to_parquet(filename, compression='gzip')
+    logging.info("Done!\n")
+
+    logging.info("Done it all!\n")
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Preprocess weather station data.')
@@ -154,6 +164,9 @@ def main(argv):
     args = parser.parse_args(argv[1:])
     
     station_id = args.station_id
+
+    fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
+    logging.basicConfig(level=logging.DEBUG, format = fmt)
 
     if not ((station_id in globals.INMET_WEATHER_STATION_IDS) or (station_id in globals.ALERTARIO_WEATHER_STATION_IDS)):
         print(f"Invalid station identifier: {station_id}")
