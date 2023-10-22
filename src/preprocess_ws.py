@@ -95,7 +95,7 @@ def preprocess_ws(ws_id, ws_filename, output_folder):
     logging.info(df.columns)
     logging.info("Done!\n")
 
-    logging.info("Getting relevantevariables...")
+    logging.info("Getting relevant variables...")
     predictor_names, target_name = util.get_relevant_variables(ws_id)
     logging.info(f"Chosen predictors: {predictor_names}")
     logging.info(f"Chosen target: {target_name}")
@@ -135,7 +135,7 @@ def preprocess_ws(ws_id, ws_filename, output_folder):
     # Imput missing values on some features.
     logging.info("Applying KNNImputer...")
     percentage_missing = (df.isna().mean() * 100).mean() # Compute the percentage of missing values
-    logging.info(f"There are {df.isnull().sum().sum()} missing values ({percentage_missing:.2f}%). Going to fill them...", end = '')
+    logging.info(f"There are {df.isnull().sum().sum()} missing values ({percentage_missing:.2f}%). Going to fill them...")
     imputer = KNNImputer(n_neighbors=2)
     df[:] = imputer.fit_transform(df)
     assert (not df.isnull().values.any().any())
