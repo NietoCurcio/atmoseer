@@ -5,7 +5,8 @@ WS_INMET_DATA_DIR = "./data/ws/inmet/"
 WS_ALERTARIO_DATA_DIR = "./data/ws/alertario/ws/"
 GS_ALERTARIO_DATA_DIR = "./data/ws/alertario/rain_gauge_era5_fused/"
 
-WS_GOES_DATA_DIR = "atmoseer/data/ws/goes16"
+# WS_GOES_DATA_DIR = "atmoseer/data/ws/goes16"
+GOES_DATA_DIR = "./data/goes16"
 
 # Atmospheric sounding datasource directory
 NWP_DATA_DIR = "./data/NWP/"

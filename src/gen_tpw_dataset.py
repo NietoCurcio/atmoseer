@@ -106,8 +106,3 @@ for wsoi_id in INMET_WEATHER_STATION_IDS:
     print(df_wsoi['tpw_value'].isna().sum())
     df_wsoi.to_parquet(f'./data/goes16/wsoi/{wsoi_id}.parquet')
     print('~~~')
-    # break
-
-# print('A636')
-# df = pd.read_parquet('./data/goes16/wsoi/A636.parquet')
-# print(df.head(30))
