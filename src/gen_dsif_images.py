@@ -134,14 +134,9 @@ extent = [-64.0, -35.0, -35.0, -15.0] # Min lon, Min lat, Max lon, Max lat
 # - Showalter Index (SI)
 # - K-index (KI)
 
-# vars = ['CAPE', 'LI', 'TT', 'SI', 'KI']
-vars = ['TT', 'SI', 'KI']
-# vars = ['LI']
+vars = ['CAPE', 'LI', 'TT', 'SI', 'KI']
 
 file_names.sort()
-
-# Print the list of file names
-print(file_names)
 
 output_folder = './data/goes16/goes16_dsif_imgs/'
 
