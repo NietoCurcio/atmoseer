@@ -6,78 +6,79 @@ import os                                # Miscellaneous operating system interf
 from goes16_utils import download_CMI       # Our own utilities
 from goes16_utils import geo2grid, convertExtent2GOESProjection      # Our own utilities
 from globals import GOES_DATA_DIR
+import argparse
 
-def plot_instability_index(instability_index: str):
-    #-----------------------------------------------------------------------------------------------------------
-    # Input and output directories
-    input = "Samples"; os.makedirs(input, exist_ok=True)
-    output = "Output"; os.makedirs(output, exist_ok=True)
+import boto3
+import botocore
+from botocore import UNSIGNED            # boto3 config
+from botocore.config import Config       # boto3 config
 
-    # North -22°, West -44°, South -23°, East -42°
-    # REGION_OF_INTEREST = [-22, -44, -23, -42]
+from datetime import datetime, timedelta
 
-    # Desired extent
-    extent = [-44.0, -23.0, -43.0, -22.0]  # Min lon, Min lat, Max lon, Max lat
+def download_goes16_product(product_name, date_str, save_path="."):
+    # Convert date string to datetime object
+    date_obj = datetime.strptime(date_str, "%Y%m%d")
 
-    #-----------------------------------------------------------------------------------------------------------
-    # Open the GOES-R image
-    file = Dataset(f'{GOES_DATA_DIR}/OR_ABI-L2-DSIF-M6_G16_s20220911700205_e20220911709513_c20220911711480.nc')
-    # https://tempoagora.uol.com.br/noticia/2022/04/01/chuva-muito-volumosa-ainda-deixa-rj-em-alerta-4746
+    yyyymmddhh = date_str
+    year = datetime.strptime(yyyymmddhh, '%Y%m%d').strftime('%Y')
+    day_of_year = datetime.strptime(yyyymmddhh, '%Y%m%d').strftime('%j')
 
-    # Convert lat/lon to grid-coordinates
-    lly, llx = geo2grid(extent[1], extent[0], file)
-    ury, urx = geo2grid(extent[3], extent[2], file)
+    satellite = "noaa-goes16"
 
-    # Get the pixel values
-    data = file.variables[instability_index][ury:lly, llx:urx]
+    # Create an S3 client
+    s3_client = boto3.client('s3', config=Config(signature_version=UNSIGNED))
 
-    print(file.variables.keys())
-    print('---')
-    print(file.variables[instability_index])
-    print('---')
-    print(type(data))
-    print(data.shape)
-    import numpy.ma as ma
-    min_indices = ma.where(data == data.min())
-    print(min_indices)
+    # Generate the prefix based on the date
+    prefix = f'{product_name}/{year}/{day_of_year}'
+    print(f'prefix: {prefix}')
+    
+    # List objects in the specified S3 bucket and prefix
+    try:
+        response = s3_client.list_objects_v2(Bucket="noaa-goes16", Prefix=prefix, )
 
-    #-----------------------------------------------------------------------------------------------------------
-    # Compute data-extent in GOES projection-coordinates
-    img_extent = convertExtent2GOESProjection(extent)
-    #-----------------------------------------------------------------------------------------------------------
-    # Choose the plot size (width x height, in inches)
-    plt.figure(figsize=(10,10))
+        if 'Contents' not in response:
+            # There are no files
+            print(f'No files found for the date: {date_str}, Product: {product_name}')
+            return -1
+        else:
+            # Download each file
+            for content in response.get("Contents", []):
+                key = content["Key"]
+                print(f'key: {key}')
 
-    # Use the Geostationary projection in cartopy
-    ax = plt.axes(projection=ccrs.Geostationary(central_longitude=-75.0, satellite_height=35786023.0))
+                # Find the index (within the key) in which the date information begins, and extract the date part
+                s_index = key.find('s')
+                temp = key[s_index+1: -1]
+                underline_index = temp.find('_')
+                date_string = temp[0: underline_index-3]
 
-    # Define the color scale based on the channel
-    colormap = "jet" # White to black for IR channels
+                print(f'date: {date_string}')
 
-    # Plot the image
-    img = ax.imshow(data, vmin=0, vmax=500, origin='upper', extent=img_extent, cmap=colormap)
+                # Parse the date string
+                parsed_date = datetime.strptime(date_string, '%Y%j%H%M')
 
-    # Add coastlines, borders and gridlines
-    ax.coastlines(resolution='10m', color='black', linewidth=0.8)
-    ax.add_feature(cartopy.feature.BORDERS, edgecolor='black', linewidth=0.5)
-    ax.gridlines(color='black', alpha=0.5, linestyle='--', linewidth=0.5)
+                # Format the parsed date as YYYYMMDDHM
+                formatted_date = parsed_date.strftime('%Y_%m_%d_%H_%M')
 
-    # Add a colorbar
-    plt.colorbar(img, label=instability_index, extend='both', orientation='horizontal', pad=0.05, fraction=0.05)
+                print(f'formatted data: {formatted_date}')
 
-    # Extract the date
-    date = (datetime.strptime(file.time_coverage_start, '%Y-%m-%dT%H:%M:%S.%fZ'))
+                local_path = f"{save_path}/{product_name}_{formatted_date}.nc"
 
-    # Add a title
-    plt.title('GOES-16 (' + instability_index + ') ' + date.strftime('%Y-%m-%d %H:%M') + ' UTC', fontweight='bold', fontsize=10, loc='left')
-    plt.title('Reg.: ' + str(extent) , fontsize=10, loc='right')
-    #-----------------------------------------------------------------------------------------------------------
-    # Save the image
-    plt.savefig(f'OR_ABI-L2-DSIF-M6_G16_s20210632010164_e20210632019472_c20210632020547-{instability_index}.png', bbox_inches='tight', pad_inches=0, dpi=300)
+                print(f"Downloading {key} to {local_path}")
+                s3_client.download_file("noaa-goes16", key, local_path)
 
-    # Show the image
-    plt.show()
+            print("Download complete!")
 
-instability_indices = ['LI', 'CAPE', 'TT', 'SI', 'KI']
-for idx in instability_indices:
-    plot_instability_index(idx)
+    except botocore.exceptions.NoCredentialsError:
+        print("Credentials not available. Please configure AWS credentials.")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Download GOES-16 data for a specified product, date, and save path.")
+    
+    parser.add_argument("--product_name", type=str, default="ABI-L2-DSIF", help="Specify the product name")
+    parser.add_argument("--target_date", type=str, default="20220911", help="Specify the target date in YYYYMMDD format")
+    parser.add_argument("--local_save_path", type=str, default="../data/goes16_dsif", help="Specify the local path to save the downloaded files")
+
+    args = parser.parse_args()
+
+    download_goes16_product(args.product_name, args.target_date, args.local_save_path)
