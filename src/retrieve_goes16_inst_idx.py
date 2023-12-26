@@ -41,6 +41,7 @@ def download_goes16_product(product_name, date_str, save_path="."):
             print(f'No files found for the date: {date_str}, Product: {product_name}')
             return -1
         else:
+            # print(f'Contents: {response.get("Contents", [])}')
             # Download each file
             for content in response.get("Contents", []):
                 key = content["Key"]
@@ -77,7 +78,7 @@ if __name__ == "__main__":
     
     parser.add_argument("--product_name", type=str, default="ABI-L2-DSIF", help="Specify the product name")
     parser.add_argument("--target_date", type=str, default="20220911", help="Specify the target date in YYYYMMDD format")
-    parser.add_argument("--local_save_path", type=str, default="../data/goes16_dsif", help="Specify the local path to save the downloaded files")
+    parser.add_argument("--local_save_path", type=str, default="./data/goes16/goes16_dsif", help="Specify the local path to save the downloaded files")
 
     args = parser.parse_args()
 
