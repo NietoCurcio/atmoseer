@@ -126,7 +126,10 @@ def add_user_specified_data_sources(
         join_AS_datasource, 
         join_reanalisys_datasource, 
         join_goes16_glm_datasource, 
-        join_goes16_tpw_datasource, 
+        join_goes16_tpw_datasource,
+        join_colorcord_datasource,
+        join_conv2d_datasource,
+        join_autoencoder_datasource,   
         df_ws, 
         min_datetime, 
         max_datetime):
@@ -271,6 +274,74 @@ def add_user_specified_data_sources(
 
     assert (not joined_df.isnull().values.any().any())
 
+    if join_colorcord_datasource:
+        filename = f'FEATURE_{station_id}_COLORCORD.csv'
+        logging.info(f"Loading image features {filename}...")
+        df_new = pd.read_csv(filename)
+        logging.info(f"Done! Shape = {df_new.shape}.")
+        df_new['date'] = pd.to_datetime(df_new['date'], format="%Y-%m-%d--%H%M%S")
+        df_new['date'] = df_new['date'].dt.floor('H')
+        del df_new["Estação"]
+        df_new = df_new.groupby('date', as_index=False).mean()
+
+        format_string = '%Y-%m-%d %H:%M:%S'
+
+        df_new['Datetime'] = pd.to_datetime(df_new['date'], format=format_string)
+        df_new = df_new.set_index(pd.DatetimeIndex(df_new['Datetime']))
+        logging.info(f"Range of timestamps in the image feature data source: [{min(df_new.index)}, {max(df_new.index)}]")
+
+        df_new = df_new.drop(['date', 'Datetime', "Estação"], axis = 1)
+        joined_df = pd.merge(joined_df, df_new, how='left', left_index=True, right_index=True)
+        joined_df = joined_df.fillna(0)
+
+        logging.info(f"Image features data successfully joined; resulting shape: {joined_df.shape}.")
+    
+    elif join_conv2d_datasource:
+        filename = f'FEATURE_{station_id}_CONV2D.csv'
+        logging.info(f"Loading image features {filename}...")
+        df_new = pd.read_csv(filename)
+        logging.info(f"Done! Shape = {df_new.shape}.")
+        df_new['date'] = pd.to_datetime(df_new['date'], format="%Y-%m-%d--%H%M%S")
+        df_new['date'] = df_new['date'].dt.floor('H')
+        del df_new["Estação"]
+        df_new = df_new.groupby('date', as_index=False).mean()
+
+        format_string = '%Y-%m-%d %H:%M:%S'
+
+        df_new['Datetime'] = pd.to_datetime(df_new['date'], format=format_string)
+        df_new = df_new.set_index(pd.DatetimeIndex(df_new['Datetime']))
+        logging.info(f"Range of timestamps in the image feature data source: [{min(df_new.index)}, {max(df_new.index)}]")
+
+        df_new = df_new.drop(['date', 'Datetime'], axis = 1)
+        joined_df = pd.merge(joined_df, df_new, how='left', left_index=True, right_index=True)
+        joined_df = joined_df.fillna(0)
+
+        logging.info(f"Image features data successfully joined; resulting shape: {joined_df.shape}.")
+
+    elif join_autoencoder_datasource:
+        filename = f'FEATURE_{station_id}_AUTOENCODER.csv'
+        logging.info(f"Loading image features {filename}...")
+        df_new = pd.read_csv(filename)
+        logging.info(f"Done! Shape = {df_new.shape}.")
+        df_new['date'] = pd.to_datetime(df_new['date'], format="%Y-%m-%d--%H%M%S")
+        df_new['date'] = df_new['date'].dt.ceil('H')
+        del df_new["Estação"]
+        df_new = df_new.groupby('date', as_index=False).mean()
+
+        format_string = '%Y-%m-%d %H:%M:%S'
+
+        df_new['Datetime'] = pd.to_datetime(df_new['date'], format=format_string)
+        df_new = df_new.set_index(pd.DatetimeIndex(df_new['Datetime']))
+        logging.info(f"Range of timestamps in the image feature data source: [{min(df_new.index)}, {max(df_new.index)}]")
+
+        df_new = df_new.drop(['date', 'Datetime'], axis = 1)
+        joined_df = pd.merge(joined_df, df_new, how='left', left_index=True, right_index=True)
+        joined_df = joined_df.fillna(0)
+
+        logging.info(f"Image features data successfully joined; resulting shape: {joined_df.shape}.")
+
+    assert (not joined_df.isnull().values.any().any())
+
     return joined_df
 
 def build_datasets(station_id: str, 
@@ -281,6 +352,9 @@ def build_datasets(station_id: str,
                    join_reanalisys_datasource: bool, 
                    join_goes16_glm_datasource: bool, 
                    join_goes16_tpw_datasource: bool,
+                   join_colorcord_datasource: bool,
+                   join_conv2d_datasource: bool,
+                   join_autoencoder_datasource: bool,
                    subsampling_procedure: str):
     '''
     This function joins a set of datasources to build datasets. These resulting datasets are used to fit the 
@@ -301,6 +375,12 @@ def build_datasets(station_id: str,
         pipeline_id = pipeline_id + '_L'
     if join_goes16_tpw_datasource:
         pipeline_id = pipeline_id + '_T'
+    if join_colorcord_datasource:
+        pipeline_id = pipeline_id + '_I'
+    if join_conv2d_datasource:
+        pipeline_id = pipeline_id + '_C'
+    if join_autoencoder_datasource:
+        pipeline_id = pipeline_id + '_A'
 
     logging.info(f"Loading observations for weather station {station_id}...")
     df_ws = pd.read_parquet(input_folder + station_id + "_preprocessed.parquet.gzip")
@@ -349,7 +429,10 @@ def build_datasets(station_id: str,
         join_AS_data_source, 
         join_reanalisys_datasource, 
         join_goes16_glm_datasource, 
-        join_goes16_tpw_datasource,         
+        join_goes16_tpw_datasource,
+        join_colorcord_datasource,
+        join_conv2d_datasource,
+        join_autoencoder_datasource,     
         df_ws, 
         min_datetime, 
         max_datetime)
@@ -553,6 +636,9 @@ def main(argv):
     join_as_data_source = False
     join_nwp_data_source = False
     join_lightning_data_source = False
+    join_colorcord_data_source = False
+    join_conv2d_data_source = False
+    join_autoencoder_data_source = False
 
     if datasources:
         if 'R' in datasources:
@@ -563,6 +649,12 @@ def main(argv):
             join_lightning_data_source = True
         if 'T' in datasources:
             join_goes16_tpw_data_source = True
+        if "I" in datasources:
+            join_colorcord_data_source = True
+        if "C" in datasources:
+            join_conv2d_data_source = True
+        if "A" in datasources:
+            join_autoencoder_data_source = True
 
     assert(station_id is not None) and (station_id != "")
 
@@ -574,6 +666,9 @@ def main(argv):
                    join_nwp_data_source, 
                    join_lightning_data_source, 
                    join_goes16_tpw_data_source,
+                   join_colorcord_data_source,
+                   join_conv2d_data_source,
+                   join_autoencoder_data_source,
                    subsampling_procedure)
 
 if __name__ == "__main__":
