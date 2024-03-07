@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt                 # Plotting library
 from datetime import timedelta, date, datetime  # Basic Dates and time types
 import cartopy, cartopy.crs as ccrs             # Plot maps
 import os                                       # Miscellaneous operating system interfaces
-# from osgeo import gdal                          # Python bindings for GDAL
 import numpy as np                              # Scientific computing with Python
 from matplotlib import cm                       # Colormap handling utilities
 from goes16_utils import download_PROD             # Our function for download
@@ -28,7 +27,20 @@ def store_file(product_name, yyyymmddhhmn, output, img, acum, extent, undef):
 
 
 #------------------------------------------------------------------------------
-def download_data_for_a_day(df, yyyymmdd, stations_of_interest):
+def download_data_for_a_day(df: pandas.DataFrame, yyyymmdd: str, stations_of_interest: dict):
+    """
+    Downloads TPW (Total Precipitable Water) data for a specific day from GOES-16 satellite,
+    extracts TPW values for stations of interest, and appends them to a DataFrame.
+
+    Args:
+    - df (pandas.DataFrame): DataFrame to which TPW values for stations of interest will be appended.
+    - yyyymmdd (str): Date in 'YYYYMMDD' format specifying the day for which data will be downloaded.
+    - stations_of_interest (dict): Dictionary containing stations of interest with their IDs as keys
+                                   and their corresponding latitude and longitude coordinates as values.
+
+    Returns:
+    - pandas.DataFrame: Updated DataFrame with appended TPW values for stations of interest.
+    """
     # Input and output directories
     input  = "./data/goes16/Samples"; os.makedirs(input, exist_ok=True)
     output = "./data/goes16/Output"; os.makedirs(output, exist_ok=True)
@@ -65,13 +77,13 @@ def download_data_for_a_day(df, yyyymmdd, stations_of_interest):
             ds = open_dataset(filename)
 
             if ds is not None:
-                RRQPE, LonCen, LatCen = ds.image(var, lonlat='center')
+                field, LonCen, LatCen = ds.image(var, lonlat='center')
 
                 for wsoi_id in stations_of_interest:
                     lon = stations_of_interest[wsoi_id][1]
                     lat = stations_of_interest[wsoi_id][0]
                     x, y = find_pixel_of_coordinate(LonCen, LatCen, lon, lat)
-                    value1 = RRQPE.data[y,x]
+                    value1 = field.data[y,x]
                     new_row = {'timestamp': yyyymmddhhmn, 'station_id': wsoi_id, 'tpw_value': value1}
                     df = df.append(new_row, ignore_index=True)
 
@@ -95,37 +107,29 @@ def download_data_for_a_day(df, yyyymmdd, stations_of_interest):
 
 
 def main(argv):
-    periods = [
-        # ('20191201', '20191231')
-
-        # Netuno
-        # ('20200101', '20200531'),
-        # ('20200901', '20201231'),
-        # ('20210101', '20210531'),
-        # ('20210901', '20211231'),
-
-        ('20210901', '20210930'),
-        ('20211001', '20211031'),
-        ('20211101', '20211130'),
-        ('20211201', '20211231'),
-
-        # ('20220101', '20220531'),
-
-        # Librae
-        # ('20220901', '20221231'),
-        # ('20230101', '20230531'),
-    ]
-
-    # # Create an argument parser
-    # parser = argparse.ArgumentParser(description="Process TPW data for a date range.")
+    # Create an argument parser
+    parser = argparse.ArgumentParser(description="Retrieve GOES16's TPW data for a date range.")
     
-    # # Add command line arguments for date_ini and date_end
-    # parser.add_argument("--date_ini", required=True, help="Start date (YYYYMMDD)")
-    # parser.add_argument("--date_end", required=True, help="End date (YYYYMMDD)")
+    # Add command line arguments for date_ini and date_end
+    parser.add_argument("--date_ini", type="str", required=True, help="Start date (format: YYYY-MM-DD)")
+    parser.add_argument("--date_end", type="str", required=True, help="End date (format: YYYY-MM-DD)")
     
-    # args = parser.parse_args()
-    # date_ini = args.date_ini
-    # date_end = args.date_end
+    args = parser.parse_args()
+    start_date = args.date_ini
+    end_date = args.date_end
+
+    try:
+        if (station_id in globals.ALERTARIO_WEATHER_STATION_IDS or station_id in globals.ALERTARIO_GAUGE_STATION_IDS):
+            # This UTC thing is really anonying!
+            start_date = pd.to_datetime(args.date_ini, utc=True)
+            end_date = pd.to_datetime(args.date_end, utc=True)
+        else:
+            start_date = pd.to_datetime(args.date_ini)
+            end_date = pd.to_datetime(args.date_end)
+    except ParserError:
+        print(f"Invalid date format: {args.date_ini}, {args.date_end}.")
+        parser.print_help()
+        sys.exit(2)
 
     stations_of_interest = dict()
     stations_filename = "./data/ws/WeatherStations.csv"
@@ -135,28 +139,25 @@ def main(argv):
         wsoi_lat_lon = (row["VL_LATITUDE"], row["VL_LONGITUDE"])
         stations_of_interest[row["STATION_ID"]] = wsoi_lat_lon
 
-    for period in periods:
-        # Create an empty DataFrame
-        df = pd.DataFrame(columns=['timestamp', 'station_id', 'tpw_value'])
+    # Create an empty DataFrame
+    df = pd.DataFrame(columns=['timestamp', 'station_id', 'tpw_value'])
 
-        start_date = period[0]
-        end_date = period[1]
 
-        # Convert start_date and end_date to datetime objects
-        from datetime import datetime
-        start_datetime = datetime.strptime(start_date, '%Y%m%d')
-        end_datetime = datetime.strptime(end_date, '%Y%m%d')
+    # # Convert start_date and end_date to datetime objects
+    # from datetime import datetime
+    # start_datetime = datetime.strptime(start_date, '%Y%m%d')
+    # end_datetime = datetime.strptime(end_date, '%Y%m%d')
 
-        # Iterate through the range of dates
-        current_datetime = start_datetime
-        while current_datetime <= end_datetime:
-            yyyymmdd = current_datetime.strftime('%Y%m%d')
-            df = download_data_for_a_day(df, yyyymmdd, stations_of_interest)
-            # Increment the current date by one day
-            current_datetime += timedelta(days=1)
-    
-        print(f'Shape in the end: {df.shape}')
-        df.to_parquet(f'tpw_{start_datetime}_to_{end_datetime}.parquet')
+    # Iterate through the range of dates
+    current_datetime = start_datetime
+    while current_datetime <= end_datetime:
+        yyyymmdd = current_datetime.strftime('%Y%m%d')
+        df = download_data_for_a_day(df, yyyymmdd, stations_of_interest)
+        # Increment the current date by one day
+        current_datetime += timedelta(days=1)
+
+    print(f'Shape in the end: {df.shape}')
+    df.to_parquet(f'tpw_{start_datetime}_to_{end_datetime}.parquet')
 
 if __name__ == "__main__":
     main(sys.argv)

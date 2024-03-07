@@ -147,8 +147,30 @@ python src/train_model.py -p A652_A621_A636_A627 -t ORDINAL_CLASSIFICATION
 python src/train_model.py -p sao_cristovao_tijuca_tijuca_muda_saude_grajau -t ORDINAL_CLASSIFICATION > sao_cristovao_tijuca_tijuca_muda_saude_grajau.txt
 
 
-LAFUSION
+LAFUSION 2023
 ===========
+
+python src/retrieve_goes16_tpwf.py --date_ini "2019-12-01" --date_ini "2019-12-31"
+python src/retrieve_goes16_tpwf.py --date_ini "2020-01-01" --date_ini "2020-05-31"
+python src/retrieve_goes16_tpwf.py --date_ini "2020-09-01" --date_ini "2020-12-31"
+python src/retrieve_goes16_tpwf.py --date_ini "2021-01-01" --date_ini "2021-05-31"
+python src/retrieve_goes16_tpwf.py --date_ini "2021-09-01" --date_ini "2021-12-31"
+python src/retrieve_goes16_tpwf.py --date_ini "2021-09-01" --date_ini "2021-09-30"
+python src/retrieve_goes16_tpwf.py --date_ini "2021-10-01" --date_ini "2021-10-31"
+python src/retrieve_goes16_tpwf.py --date_ini "2021-11-01" --date_ini "2021-11-30"
+python src/retrieve_goes16_tpwf.py --date_ini "2021-12-01" --date_ini "2021-12-31"
+python src/retrieve_goes16_tpwf.py --date_ini "2022-01-01" --date_ini "2022-05-31"
+python src/retrieve_goes16_tpwf.py --date_ini "2022-09-01" --date_ini "2022-12-31"
+python src/retrieve_goes16_tpwf.py --date_ini "2023-01-01" --date_ini "2023-05-31"
+python src/retrieve_goes16_tpwf.py --date_ini "2023-06-01" --date_end "2023-12-31"
+
+python src/gen_tpw_datasets_per_wsois.py
+
+python src/retrieve_ws_inmet.py -s A602 -b 2007 -e 2023 --api_token <token>
+python src/retrieve_ws_inmet.py -s A621 -b 2007 -e 2023 --api_token <token>
+python src/retrieve_ws_inmet.py -s A627 -b 2018 -e 2023 --api_token <token>
+python src/retrieve_ws_inmet.py -s A636 -b 2017 -e 2023 --api_token <token>
+python src/retrieve_ws_inmet.py -s A652 -b 2007 -e 2023 --api_token <token>
 
 python src/preprocess_ws.py -s A602 > preprocess_A602.out
 python src/preprocess_ws.py -s A621 > preprocess_A621.out
@@ -192,3 +214,22 @@ python src/train_model.py -p A627 -t BINARY_CLASSIFICATION > ./data/goes16/tpw/o
 python src/train_model.py -p A636 -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A636_LstmNeuralNet.out
 python src/train_model.py -p A652 -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A652_LstmNeuralNet.out
 
+
+DEXEA2023
+===========
+
+python src/fuse_rain_gauge_and_era5.py
+python src/preprocess_gs.py -s tijuca_muda
+python src/build_datasets.py -s guaratiba --train_test_threshold "2021-11-12"
+
+
+AlertaRio Dashboard
+===========
+
+python src/retrieve_goes16_product.py
+
+python src/gen_dsif_images.py
+
+
+FUSION 2024
+===========
