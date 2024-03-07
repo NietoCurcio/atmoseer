@@ -17,6 +17,9 @@ import logging
 import yaml
 import datetime
 
+from statsmodels.stats.diagnostic import acorr_ljungbox
+import matplotlib.pyplot as plt
+
 # def format_for_binary_classification(y_train, y_val, y_test):
 #     y_train_oc = map_to_binary_precipitation_levels(y_train)
 #     y_val_oc = map_to_binary_precipitation_levels(y_val)
@@ -79,8 +82,7 @@ def generate_windowed_split(train_df, val_df, test_df, target_name, window_size)
     X_test, y_test = apply_sliding_window(test_df, target_idx, window_size)
     return X_train, y_train, X_val, y_val, X_test, y_test
 
-# TODO ver como tratar o max_event bool nos argumentos de python
-def get_goes16_data_for_weather_station(df: pd.DataFrame, station_id: str, max_event: bool = True) -> pd.DataFrame:
+def get_goes16_data_for_weather_station(df: pd.DataFrame, max_event: bool = False) -> pd.DataFrame:
     """
     Filters lightning event data in a DataFrame based on latitude and longitude boundaries for a specific weather station
     and calculates the maximum or median value of the 'event_energy' column on an hourly basis.
@@ -96,35 +98,17 @@ def get_goes16_data_for_weather_station(df: pd.DataFrame, station_id: str, max_e
             specified latitude and longitude boundaries removed, and the maximum or median value of 'event_energy' for each hour.
 
     """
-    filtered_df = df.loc[
-        (df['event_lat'] >= station_ids_for_goes16[station_id]['s_lat']) & (df['event_lat'] <= station_ids_for_goes16[station_id]['n_lat']) &
-        (df['event_lon'] >= station_ids_for_goes16[station_id]['w_lon']) & (df['event_lon'] <= station_ids_for_goes16[station_id]['e_lon'])
-    ]
+
+    filtered_df = util.min_max_normalize(df)
+
+    result_df = filtered_df[["event_energy"]]
 
     if max_event:
-        hourly_data = filtered_df.resample('H').max()
+        result_df = result_df.resample('H').max()
     else:
-        hourly_data = filtered_df.resample('H').mean()
-    result_df = pd.DataFrame(hourly_data[['event_energy']])
-    
-    # Remove rows with NaN values in 'event_energy' column
-    result_df = result_df.dropna(subset=['event_energy'])
+        result_df = result_df.resample('H').mean()
 
     return result_df
-
-# TODO Transformar em variavel global
-station_ids_for_goes16 = {
-    "A652": {
-        "name": "forte de copacabana",
-        "n_lat": -22.717,
-        "s_lat": -23.083,
-        'w_lon': -43.733,
-        'e_lon': -42.933
-        }
-    }
-
-import numpy as np
-import pandas as pd
 
 def gaussian_noise(df, column_name, mu=0, sigma=1):
 
@@ -142,7 +126,10 @@ def add_user_specified_data_sources(
         join_AS_datasource, 
         join_reanalisys_datasource, 
         join_goes16_glm_datasource, 
-        join_goes16_tpw_datasource, 
+        join_goes16_tpw_datasource,
+        join_colorcord_datasource,
+        join_conv2d_datasource,
+        join_autoencoder_datasource,   
         df_ws, 
         min_datetime, 
         max_datetime):
@@ -253,19 +240,105 @@ def add_user_specified_data_sources(
 
     if join_goes16_glm_datasource:
         print(f"Loading GLM (Goes 16) data near the weather station {station_id}...", end= "")
-        df_lightning = pd.read_parquet('/mnt/e/atmoseer/data/ws/merged_file_preprocessed.parquet.gzip')
-        df_lightning_filtered = get_goes16_data_for_weather_station(df_lightning, station_id)
-        print(f"Done! Shape = {df_lightning_filtered.shape}.")
+        df_lightning = pd.read_parquet(f'data/parquet_files/glm_{station_id}_preprocessed_file.parquet')
+        df_lightning_filtered = get_goes16_data_for_weather_station(df_lightning)
         print(df_lightning_filtered.isnull().sum())
+        df_lightning_filtered.fillna(method="bfill", inplace=True)
         assert (not df_lightning_filtered.isnull().values.any().any())
-        joined_df = pd.merge(joined_df, df_lightning_filtered, how='left', left_index=True, right_index=True)
+        joined_df = pd.merge(df_ws, df_lightning_filtered, how='left', left_index=True, right_index=True)
+
+        joined_df['event_energy'].fillna(method="bfill", inplace=True)
+
+        # Ruido branco
+        lb_test_stat = acorr_ljungbox(joined_df['event_energy'], lags=10)
+        print("Estatísticas do Teste:", lb_test_stat)
+        plt.axhline(y=0.05, color='r', linestyle='--')
+        plt.title('Valores p do Teste de Ljung-Box')
+        plt.xlabel('Lag')
+        plt.ylabel('Valor p')
+        plt.show()
 
         print(f"GLM data successfully joined; resulting shape = {joined_df.shape}.")
+        print(df_ws.index.difference(joined_df.index).shape)
+        print(joined_df.index.difference(df_ws.index).shape)
+
+        print(df_lightning_filtered.index.intersection(df_ws.index).shape)
+        print(df_lightning_filtered.index.difference(df_ws.index).shape)
+        print(df_ws.index.difference(df_lightning_filtered.index).shape)
+        print(df_ws.index.difference(df_lightning_filtered.index))
 
         shape_before_dropna = joined_df.shape
         joined_df = joined_df.dropna()
         shape_after_dropna = joined_df.shape
         print(f"Removed NaN rows in merge data; Shapes before/after dropna: {shape_before_dropna}/{shape_after_dropna}.")
+
+    assert (not joined_df.isnull().values.any().any())
+
+    if join_colorcord_datasource:
+        filename = f'FEATURE_{station_id}_COLORCORD.csv'
+        logging.info(f"Loading image features {filename}...")
+        df_new = pd.read_csv(filename)
+        logging.info(f"Done! Shape = {df_new.shape}.")
+        df_new['date'] = pd.to_datetime(df_new['date'], format="%Y-%m-%d--%H%M%S")
+        df_new['date'] = df_new['date'].dt.floor('H')
+        del df_new["Estação"]
+        df_new = df_new.groupby('date', as_index=False).mean()
+
+        format_string = '%Y-%m-%d %H:%M:%S'
+
+        df_new['Datetime'] = pd.to_datetime(df_new['date'], format=format_string)
+        df_new = df_new.set_index(pd.DatetimeIndex(df_new['Datetime']))
+        logging.info(f"Range of timestamps in the image feature data source: [{min(df_new.index)}, {max(df_new.index)}]")
+
+        df_new = df_new.drop(['date', 'Datetime', "Estação"], axis = 1)
+        joined_df = pd.merge(joined_df, df_new, how='left', left_index=True, right_index=True)
+        joined_df = joined_df.fillna(0)
+
+        logging.info(f"Image features data successfully joined; resulting shape: {joined_df.shape}.")
+    
+    elif join_conv2d_datasource:
+        filename = f'FEATURE_{station_id}_CONV2D.csv'
+        logging.info(f"Loading image features {filename}...")
+        df_new = pd.read_csv(filename)
+        logging.info(f"Done! Shape = {df_new.shape}.")
+        df_new['date'] = pd.to_datetime(df_new['date'], format="%Y-%m-%d--%H%M%S")
+        df_new['date'] = df_new['date'].dt.floor('H')
+        del df_new["Estação"]
+        df_new = df_new.groupby('date', as_index=False).mean()
+
+        format_string = '%Y-%m-%d %H:%M:%S'
+
+        df_new['Datetime'] = pd.to_datetime(df_new['date'], format=format_string)
+        df_new = df_new.set_index(pd.DatetimeIndex(df_new['Datetime']))
+        logging.info(f"Range of timestamps in the image feature data source: [{min(df_new.index)}, {max(df_new.index)}]")
+
+        df_new = df_new.drop(['date', 'Datetime'], axis = 1)
+        joined_df = pd.merge(joined_df, df_new, how='left', left_index=True, right_index=True)
+        joined_df = joined_df.fillna(0)
+
+        logging.info(f"Image features data successfully joined; resulting shape: {joined_df.shape}.")
+
+    elif join_autoencoder_datasource:
+        filename = f'FEATURE_{station_id}_AUTOENCODER.csv'
+        logging.info(f"Loading image features {filename}...")
+        df_new = pd.read_csv(filename)
+        logging.info(f"Done! Shape = {df_new.shape}.")
+        df_new['date'] = pd.to_datetime(df_new['date'], format="%Y-%m-%d--%H%M%S")
+        df_new['date'] = df_new['date'].dt.ceil('H')
+        del df_new["Estação"]
+        df_new = df_new.groupby('date', as_index=False).mean()
+
+        format_string = '%Y-%m-%d %H:%M:%S'
+
+        df_new['Datetime'] = pd.to_datetime(df_new['date'], format=format_string)
+        df_new = df_new.set_index(pd.DatetimeIndex(df_new['Datetime']))
+        logging.info(f"Range of timestamps in the image feature data source: [{min(df_new.index)}, {max(df_new.index)}]")
+
+        df_new = df_new.drop(['date', 'Datetime'], axis = 1)
+        joined_df = pd.merge(joined_df, df_new, how='left', left_index=True, right_index=True)
+        joined_df = joined_df.fillna(0)
+
+        logging.info(f"Image features data successfully joined; resulting shape: {joined_df.shape}.")
 
     assert (not joined_df.isnull().values.any().any())
 
@@ -279,6 +352,9 @@ def build_datasets(station_id: str,
                    join_reanalisys_datasource: bool, 
                    join_goes16_glm_datasource: bool, 
                    join_goes16_tpw_datasource: bool,
+                   join_colorcord_datasource: bool,
+                   join_conv2d_datasource: bool,
+                   join_autoencoder_datasource: bool,
                    subsampling_procedure: str):
     '''
     This function joins a set of datasources to build datasets. These resulting datasets are used to fit the 
@@ -299,6 +375,12 @@ def build_datasets(station_id: str,
         pipeline_id = pipeline_id + '_L'
     if join_goes16_tpw_datasource:
         pipeline_id = pipeline_id + '_T'
+    if join_colorcord_datasource:
+        pipeline_id = pipeline_id + '_I'
+    if join_conv2d_datasource:
+        pipeline_id = pipeline_id + '_C'
+    if join_autoencoder_datasource:
+        pipeline_id = pipeline_id + '_A'
 
     logging.info(f"Loading observations for weather station {station_id}...")
     df_ws = pd.read_parquet(input_folder + station_id + "_preprocessed.parquet.gzip")
@@ -347,7 +429,10 @@ def build_datasets(station_id: str,
         join_AS_data_source, 
         join_reanalisys_datasource, 
         join_goes16_glm_datasource, 
-        join_goes16_tpw_datasource,         
+        join_goes16_tpw_datasource,
+        join_colorcord_datasource,
+        join_conv2d_datasource,
+        join_autoencoder_datasource,     
         df_ws, 
         min_datetime, 
         max_datetime)
@@ -551,6 +636,9 @@ def main(argv):
     join_as_data_source = False
     join_nwp_data_source = False
     join_lightning_data_source = False
+    join_colorcord_data_source = False
+    join_conv2d_data_source = False
+    join_autoencoder_data_source = False
 
     if datasources:
         if 'R' in datasources:
@@ -561,6 +649,12 @@ def main(argv):
             join_lightning_data_source = True
         if 'T' in datasources:
             join_goes16_tpw_data_source = True
+        if "I" in datasources:
+            join_colorcord_data_source = True
+        if "C" in datasources:
+            join_conv2d_data_source = True
+        if "A" in datasources:
+            join_autoencoder_data_source = True
 
     assert(station_id is not None) and (station_id != "")
 
@@ -572,6 +666,9 @@ def main(argv):
                    join_nwp_data_source, 
                    join_lightning_data_source, 
                    join_goes16_tpw_data_source,
+                   join_colorcord_data_source,
+                   join_conv2d_data_source,
+                   join_autoencoder_data_source,
                    subsampling_procedure)
 
 if __name__ == "__main__":
