@@ -137,7 +137,7 @@ s3_client = boto3.client('s3', config=Config(signature_version=UNSIGNED))
 #-----------------------------------------------------------------------------------------------------------
 def download_PROD(yyyymmddhhmn, product_name, path_dest):
 
-  os.makedirs(path_dest, exist_ok=True)
+  # os.makedirs(path_dest, exist_ok=True)
 
   year = datetime.strptime(yyyymmddhhmn, '%Y%m%d%H%M').strftime('%Y')
   day_of_year = datetime.strptime(yyyymmddhhmn, '%Y%m%d%H%M').strftime('%j')
@@ -162,7 +162,7 @@ def download_PROD(yyyymmddhhmn, product_name, path_dest):
   # Check if there are files available
   if 'Contents' not in s3_result:
     # There are no files
-    print(f'No files found for the date: {yyyymmddhhmn}, Product-{product_name}')
+    print(f'No files found for the date: {yyyymmddhhmn}, Product: {product_name}')
     return -1
   else:
     # There are files

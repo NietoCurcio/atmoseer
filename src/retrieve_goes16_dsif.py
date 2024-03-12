@@ -14,6 +14,81 @@ from botocore import UNSIGNED            # boto3 config
 from botocore.config import Config       # boto3 config
 
 from datetime import datetime, timedelta
+import logging
+
+from osgeo import osr                           # Python bindings for GDAL
+from osgeo import gdal                          # Python bindings for GDAL
+
+"""Builds a reprojected netCDF file from a full disk netCDF file.
+
+Args:
+in_filename (str): Path to the full disk netCDF file.
+out_filename (str): Path to write the reprojected netCDF file.
+var (str): Name of the variable to reproject within the input file.
+extent (tuple): A tuple of four floats defining the output bounding box in
+geographic coordinates (lon_min, lat_max, lon_max, lat_min).
+
+Returns:
+str: The starting time of the data coverage extracted from the metadata
+of the input file.
+
+Raises:
+RuntimeError: If there is an error opening the input file or writing
+the reprojected file.
+"""
+def build_projection_from_full_disk(in_filename, out_filename, var, extent):
+
+    # Open the file
+    img = gdal.Open(f'NETCDF:{in_filename}:' + var)
+
+    # Read the header metadata
+    metadata = img.GetMetadata()
+    scale = float(metadata.get(var + '#scale_factor'))
+    offset = float(metadata.get(var + '#add_offset'))
+    undef = float(metadata.get(var + '#_FillValue'))
+    dtime = metadata.get('NC_GLOBAL#time_coverage_start')
+
+    # print(f'scale/offset/undef/dtime: {scale}/{offset}/{undef}/{dtime}')
+
+    # Load the data
+    ds = img.ReadAsArray(0, 0, img.RasterXSize, img.RasterYSize).astype(float)
+
+    # Apply the scale and offset
+    ds = (ds * scale + offset)
+
+    # Read the original file projection and configure the output projection
+    source_prj = osr.SpatialReference()
+    source_prj.ImportFromProj4(img.GetProjectionRef())
+
+    target_prj = osr.SpatialReference()
+    target_prj.ImportFromProj4("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+    # Reproject the data
+    GeoT = img.GetGeoTransform()
+    driver = gdal.GetDriverByName('MEM')
+    raw = driver.Create('raw', ds.shape[0], ds.shape[1], 1, gdal.GDT_Float32)
+    raw.SetGeoTransform(GeoT)
+    raw.GetRasterBand(1).WriteArray(ds)
+
+    # Define the parameters of the output file
+    options = gdal.WarpOptions(format = 'netCDF',
+            srcSRS = source_prj,
+            dstSRS = target_prj,
+            outputBounds = (extent[0], extent[3], extent[2], extent[1]),
+            outputBoundsSRS = target_prj,
+            outputType = gdal.GDT_Float32,
+            srcNodata = undef,
+            dstNodata = 'nan',
+            xRes = 0.02,
+            yRes = 0.02,
+            resampleAlg = gdal.GRA_NearestNeighbour)
+
+    # print(options)
+
+    # Write the reprojected file on disk
+    gdal.Warp(f'{out_filename}', raw, options=options)
+
+    return dtime
 
 def download_goes16_product(product_name, date_str, save_path="."):
     # Convert date string to datetime object
@@ -44,16 +119,13 @@ def download_goes16_product(product_name, date_str, save_path="."):
             # print(f'Contents: {response.get("Contents", [])}')
             # Download each file
             for content in response.get("Contents", []):
-                key = content["Key"]
-                print(f'key: {key}')
+                filename = content["Key"]
 
                 # Find the index (within the key) in which the date information begins, and extract the date part
-                s_index = key.find('s')
-                temp = key[s_index+1: -1]
+                s_index = filename.find('s')
+                temp = filename[s_index+1: -1]
                 underline_index = temp.find('_')
                 date_string = temp[0: underline_index-3]
-
-                print(f'date: {date_string}')
 
                 # Parse the date string
                 parsed_date = datetime.strptime(date_string, '%Y%j%H%M')
@@ -63,10 +135,10 @@ def download_goes16_product(product_name, date_str, save_path="."):
 
                 print(f'formatted data: {formatted_date}')
 
-                local_path = f"{save_path}/{product_name}_{formatted_date}.nc"
+                full_disk_filename = f"{save_path}/{product_name}_{formatted_date}.nc"
 
-                print(f"Downloading {key} to {local_path}")
-                s3_client.download_file("noaa-goes16", key, local_path)
+                print(f"Downloading {filename} to {full_disk_filename}")
+                s3_client.download_file("noaa-goes16", filename, full_disk_filename)
 
             print("Download complete!")
 
