@@ -10,6 +10,7 @@ from datetime import timedelta, date, datetime # Basic Dates and time types
 import cartopy, cartopy.crs as ccrs            # Plot maps
 import cartopy.io.shapereader as shpreader     # Import shapefiles
 import cartopy.feature as cfeature             # Cartopy features
+from osgeo import gdal                          # Python bindings for GDAL
 import numpy as np                             # Scientific computing with Python
 import os                                      # Miscellaneous operating system interfaces
 from goes16_utils import download_PROD             # Our own utilities
@@ -20,7 +21,9 @@ temp_dir = "./data/goes16/temp"
 output = "./data/goes16/Animation"
 
 # # Desired extent
-extent = [-93.0, -60.00, -25.00, 15.00] # Min lon, Min lat, Max lon, Max lat
+# extent = [-93.0, -60.00, -25.00, 15.00] # Min lon, Min lat, Max lon, Max lat
+extent = [-74.0, -34.1, -34.8, 5.5] # Min lon, Max lon, Min lat, Max lat
+
 # Coordinates of rectangle for region of interest (Rio de Janeiro municipality)
 # extent = [-64.0, -35.0, -35.0, -15.0] # Min lon, Min lat, Max lon, Max lat
 
@@ -76,6 +79,20 @@ while (date_loop <= date_end):
 
     # Download the Full Disk file
     file_name = download_PROD(yyyymmddhhmn, prod_name, temp_dir)
+
+    #-----------------------------------------------------------------------------------------------------------
+
+    # Open the file
+    img = gdal.Open(f'NETCDF:{temp_dir}/{file_name}.nc:' + variable_name)
+    dqf = gdal.Open(f'NETCDF:{temp_dir}/{file_name}.nc:DQF_Overall')
+
+    # Read the header metadata
+    metadata = img.GetMetadata()
+    scale = float(metadata.get(variable_name + '#scale_factor'))
+    offset = float(metadata.get(variable_name + '#add_offset'))
+    undef = float(metadata.get(variable_name + '#_FillValue'))
+    dtime = metadata.get('NC_GLOBAL#time_coverage_start')
+    print(f'scale, offset, undef, dtime = {(scale, offset, undef, dtime)}')
 
     #-----------------------------------------------------------------------------------------------------------
     
@@ -135,7 +152,7 @@ while (date_loop <= date_end):
 
     #-----------------------------------------------------------------------------------------------------------
     # Define the coordinates to extract the data (lat,lon) <- pairs
-    coordinates = [('A652', -22.98833333,-43.19055555), ('A636', -22.93999999,-43.40277777)]
+    coordinates = [('A652', -22.98833333,-43.19055555)]
 
     for label, lat, lon in coordinates:
       # Reading the data from a coordinate
@@ -150,7 +167,7 @@ while (date_loop <= date_end):
 
       # Adding the data as an annotation
       # Add a circle
-      ax.plot(lon_point, lat_point, 'o', color='yellow', markersize=3, transform=ccrs.Geodetic(), markeredgewidth=1.0, markeredgecolor=(0, 0, 0, 1), zorder=8)
+      ax.plot(lon_point, lat_point, 'o', color='black', markersize=3, transform=ccrs.Geodetic(), markeredgewidth=1.0, markeredgecolor=(0, 0, 0, 1), zorder=8)
       
       # Add a text
       txt_offset_x = 0.8
