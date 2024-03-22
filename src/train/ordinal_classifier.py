@@ -90,10 +90,10 @@ class OrdinalClassifier(BaseClassifier):
 
     def predict(self, X):
         print('Making predictions with ordinal classification model...')
-        self.eval()
+        self.learner.eval()
 
         X_as_tensor = torch.from_numpy(X.astype('float64'))
-        X_as_tensor = torch.permute(X_as_tensor, (0, 2, 1))
+        X_as_tensor = torch.permute(X_as_tensor, (0, 1, 2))
 
         outputs = []
         with torch.no_grad():
