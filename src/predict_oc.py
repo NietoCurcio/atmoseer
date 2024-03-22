@@ -1,12 +1,12 @@
 import torch
 import torch.nn as nn
-from src.train.ordinal_classifier import OrdinalClassifier
+from train.ordinal_classifier import OrdinalClassifier
+from train.lstm_neural_net import LstmNeuralNet
 import globals as globals
 import pickle
 import yaml
 
-if __name__ == "__main__":
-    pipeline_id = "A652_N"
+def predict_oc(pipeline_id: str, prediction_task_sufix: str):
 
     #
     # Load numpy arrays (stored in a pickle file) from disk
@@ -22,27 +22,40 @@ if __name__ == "__main__":
     print(x)
 
     NUM_FEATURES = X_test.shape[2]
-    NUM_CLASSES = 5
 
     with open('./config/config.yaml', 'r') as file:
         config = yaml.safe_load(file)
 
-    #Create an instance of the model
-    input_dim = (NUM_FEATURES, config["preproc"]["SLIDING_WINDOW_SIZE"])
-    model = OrdinalClassifier(in_channels=NUM_FEATURES, 
-                                    num_classes=NUM_CLASSES, 
-                                    input_dim = input_dim, 
-                                    target_average = None)
+    SEQ_LENGTH = config["preproc"]["SLIDING_WINDOW_SIZE"]
+    DROPOUT_RATE = config["training"][prediction_task_sufix]["DROPOUT_RATE"]
+    OUTPUT_SIZE = config["training"][prediction_task_sufix]["OUTPUT_SIZE"]
 
+    #Create an instance of the model
+    learner = LstmNeuralNet(seq_length = SEQ_LENGTH,
+                        input_size = NUM_FEATURES, 
+                        output_size = OUTPUT_SIZE,
+                        dropout_rate = DROPOUT_RATE)
+
+    input_dim = (NUM_FEATURES, config["preproc"]["SLIDING_WINDOW_SIZE"])
+    model = OrdinalClassifier(learner)
+
+    
     # Load the pretrained model weights from the file
-    model_path = globals.MODELS_DIR + "best_" + pipeline_id + "_OC.pt"  # Path to the pretrained model file
-    model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+    learner_name = model.learner.__class__.__name__
+    model_path = globals.MODELS_DIR + f"best_{pipeline_id}_{prediction_task_sufix}_{learner_name}.pt"
+    model.learner.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
 
 
     # Set the model in evaluation (inference) mode.
-    model.eval()
+    model.learner.eval()
 
     # Make prediction using the loaded model
     with torch.no_grad():
         output = model.predict(x)
         print(f"Predicted level: {output[0][0]}")
+
+if __name__ == "__main__":
+    pipeline_id = 'A652_A621_A636_A627'
+    prediction_task_sufix = "oc"
+    # hardcoded for now
+    predict_oc(pipeline_id, prediction_task_sufix)
