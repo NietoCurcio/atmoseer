@@ -53,6 +53,7 @@ def predict_oc(pipeline_id: str, prediction_task_sufix: str):
     with torch.no_grad():
         output = model.predict(x)
         print(f"Predicted level: {output[0][0]}")
+        return output[0][0]
 
 if __name__ == "__main__":
     pipeline_id = 'A652_A621_A636_A627'
