@@ -596,7 +596,7 @@ def main(argv):
             train_test_threshold = pd.to_datetime(args.train_test_threshold, utc=True) # This UTC thing is really anonying!
         else:
             train_test_threshold = pd.to_datetime(args.train_test_threshold)
-    except ParserError:
+    except pd.errors.ParserError:
         print(f"Invalid date format: {args.train_test_threshold}.")
         parser.print_help()
         sys.exit(2)
