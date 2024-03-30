@@ -66,9 +66,9 @@ def main(argv):
     args = parser.parse_args(argv[1:])
 
     api_token = args.api_token
-    station_id = args.station_id
-    start_year = args.begin
-    end_year = args.end
+    station_id = args.ws_id
+    start_year = args.begin_year
+    end_year = args.end_year
 
     if not (station_id in globals.INMET_WEATHER_STATION_IDS):
         parser.error(f'Invalid station ID: {station_id}')
