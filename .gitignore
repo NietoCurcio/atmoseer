@@ -2,8 +2,8 @@
 data/
 models/
 backup/
- __pycache__/
- *.pyc
+__pycache__/
+*.pyc
 
 src/__pycache__/globals.cpython-38.pyc
 src/__pycache__/globals.cpython-310.pyc
