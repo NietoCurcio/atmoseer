@@ -1,7 +1,8 @@
 import sys
 from datetime import datetime
 import time
-import cdsapi
+from cdsapi.api import Client as ClientCDS
+from collections.abc import Iterator
 from pathlib import Path
 import xarray as xr
 import argparse
@@ -30,127 +31,73 @@ class Months(Enum):
     NOVEMBER = 11
     DECEMBER = 12
 
-def get_data(start_year, end_year):
+def _download_CDS_data(clientCDS: ClientCDS, month: str, year: str):
+    file_exist = Path(f"{globals.NWP_DATA_DIR}ERA5/montly_data/RJ_{year}_{month}.nc")
+    if file_exist.is_file():
+        print(f"ERA5 data already downloaded for the month {month} of year {year}.")
+        return
 
+    request = {
+        "product_type": "reanalysis",
+        "format": "netcdf",
+        "variable": [
+            "geopotential",
+            "relative_humidity",
+            "temperature",
+            "u_component_of_wind",
+            "v_component_of_wind"
+        ],
+        "pressure_level": ['200', '700', '1000'],
+        "year": [year],
+        "month": [month],
+        "day": [f"{day:02d}" for day in range(1, 32)],
+        "time": [f"{hour:02d}:00" for hour in range(24)],
+        "area": REGION_OF_INTEREST,
+    }
+
+    try:
+        print(f"Downloading ERA5 data at month {month} of year {year}...")
+        clientCDS.retrieve(
+            name="reanalysis-era5-pressure-levels",
+            request=request,
+            target=f"{globals.NWP_DATA_DIR}ERA5/montly_data/RJ_{year}_{month}.nc"
+        )
+        print(f"Downloaded ERA5 data at month {month} of year {year}")
+    except Exception as e:
+        print(f"Unexpected error! {repr(e)}")
+        sys.exit(2)
+
+def _get_datasets_generator(years: Iterator, months: Iterator):
+    for year in years:
+        for month in months:
+            target = f"{globals.NWP_DATA_DIR}ERA5/montly_data/RJ_{year}_{month}.nc"
+            yield xr.open_dataset(target)
+
+def get_data(start_year: int, end_year: int) -> None:
     end_year = min([end_year, datetime.today().year])
 
-    file = "RJ_" + str(start_year) + "_" + str(end_year)
+    target_path = f"{globals.NWP_DATA_DIR}ERA5/RJ_{start_year}_{end_year}.nc"
 
-    file_exist = Path(globals.NWP_DATA_DIR + "ERA5/" + file + ".nc")
-
-    months = range(Months.JANUARY.value, Months.DECEMBER.value+1)
-
+    file_exist = Path(target_path)
     if file_exist.is_file():
-        ds = xr.open_dataset(globals.NWP_DATA_DIR + "ERA5/" + file + ".nc")
-    else:
-        c = cdsapi.Client()
-        years = list(map(str, range(int(start_year), int(end_year) + 1)))
-        for year in years:
-            for month in months:
-                print(f"Downloading ERA5 data at month {month} of year {year}...", end="")
-                try:
-                    c.retrieve(
-                        "reanalysis-era5-pressure-levels",
-                        {
-                            "product_type": "reanalysis",
-                            "format": "netcdf",
-                            "variable": [
-                                "geopotential",
-                                "relative_humidity",
-                                "temperature",
-                                "u_component_of_wind",
-                                "v_component_of_wind"
-                            ],
-                            "pressure_level": [
-                                '200', '700', '1000'
-                            ],
-                            "year": [
-                                year,
-                            ],
-                            "month": [
-                                str(month)
-                            ],
-                            "day": [
-                                "01",
-                                "02",
-                                "03",
-                                "04",
-                                "05",
-                                "06",
-                                "07",
-                                "08",
-                                "09",
-                                "10",
-                                "11",
-                                "12",
-                                "13",
-                                "14",
-                                "15",
-                                "16",
-                                "17",
-                                "18",
-                                "19",
-                                "20",
-                                "21",
-                                "22",
-                                "23",
-                                "24",
-                                "25",
-                                "26",
-                                "27",
-                                "28",
-                                "29",
-                                "30",
-                                "31",
-                            ],
-                            "time": [
-                                "00:00",
-                                "01:00",
-                                "02:00",
-                                "03:00",
-                                "04:00",
-                                "05:00",
-                                "06:00",
-                                "07:00",
-                                "08:00",
-                                "09:00",
-                                "10:00",
-                                "11:00",
-                                "12:00",
-                                "13:00",
-                                "14:00",
-                                "15:00",
-                                "16:00",
-                                "17:00",
-                                "18:00",
-                                "19:00",
-                                "20:00",
-                                "21:00",
-                                "22:00",
-                                "23:00",
-                            ],
-                            "area": REGION_OF_INTEREST,
-                        },
-                        globals.NWP_DATA_DIR + "ERA5/montly_data/RJ_" + year + "_" + str(month) + ".nc",
-                    )
-                    print("Done!")
-                except Exception as e:
-                    print(f"Unexpected error! {repr(e)}")
-                    sys.exit(2)
+        print(f"ERA5 data already downloaded for the period {start_year} to {end_year}.")
+        return
+    
+    clientCDS = ClientCDS()
+    years = map(str, range(start_year, end_year + 1))
+    months = map(str, range(Months.JANUARY.value, Months.DECEMBER.value + 1))
+    for year in years:
+        for month in months:
+            _download_CDS_data(clientCDS, month, year)
 
-        ds = None
-        for year in years:
-            for month in months:
-                if ds is None:
-                    ds = xr.open_dataset(globals.NWP_DATA_DIR + "ERA5/montly_data/RJ_" + year + "_" + str(month) + ".nc")
-                else:
-                    ds_aux = xr.open_dataset(globals.NWP_DATA_DIR + "ERA5/montly_data/RJ_" + year + "_" + str(month) + ".nc")
-                    ds = ds.merge(ds_aux)
+    datasets_generator = _get_datasets_generator(years, months)
+    ds = next(datasets_generator)
+    for dataset in datasets_generator:
+        ds = ds.merge(dataset)
 
-        print(f"Done!", end="")
-        filename = globals.NWP_DATA_DIR + "ERA5/" + file + ".nc"
-        print(f"Saving dowloaded data to {filename}")
-        ds.to_netcdf(filename)
+    print(f"ERA5 data downloaded for the period {start_year} to {end_year}")
+    print(f"Saving dowloaded data to {target_path}")
+    ds.to_netcdf(target_path)
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Retrieve ERA5 data between two given years.')
@@ -165,11 +112,9 @@ def main(argv):
     # ERA5 data goes back to the year 1940. 
     # see https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=overview
     assert start_year >= 1940 
-
     assert start_year <= end_year
 
     get_data(start_year, end_year)
 
 if __name__ == "__main__":
     main(sys.argv)
-
