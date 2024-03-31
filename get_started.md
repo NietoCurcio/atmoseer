@@ -34,7 +34,7 @@ conda create --name atmoseer python=3.9
 conda activate atmoseer
 ```
 
-Install conda [libmamba solver](https://www.anaconda.com/blog/a-faster-conda-for-a-growing-community) for fast solving enviroment when installing dependencies and set it in the `atmoseer` env:
+Install conda [libmamba solver](https://www.anaconda.com/blog/a-faster-conda-for-a-growing-community) for fast solving environment when installing dependencies and set it in the `atmoseer` env:
 ```sh
 conda update -n base conda
 conda install -n atmoseer conda-libmamba-solver
@@ -50,7 +50,7 @@ conda config --env --add channels anaconda
 # run conda config --show channels to see configured channels
 ```
 
-Install the dependencies in the `atmoseer` conda enviroment from the `config/environment.yml` file:
+Install the dependencies in the `atmoseer` conda environment from the `config/environment.yml` file:
 ```sh
 conda env update --name atmoseer --file config/environment.yml
 ```
@@ -58,10 +58,10 @@ conda env update --name atmoseer --file config/environment.yml
 Exporting an environment file across platforms:
 ```sh
 conda env export --from-history | grep -v "^prefix: " > config/environment.yml
-# This command writes the enviroment in the config/environment.yml file, ignoring the prefix local setting.
+# This command writes the environment in the config/environment.yml file, ignoring the prefix local setting.
 ```
 
-Exporting an enviroment is useful if some contributor has installed a package not listed in the `config/environment.yml` file. Please, consider passing the package version explicitly when installing a conda package, so that when exporting the enviroment the package version will be configured as well. Installing a package with version example:
+Exporting an environment is useful if some contributor has installed a package not listed in the `config/environment.yml` file. Please, consider passing the package version explicitly when installing a conda package, so that when exporting the environment the package version will be configured as well. Installing a package with version example:
 ```sh
 # conda install conda-forge::pandas==2.2.1
 ```
