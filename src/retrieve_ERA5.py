@@ -103,7 +103,7 @@ class CDSDatasetDownloader:
         ds = next(datasets_generator)
         for dataset in datasets_generator:
             ds = ds.merge(dataset)
-        ds.to_netcdf(f"{globals.NWP_DATA_DIR}ERA5/merged_data/RJ_{self.start_year}_{self.end_year}.nc")
+        ds.to_netcdf(f"{globals.NWP_DATA_DIR}ERA5/RJ_{self.start_year}_{self.end_year}.nc")
         print(f"ERA5 data merged for the period {self.start_year} to {self.end_year}")
 
 def main(argv):

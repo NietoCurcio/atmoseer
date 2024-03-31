@@ -88,7 +88,7 @@ Copy the [`WeatherStations.csv`](https://portal.inmet.gov.br/paginas/catalogoaut
 
 - AlertaRio rain gauge stations
 
-    Since rain gauge stations only have pluimoetric info, we need to fuse this data with ERA5 NWP, to 
+    Since rain gauge stations only have pluviometric info, we need to fuse this data with ERA5 NWP, to 
     simulate values for temperature, relative humidity, barometric pressure, wind speed and sind direction.
 
     First, retrieve ERA5 data:
@@ -105,11 +105,11 @@ Copy the [`WeatherStations.csv`](https://portal.inmet.gov.br/paginas/catalogoaut
         key: YOUR_UID:YOUR_APIKEY
         ```
     5. Confirm terms acceptance at https://cds.climate.copernicus.eu/cdsapp/#!/terms/licence-to-use-copernicus-products
-    6. Exeute the ERA5 data retrival script:
+    6. Execute the ERA5 data retrival script:
     ```sh
     python src/retrieve_ERA5.py -b 1997 -e 2023
     ```
-    Creates `./data/NWP/ERA5
+    Creates the `./data/NWP/ERA5/RJ_1997_2023.nc` file.
 
     TODO
     Execute the script `create_alertario_gs_parquet.py`
