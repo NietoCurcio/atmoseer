@@ -47,15 +47,30 @@ class DatasetClient:
             self.call_retrieve(name, request, target)
 
 class CDSDatasetDownloader:
-    def __init__(self, start_year: int, end_year: int) -> None:
-        self.start_year = start_year
+    def __init__(self, begin_year: int, begin_month: int, end_year: int, end_month: int) -> None:
+        self.begin_year = begin_year
+        self.begin_month = begin_month
         self.end_year = min([end_year, datetime.today().year])
+        self.end_month = end_month
         self.dataset_client = DatasetClient()
 
+    def _get_dates_generator(self) -> Generator[str, None, None]:
+        current_date = datetime.strptime(f"{self.begin_year}-{self.begin_month}", "%Y-%m")
+        end_date = datetime.strptime(f"{self.end_year}-{self.end_month + 1}", "%Y-%m")
+        while current_date < end_date:
+            year = int(current_date.year)
+            month = int(current_date.month)
+
+            yield year, month
+
+            if month == 12:
+                current_date = current_date.replace(year=current_date.year + 1, month=1)
+            else:
+                current_date = current_date.replace(month=current_date.month + 1)
+
     def _get_datasets_generator(self) -> Generator[Dataset, None, None]:
-        for year in map(str, range(self.start_year, self.end_year + 1)):
-            for month in map(str, range(1, 12 + 1)):
-                yield xr.open_dataset(f"{globals.NWP_DATA_DIR}ERA5/montly_data/RJ_{year}_{month}.nc")
+        for year, month in self._get_dates_generator():
+            yield xr.open_dataset(f"{globals.NWP_DATA_DIR}ERA5/montly_data/RJ_{year}_{month}.nc")
 
     def _download_dataset(self, month: str, year: str):
         target_path_nc = Path(f"{globals.NWP_DATA_DIR}ERA5/montly_data/RJ_{year}_{month}.nc")
@@ -78,7 +93,7 @@ class CDSDatasetDownloader:
             ],
             "pressure_level": ['200', '700', '1000'],
             "year": year,
-            "month": month,
+            "month": [month],
             "day": [f"{day:02d}" for day in range(1, 32)],
             "time": [f"{hour:02d}:00" for hour in range(24)],
             "area": [REGION_OF_INTEREST[key] for key in ['north', 'west', 'south', 'east']]
@@ -93,32 +108,41 @@ class CDSDatasetDownloader:
         print(f"Downloaded ERA5 data at month {month} of year {year}")
 
     def download_datasets(self):
-        print(f"Downloading ERA5 data for the period {self.start_year} to {self.end_year}...")
-        for year in map(str, range(self.start_year, self.end_year + 1)):
-            for month in map(str, range(1, 12 + 1)):
-                self._download_dataset(month, year)
-        print(f"Downloaded ERA5 data for the period {self.start_year} to {self.end_year}")
+        print(f"Downloading ERA5 data for the period {self.begin_year} to {self.end_year}...")
+        for year, month in self._get_dates_generator():
+            self._download_dataset(month, year)
+        print(f"Downloaded ERA5 data for the period {self.begin_year} to {self.end_year}")
 
     def merge_datasets(self, merge_dataset: Union[str, None] = None):
-        print(f"Merging ERA5 data for the period {self.start_year} to {self.end_year}...")
+        print(f"Merging ERA5 data for the period {self.begin_year} to {self.end_year}...")
         datasets_generator = self._get_datasets_generator()
         ds = next(datasets_generator) if not merge_dataset else xr.open_dataset(merge_dataset,)
         for dataset in datasets_generator:
             ds = ds.merge(dataset)
-        ds.to_netcdf(f"{globals.NWP_DATA_DIR}ERA5/RJ_{self.start_year}_{self.end_year}.nc")
-        print(f"ERA5 data merged for the period {self.start_year} to {self.end_year}")
+        ds.to_netcdf(f"{globals.NWP_DATA_DIR}ERA5/RJ_{self.begin_year}_{self.end_year}.nc")
+        print(f"ERA5 data merged for the period {self.begin_year} to {self.end_year}")
+
+def valid_date(arg: str):
+    try:
+        year_str, month_str = arg.split('-')
+        if len(month_str) != 2 or len(year_str) != 4: raise ValueError
+        year = int(year_str)
+        month = int(month_str)
+        return year, month
+    except ValueError:
+        raise argparse.ArgumentTypeError("Invalid date format. Please use YYYY-MM")
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Retrieve ERA5 data between two given years.')
-    parser.add_argument('-b', '--start_year', type=int, required=True, help='Start year')
-    parser.add_argument('-e', '--end_year', type=int, required=True, help='End year')
+    parser.add_argument('-b', '--begin', type=valid_date, required=True, help='Begin date (MM/YYYY)')
+    parser.add_argument('-e', '--end', type=valid_date, required=True, help='End date (MM/YYYY)')
     parser.add_argument('-m', '--merge', action=argparse.BooleanOptionalAction, help='Merge datasets')
     parser.add_argument('-md', '--merge_dataset', type=str, help='Dataset to merge datasets')
 
     args = parser.parse_args(argv[1:])
 
-    start_year = args.start_year
-    end_year = args.end_year
+    begin_year, begin_month = args.begin
+    end_year, end_month = args.end
     merge = args.merge
     merge_dataset = args.merge_dataset
 
@@ -127,10 +151,15 @@ def main(argv):
 
     # ERA5 data goes back to the year 1940. 
     # see https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form
-    assert start_year >= 1940, "ERA5 start year must be greater than or equal to 1940"
-    assert start_year <= end_year, "ERA5 start year must be less than or equal to end year"
+    assert begin_year >= 1940, "ERA5 start year must be greater than or equal to 1940"
+    assert begin_year <= end_year, "ERA5 start year must be less than or equal to end year"
 
-    dataset_downloader = CDSDatasetDownloader(start_year, end_year)
+    dataset_downloader = CDSDatasetDownloader(
+        begin_year=begin_year,
+        begin_month=begin_month,
+        end_year=end_year,
+        end_month=end_month
+    )
     dataset_downloader.download_datasets()
     dataset_downloader.merge_datasets(merge_dataset)
 
