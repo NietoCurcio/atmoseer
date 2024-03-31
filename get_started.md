@@ -23,12 +23,47 @@ mkdir -p ./data/datasets
 mkdir -p ./data/goes16
 ```
 
-Create an `atmoseer` [conda](https://www.anaconda.com/download/) environment and install its dependencies:
+Ensure [conda](https://www.anaconda.com/download/) package manager is installed:
+```sh
+conda --version
+```
+
+Create the `atmoseer` environment:
 ```sh
 conda create --name atmoseer python=3.9
 conda activate atmoseer
+```
 
-TODO install packages or conda env create -f environment.yml
+Install conda [libmamba solver](https://www.anaconda.com/blog/a-faster-conda-for-a-growing-community) for fast solving enviroment when installing dependencies and set it in the `atmoseer` env:
+```sh
+conda update -n base conda
+conda install -n atmoseer conda-libmamba-solver
+conda config --env --set solver libmamba
+# It helps us from being stuck at "Solving environment: \ "
+```
+
+Add the following package channels to `atmoseer` environment:
+```sh
+conda config --env --add channels conda-forge
+conda config --env --add channels pytorch
+conda config --env --add channels anaconda
+# run conda config --show channels to see configured channels
+```
+
+Install the dependencies in the `atmoseer` conda enviroment from the `config/environment.yml` file:
+```sh
+conda env update --name atmoseer --file config/environment.yml
+```
+
+Exporting an environment file across platforms:
+```sh
+conda env export --from-history | grep -v "^prefix: " > config/environment.yml
+# This command writes the enviroment in the config/environment.yml file, ignoring the prefix local setting.
+```
+
+Exporting an enviroment is useful if some contributor has installed a package not listed in the `config/environment.yml` file. Please, consider passing the package version explicitly when installing a conda package, so that when exporting the enviroment the package version will be configured as well. Installing a package with version example:
+```sh
+# conda install conda-forge::pandas==2.2.1
 ```
 
 ## Data retrieval
