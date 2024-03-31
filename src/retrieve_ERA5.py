@@ -113,10 +113,42 @@ class CDSDatasetDownloader:
             self._download_dataset(month, year)
         print(f"Downloaded ERA5 data for the period {self.begin_year} to {self.end_year}")
 
-    def merge_datasets(self, merge_dataset: Union[str, None] = None):
+    def prepend_dataset(self, prepend_dataset: str):
+        if not Path(prepend_dataset).is_file():
+            raise FileNotFoundError(f"Dataset to prepend not found: {prepend_dataset}")
+
+        # filename follows this pattern: RJ_YYYY_YYYY.nc
+        prepend_dataset_name = Path(prepend_dataset).name
+        prepend_begin_year = int(prepend_dataset_name.split('_')[1])
+        prepend_end_year = int(prepend_dataset_name.split('_')[-1].split('.')[0])
+
+        print(f"""
+            Last dataset info:
+            Begin year: {prepend_begin_year}
+            End year: {prepend_end_year}
+        """)
+
+        print(f"""
+            Current CDSDatasetDownloader info:
+            Begin year: {self.begin_year}
+            End year: {self.end_year}
+        """)
+
+        assert self.end_year >= prepend_end_year, "The end year must be greater than the last year of the dataset to append"
+
+        print(f"Prepending ERA5 data for the period {prepend_begin_year} to {self.end_year}...")
+
+        prepend_ds = xr.open_dataset(prepend_dataset)
+        append_ds = xr.open_dataset(f"{globals.NWP_DATA_DIR}ERA5/montly_data/RJ_{self.begin_year}_{self.end_year}.nc")
+
+        ds = prepend_ds.merge(append_ds)
+        ds.to_netcdf(f"{globals.NWP_DATA_DIR}ERA5/RJ_{prepend_begin_year}_{self.end_year}.nc")
+        print(f"ERA5 data appended for the period {prepend_begin_year} to {self.end_year}")
+
+    def merge_datasets(self):
         print(f"Merging ERA5 data for the period {self.begin_year} to {self.end_year}...")
         datasets_generator = self._get_datasets_generator()
-        ds = next(datasets_generator) if not merge_dataset else xr.open_dataset(merge_dataset)
+        ds = next(datasets_generator)
         for dataset in datasets_generator:
             ds = ds.merge(dataset)
         ds.to_netcdf(f"{globals.NWP_DATA_DIR}ERA5/RJ_{self.begin_year}_{self.end_year}.nc")
@@ -136,16 +168,13 @@ def main(argv):
     parser = argparse.ArgumentParser(description='Retrieve ERA5 data between two given years.')
     parser.add_argument('-b', '--begin', type=valid_date, required=True, help='Begin date (YYYY-MM)')
     parser.add_argument('-e', '--end', type=valid_date, required=True, help='End date (YYYY-MM)')
-    parser.add_argument('-md', '--merge_dataset', type=str, help='Dataset to merge datasets')
+    parser.add_argument('-pd', '--prepend_dataset', type=Union[str, None], default=None, help='Dataset to merge datasets')
 
     args = parser.parse_args(argv[1:])
 
     begin_year, begin_month = args.begin
     end_year, end_month = args.end
-    merge_dataset = args.merge_dataset
-
-    if merge_dataset and not Path(merge_dataset).is_file():
-        raise FileNotFoundError(f"Dataset to merge not found: {merge_dataset}")
+    prepend_dataset = args.prepend_dataset
 
     # ERA5 data goes back to the year 1940. 
     # see https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form
@@ -159,7 +188,9 @@ def main(argv):
         end_month=end_month
     )
     dataset_downloader.download_datasets()
-    dataset_downloader.merge_datasets(merge_dataset)
+    dataset_downloader.merge_datasets()
+    if prepend_dataset:
+        dataset_downloader.prepend_dataset(prepend_dataset)
 
 if __name__ == "__main__":
     main(sys.argv)
