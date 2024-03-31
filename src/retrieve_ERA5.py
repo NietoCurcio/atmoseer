@@ -116,7 +116,7 @@ class CDSDatasetDownloader:
     def merge_datasets(self, merge_dataset: Union[str, None] = None):
         print(f"Merging ERA5 data for the period {self.begin_year} to {self.end_year}...")
         datasets_generator = self._get_datasets_generator()
-        ds = next(datasets_generator) if not merge_dataset else xr.open_dataset(merge_dataset,)
+        ds = next(datasets_generator) if not merge_dataset else xr.open_dataset(merge_dataset)
         for dataset in datasets_generator:
             ds = ds.merge(dataset)
         ds.to_netcdf(f"{globals.NWP_DATA_DIR}ERA5/RJ_{self.begin_year}_{self.end_year}.nc")
@@ -136,18 +136,16 @@ def main(argv):
     parser = argparse.ArgumentParser(description='Retrieve ERA5 data between two given years.')
     parser.add_argument('-b', '--begin', type=valid_date, required=True, help='Begin date (YYYY-MM)')
     parser.add_argument('-e', '--end', type=valid_date, required=True, help='End date (YYYY-MM)')
-    parser.add_argument('-m', '--merge', action=argparse.BooleanOptionalAction, help='Merge datasets')
     parser.add_argument('-md', '--merge_dataset', type=str, help='Dataset to merge datasets')
 
     args = parser.parse_args(argv[1:])
 
     begin_year, begin_month = args.begin
     end_year, end_month = args.end
-    merge = args.merge
     merge_dataset = args.merge_dataset
 
-    if merge and not merge_dataset:
-        parser.error("--merge requires --merge_dataset some_file.nc")
+    if merge_dataset and not Path(merge_dataset).is_file():
+        raise FileNotFoundError(f"Dataset to merge not found: {merge_dataset}")
 
     # ERA5 data goes back to the year 1940. 
     # see https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form
