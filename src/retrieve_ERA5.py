@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 from collections.abc import Generator
+from typing import Union
 
 from cdsapi.api import Client as ClientCDS
 import xarray as xr
@@ -23,13 +24,14 @@ class DatasetClient:
     def _convert_grib_to_netcdf(self, target: str):
         # please see, https://github.com/ecmwf/cfgrib
         # also, https://docs.xarray.dev/en/stable/user-guide/io.html#grib-format-via-cfgrib
+        print(f"Converting grib data to netcdf...")
         assert target.endswith('.grib'), "The target file must be a grib file"
         data = xr.open_dataset(target, engine='cfgrib')
         target = target.replace('.grib', '.nc')
         data.to_netcdf(target)
         print(f"Converted grib data to netcdf")
 
-    def call_retrieve(self,name: str, request: dict, target: str):
+    def call_retrieve(self, name: str, request: dict, target: str):
         try:
             self.clientCDS.retrieve(name=name, request=request, target=target)
             print(f"Downloaded ERA5 data - {request['format']} format")
@@ -42,7 +44,7 @@ class DatasetClient:
             print(f"Failed to download ERA5 data in netcdf format. Downloading in grib format")
             request['format'] = 'grib'
             target = target.replace('.nc', '.grib')
-            self.call_retrieve(request, target)
+            self.call_retrieve(name, request, target)
 
 class CDSDatasetDownloader:
     def __init__(self, start_year: int, end_year: int) -> None:
@@ -97,10 +99,10 @@ class CDSDatasetDownloader:
                 self._download_dataset(month, year)
         print(f"Downloaded ERA5 data for the period {self.start_year} to {self.end_year}")
 
-    def merge_datasets(self):
+    def merge_datasets(self, merge_dataset: Union[str, None] = None):
         print(f"Merging ERA5 data for the period {self.start_year} to {self.end_year}...")
         datasets_generator = self._get_datasets_generator()
-        ds = next(datasets_generator)
+        ds = next(datasets_generator) if not merge_dataset else xr.open_dataset(merge_dataset,)
         for dataset in datasets_generator:
             ds = ds.merge(dataset)
         ds.to_netcdf(f"{globals.NWP_DATA_DIR}ERA5/RJ_{self.start_year}_{self.end_year}.nc")
@@ -110,11 +112,18 @@ def main(argv):
     parser = argparse.ArgumentParser(description='Retrieve ERA5 data between two given years.')
     parser.add_argument('-b', '--start_year', type=int, required=True, help='Start year')
     parser.add_argument('-e', '--end_year', type=int, required=True, help='End year')
+    parser.add_argument('-m', '--merge', action=argparse.BooleanOptionalAction, help='Merge datasets')
+    parser.add_argument('-md', '--merge_dataset', type=str, help='Dataset to merge datasets')
 
     args = parser.parse_args(argv[1:])
 
     start_year = args.start_year
     end_year = args.end_year
+    merge = args.merge
+    merge_dataset = args.merge_dataset
+
+    if merge and not merge_dataset:
+        parser.error("--merge requires --merge_dataset some_file.nc")
 
     # ERA5 data goes back to the year 1940. 
     # see https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form
@@ -123,7 +132,7 @@ def main(argv):
 
     dataset_downloader = CDSDatasetDownloader(start_year, end_year)
     dataset_downloader.download_datasets()
-    dataset_downloader.merge_datasets()
+    dataset_downloader.merge_datasets(merge_dataset)
 
 if __name__ == "__main__":
     main(sys.argv)
