@@ -134,8 +134,8 @@ def valid_date(arg: str):
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Retrieve ERA5 data between two given years.')
-    parser.add_argument('-b', '--begin', type=valid_date, required=True, help='Begin date (MM/YYYY)')
-    parser.add_argument('-e', '--end', type=valid_date, required=True, help='End date (MM/YYYY)')
+    parser.add_argument('-b', '--begin', type=valid_date, required=True, help='Begin date (YYYY-MM)')
+    parser.add_argument('-e', '--end', type=valid_date, required=True, help='End date (YYYY-MM)')
     parser.add_argument('-m', '--merge', action=argparse.BooleanOptionalAction, help='Merge datasets')
     parser.add_argument('-md', '--merge_dataset', type=str, help='Dataset to merge datasets')
 
