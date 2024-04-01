@@ -52,7 +52,7 @@ Exporting an environment is useful if some contributor has installed a package n
 
 ## Data retrieval
 
-Copy the [`WeatherStations.csv`](https://portal.inmet.gov.br/paginas/catalogoaut#) file into `./data/ws` folder.
+Copy the [`WeatherStations.csv`] file into `./data/ws` folder.
 
 ### INMET
 - retrieve INMET:
@@ -95,12 +95,20 @@ Copy the [`WeatherStations.csv`](https://portal.inmet.gov.br/paginas/catalogoaut
         ```
         It creates the `./data/NWP/ERA5/RJ_1997_2023.nc` file. Note, this script also has a `--prepend_dataset` flag to merge new data with an existing dataset. For example, `python src/retrieve_ERA5.py -b 2023-05 -e 2024-03 --prepend_dataset data/NWP/ERA5/RJ_1997_2023.nc` will prepend `RJ_1997_2023.nc` into `RJ_2023_2024.nc`, creating the `RJ_1997_2024.nc` dataset.
 
-    TODO
-    Execute the script `create_alertario_gs_parquet.py`
-    ```sh
-    python create_alertario_gs_parquet.py
-    ```
-    Creates `./data/ws/alertario/ws/sao_cristovao.parquet` and `guaratiba.parquet`.
+    Second, create the `.parquet` files in the `./data/ws/alertario/rain_gauge/` and `./data/ws/alertario/rain_gauge_era5_fused/` folders:
+    1. Execute the `create_alertario_gs_parquet.ipynb` notebook:
+        ```sh
+        jupyter nbconvert --execute --to notebook --inplace notebooks/alertario/create_alertario_gs_parquet.ipynb
+        ```
+        
+        This jupyter notebook creates the `./notebooks/alertario/alertario_stations.parquet` file and a list of parquet files `[alto_da_boa_vista.parquet, anchieta.parquet, ..., vidigal.parquet]`. Move `alertario_stations.parquet` into `./data/ws/alertario_stations.parquet`. Move the list of `.parquet` files into `./data/ws/alertario/rain_gauge/` folder. The notebook assumes the `./notebooks/alertario/alertario_rain_gauge` folder exists with the alertario rain gauge data within it.
+    2. Execute the `fuse_rain_gauge_and_era5.py` script:
+        ```sh
+        python src/fuse_rain_gauge_and_era5.py --dataset_file ./data/NWP/ERA5/RJ_1997_2024.nc
+        ```
+        This script creates a list of parquet files `[alto_da_boa_vista.parquet, anchieta.parquet, ..., vidigal.parquet]` in the `./data/ws/alertario/rain_gauge_era5_fused/` folder.
+
+    TODO: automate the moving of .parquet files.
 
 ### Sirenes
 
@@ -127,14 +135,20 @@ Preprocess AlertaRio
     python src/preprocess_ws.py -s sao_cristovao
     python src/preprocess_ws.py -s guaratiba
     ```
-    These scripts create the `./data/ws/alertario/ws/sao_cristovao_preprocessed.parquet.gzip` (and `guaratiba_preprocessed.parquet.gzip`) 
+    These scripts create the `./data/ws/alertario/ws/sao_cristovao_preprocessed.parquet.gzip` (and `guaratiba_preprocessed.parquet.gzip`) files
 
-2.1.1  - preprocess AlertaRio rain gauge stations
-```sh
-# See: data/alertario_rain_gauge/create_aleratrio_gs_parquet.ipynb
-```
+- AlertaRio rain gauge stations
 
-### AlertaRio
+    Note it assumes the files in the `./data/ws/alertario/rain_gauge_era5_fused/` folder exist.
+    ```sh
+    python src/preprocess_gs.py --station_id jardim_botanico
+    ```
+    This script creates the `./data/ws/alertario/rain_gauge_era5_fused/jardim_botanico_preprocessed.parquet.gzip` file.
+
+    TODO document --station_id all
+
+
+### Sirenes
 
 ## Data building
 
