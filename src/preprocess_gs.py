@@ -32,8 +32,6 @@ def preprocess_gauge_station(station_id, df, output_folder):
 
     # print(df.head())
 
-    assert (not df.isnull().values.any().any())
-
     #
     # Normalize the weather station data. This step is necessary here due to the next step, which deals with missing values.
     # Notice that we drop the target column before normalizing, to avoid some kind of data leakage.
@@ -45,7 +43,13 @@ def preprocess_gauge_station(station_id, df, output_folder):
     df = util.min_max_normalize(df)
     print("Done!")
 
+    print("Applying KNNImputer...")
+    percentage_missing = (df.isna().mean() * 100).mean() # Compute the percentage of missing values
+    print(f"There are {df.isnull().sum().sum()} missing values ({percentage_missing:.2f}%). Going to fill them...")
+    imputer = KNNImputer(n_neighbors=2)
+    df[:] = imputer.fit_transform(df)
     assert (not df.isnull().values.any().any())
+    print("Done!\n")
 
     #
     # Add the target column back to the DataFrame.

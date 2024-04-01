@@ -1,5 +1,9 @@
+from pathlib import Path
+import argparse
+
 import pandas as pd
 import xarray as xr
+
 import util
 
 def fuse_rain_gauge_and_era5(df_station: pd.DataFrame, station_latitude: float, station_longitude: float, ds_era5):
@@ -7,7 +11,6 @@ def fuse_rain_gauge_and_era5(df_station: pd.DataFrame, station_latitude: float, 
     df_station['datetime'] = df_station['datetime'].dt.tz_localize(None)
     df_station = df_station.set_index(pd.DatetimeIndex(df_station['datetime']))
     df_station = df_station.drop(['datetime'], axis = 1)
-    assert (not df_station.isnull().values.any().any())
 
     time_min = min(df_station.index)
     time_max = max(df_station.index)
@@ -59,8 +62,8 @@ def fuse_rain_gauge_and_era5(df_station: pd.DataFrame, station_latitude: float, 
 
     return df_fusion
 
-def fuse_rain_gauges_and_era5():
-    era5_filename = "./data/NWP/ERA5/RJ_1997_2023.nc"
+def fuse_rain_gauges_and_era5(dataset_file: str):
+    era5_filename = dataset_file
     ds_era5 = xr.open_dataset(era5_filename)
     time_min = ds_era5.time.min().values
     time_max = ds_era5.time.max().values
@@ -75,8 +78,16 @@ def fuse_rain_gauges_and_era5():
         station_longitude = row["longitude"]
         df_station = pd.read_parquet("./data/ws/alertario/rain_gauge/" + station_id + ".parquet")
         df_fusion_result = fuse_rain_gauge_and_era5(df_station, station_latitude, station_longitude, ds_era5)
-        assert (not df_fusion_result.isnull().values.any().any())
         df_fusion_result.to_parquet("./data/ws/alertario/rain_gauge_era5_fused/" + station_id + ".parquet")
 
 if __name__ == "__main__":
-  fuse_rain_gauges_and_era5()
+    parser = argparse.ArgumentParser(description='Fuse rain gauge and ERA5 data')
+    parser.add_argument('-ds', '--dataset_file', type=str, required=True, help='Path to the ERA5 dataset file (.nc)')
+
+    args = parser.parse_args()
+    dataset_file = args.dataset_file
+
+    if not Path(dataset_file).is_file():
+        raise FileNotFoundError(f"Dataset file not found: {dataset_file}")
+
+    fuse_rain_gauges_and_era5(dataset_file)
