@@ -124,7 +124,7 @@ class CDSDatasetDownloader:
 
         target_path = Path(f"{globals.NWP_DATA_DIR}ERA5/RJ_{prepend_begin_year}_{self.end_year}.nc")
         if target_path.is_file():
-            print(f"ERA5 data already prepend for the period {prepend_begin_year} to {self.end_year}")
+            print(f"ERA5 data already prepended for the period {prepend_begin_year} to {self.end_year}")
             return
 
         print(f"""
@@ -139,16 +139,16 @@ class CDSDatasetDownloader:
             End year: {self.end_year}
         """)
 
-        assert self.end_year >= prepend_end_year, "The end year must be greater than the last year of the dataset to append"
+        assert self.end_year >= prepend_end_year, "The end year must be greater than the last year of the dataset to prepend"
 
-        print(f"Prepending ERA5 data for the period {prepend_begin_year} to {self.end_year}...")
+        print(f"Prepending ERA5 data {prepend_begin_year}-{prepend_end_year} to {self.begin_year}-{self.end_year}...")
 
         prepend_ds = xr.open_dataset(prepend_dataset)
         append_ds = xr.open_dataset(f"{globals.NWP_DATA_DIR}ERA5/RJ_{self.begin_year}_{self.end_year}.nc")
 
         ds = prepend_ds.merge(append_ds)
         ds.to_netcdf(str(target_path.resolve()))
-        print(f"ERA5 data appended for the period {prepend_begin_year} to {self.end_year}")
+        print(f"ERA5 data prepended for the period {prepend_begin_year} to {self.end_year}")
 
     def merge_datasets(self):
         target_path = Path(f"{globals.NWP_DATA_DIR}ERA5/RJ_{self.begin_year}_{self.end_year}.nc")
