@@ -2,25 +2,9 @@
 
 ## Project setup
 
-Create folders:
+Create dependency folders by executing the following shell script:
 ```sh
-mkdir -p ./data
-
-mkdir -p ./data/ws
-
-mkdir -p ./data/ws/inmet
-mkdir -p ./data/ws/alertario
-mkdir -p ./data/ws/alertario/ws
-mkdir -p ./data/ws/alertario/rain_gauge_era5_fused
-
-mkdir -p ./data/as
-
-mkdir -p ./data/NWP
-mkdir -p ./data/NWP/ERA5
-mkdir -p ./data/NWP/ERA5/montly_data
-
-mkdir -p ./data/datasets
-mkdir -p ./data/goes16
+./scripts/create_folders.sh
 ```
 
 Ensure [conda](https://www.anaconda.com/download/) package manager is installed:
@@ -75,21 +59,21 @@ Copy the [`WeatherStations.csv`](https://portal.inmet.gov.br/paginas/catalogoaut
     ```sh
     python src/retrieve_ws_inmet.py -s A602 -b 2007 -e 2023 --api_token INMET_TOKEN
     ```
-    That script creates the `./data/ws/inmet/A602.parquet` file
+    That script creates the `./data/ws/inmet/A602.parquet` file. Please see `./src/globals:INMET_WEATHER_STATION_IDS` for the available station IDs.
 
 ### AlertaRio
 
 - AlertaRio weather stations
 
     ```sh
-    python create_alertario_ws_parquet.py
+    jupyter nbconvert --execute --to notebook --inplace notebooks/alertario/create_alertario_ws_parquet.ipynb
     ```
-    That script creates the `./data/ws/alertario/ws/sao_cristovao.parquet` and `guaratiba.parquet` files.
+    That script creates the `./notebooks/alertario/sao_cristovao.parquet` and `guaratiba.parquet` files by executing the jupyter notebook. Once created, move these files to the `./data/ws/alertario/ws/` folder. The notebook assumes the `./notebooks/alertario/alertario_weather_station` folder exists with the alertario data within it.
 
 - AlertaRio rain gauge stations
 
     Since rain gauge stations only have pluviometric info, we need to fuse this data with ERA5 NWP, to 
-    simulate values for temperature, relative humidity, barometric pressure, wind speed and sind direction.
+    simulate values for temperature, relative humidity, barometric pressure, wind speed and wind direction.
 
     First, retrieve ERA5 data:
     1. Go to https://cds.climate.copernicus.eu/api-how-to and register an account
@@ -106,10 +90,10 @@ Copy the [`WeatherStations.csv`](https://portal.inmet.gov.br/paginas/catalogoaut
         ```
     5. Confirm terms acceptance at https://cds.climate.copernicus.eu/cdsapp/#!/terms/licence-to-use-copernicus-products
     6. Execute the ERA5 data retrival script:
-    ```sh
-    python src/retrieve_ERA5.py -b 1997 -e 2023
-    ```
-    Creates the `./data/NWP/ERA5/RJ_1997_2023.nc` file.
+        ```sh
+        python src/retrieve_ERA5.py -b 1997-01 -e 2023-12
+        ```
+        It creates the `./data/NWP/ERA5/RJ_1997_2023.nc` file. Note, this script also has a `--prepend_dataset` flag to merge new data with an existing dataset. For example, `python src/retrieve_ERA5.py -b 2023-05 -e 2024-03 --prepend_dataset data/NWP/ERA5/RJ_1997_2023.nc` will prepend `RJ_1997_2023.nc` into `RJ_2023_2024.nc`, creating the `RJ_1997_2024.nc` dataset.
 
     TODO
     Execute the script `create_alertario_gs_parquet.py`
@@ -120,35 +104,46 @@ Copy the [`WeatherStations.csv`](https://portal.inmet.gov.br/paginas/catalogoaut
 
 ### Sirenes
 
-
 Execute the
 
+## Data preprocessing
 
-2.0 - preprocess INMET (only weather stations)
-```sh
-python src/preprocess_ws.py -s A602
-# Please see, ./src/globals:INMET_WEATHER_STATION_IDS
-```
-Creates `./data/ws/inmet/A602_preprocessed.parquet.gzip` file
+### Inmet
 
-2.1 - preprocess AlertaRio (both weather and gauge stations)
+- Preprocess INMET (only weather stations)
+    ```sh
+    python src/preprocess_ws.py -s A602
+    ```
+    This script creates the `./data/ws/inmet/A602_preprocessed.parquet.gzip` file
 
-2.1.0 - preprocess AlertaRio weather stations
+### AlertaRio
 
-Note it assumes the files `./data/ws/alertario/ws/sao_cristovao_parquet` (and `guaratiba.parquet`) exists
-```sh
-# See: data/alertario_weather-station/create_aleratrio_ws_parquet.ipynb
+Preprocess AlertaRio
 
-python src/preprocess_ws.py -s sao_cristovao
-python src/preprocess_ws.py -s guaratiba
-```
+- AlertaRio weather stations
 
-2.1.1  - preprocess AlertaRio gauge stations
+    Note it assumes the files `./data/ws/alertario/ws/sao_cristovao.parquet` (and `guaratiba.parquet`) exists
+    ```sh
+    python src/preprocess_ws.py -s sao_cristovao
+    python src/preprocess_ws.py -s guaratiba
+    ```
+    These scripts create the `./data/ws/alertario/ws/sao_cristovao_preprocessed.parquet.gzip` (and `guaratiba_preprocessed.parquet.gzip`) 
+
+2.1.1  - preprocess AlertaRio rain gauge stations
 ```sh
 # See: data/alertario_rain_gauge/create_aleratrio_gs_parquet.ipynb
 ```
 
-# todo
-# ## data retrival - inmet, aleratrio, sirenes
-# ## data preprocess - inmet, aleratrio, sirenes
-# ...
+### AlertaRio
+
+## Data building
+
+This section describes the creation of training, validation and testing datasets for the INMET, AlertaRio and Sirenes entities.
+
+### INMET
+
+### AlertaRio
+
+### Sirenes
+
+## Model training and evaluation
