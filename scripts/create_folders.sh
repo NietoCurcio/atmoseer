@@ -9,6 +9,7 @@ mkdir -p ./data/ws
 mkdir -p ./data/ws/inmet
 mkdir -p ./data/ws/alertario
 mkdir -p ./data/ws/alertario/ws
+mkdir -p ./data/ws/alertario/rain_gauge
 mkdir -p ./data/ws/alertario/rain_gauge_era5_fused
 
 mkdir -p ./data/as
