@@ -75,7 +75,7 @@ class CDSDatasetDownloader:
     def _download_dataset(self, month: str, year: str):
         target_path_nc = Path(f"{globals.NWP_DATA_DIR}ERA5/montly_data/RJ_{year}_{month}.nc")
         if target_path_nc.is_file():
-            print(f"ERA5 data already downloaded for the month {month} of year {year}.")
+            print(f"ERA5 data already downloaded for the month {month} of year {year}")
             return
         
         target_path_grib = Path(f"{globals.NWP_DATA_DIR}ERA5/montly_data/RJ_{year}_{month}.grib")
@@ -122,6 +122,11 @@ class CDSDatasetDownloader:
         prepend_begin_year = int(prepend_dataset_name.split('_')[1])
         prepend_end_year = int(prepend_dataset_name.split('_')[-1].split('.')[0])
 
+        target_path = Path(f"{globals.NWP_DATA_DIR}ERA5/RJ_{prepend_begin_year}_{self.end_year}.nc")
+        if target_path.is_file():
+            print(f"ERA5 data already prepend for the period {prepend_begin_year} to {self.end_year}")
+            return
+
         print(f"""
             Last dataset info:
             Begin year: {prepend_begin_year}
@@ -139,19 +144,24 @@ class CDSDatasetDownloader:
         print(f"Prepending ERA5 data for the period {prepend_begin_year} to {self.end_year}...")
 
         prepend_ds = xr.open_dataset(prepend_dataset)
-        append_ds = xr.open_dataset(f"{globals.NWP_DATA_DIR}ERA5/montly_data/RJ_{self.begin_year}_{self.end_year}.nc")
+        append_ds = xr.open_dataset(f"{globals.NWP_DATA_DIR}ERA5/RJ_{self.begin_year}_{self.end_year}.nc")
 
         ds = prepend_ds.merge(append_ds)
-        ds.to_netcdf(f"{globals.NWP_DATA_DIR}ERA5/RJ_{prepend_begin_year}_{self.end_year}.nc")
+        ds.to_netcdf(str(target_path.resolve()))
         print(f"ERA5 data appended for the period {prepend_begin_year} to {self.end_year}")
 
     def merge_datasets(self):
+        target_path = Path(f"{globals.NWP_DATA_DIR}ERA5/RJ_{self.begin_year}_{self.end_year}.nc")
+        if target_path.is_file():
+            print(f"ERA5 data already merged for the period {self.begin_year} to {self.end_year}")
+            return
+
         print(f"Merging ERA5 data for the period {self.begin_year} to {self.end_year}...")
         datasets_generator = self._get_datasets_generator()
         ds = next(datasets_generator)
         for dataset in datasets_generator:
             ds = ds.merge(dataset)
-        ds.to_netcdf(f"{globals.NWP_DATA_DIR}ERA5/RJ_{self.begin_year}_{self.end_year}.nc")
+        ds.to_netcdf(str(target_path.resolve()))
         print(f"ERA5 data merged for the period {self.begin_year} to {self.end_year}")
 
 def valid_date(arg: str):
@@ -168,7 +178,7 @@ def main(argv):
     parser = argparse.ArgumentParser(description='Retrieve ERA5 data between two given years.')
     parser.add_argument('-b', '--begin', type=valid_date, required=True, help='Begin date (YYYY-MM)')
     parser.add_argument('-e', '--end', type=valid_date, required=True, help='End date (YYYY-MM)')
-    parser.add_argument('-pd', '--prepend_dataset', type=Union[str, None], default=None, help='Dataset to merge datasets')
+    parser.add_argument('-pd', '--prepend_dataset', type=str, default=None, help='Dataset to merge datasets')
 
     args = parser.parse_args(argv[1:])
 
