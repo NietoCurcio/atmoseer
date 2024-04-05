@@ -156,8 +156,18 @@ This section describes the creation of training, validation and testing datasets
 
 ### INMET
 
+python src/build_datasets.py -s A652 --train_test_threshold "2021-11-12"
+see src/globals.py
+
 ### AlertaRio
+
+python src/build_datasets.py -s urca --train_test_threshold "2021-11-12"
+see src/globals.py
 
 ### Sirenes
 
+TODO
+
 ## Model training and evaluation
+
+call src/train_model.py

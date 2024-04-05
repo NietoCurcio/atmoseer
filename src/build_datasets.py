@@ -593,7 +593,7 @@ def main(argv):
 
     try:
         if (station_id in globals.ALERTARIO_WEATHER_STATION_IDS or station_id in globals.ALERTARIO_GAUGE_STATION_IDS):
-            train_test_threshold = pd.to_datetime(args.train_test_threshold, utc=True) # This UTC thing is really anonying!
+            train_test_threshold = pd.to_datetime(args.train_test_threshold) # This UTC thing is really anonying!
         else:
             train_test_threshold = pd.to_datetime(args.train_test_threshold)
     except pd.errors.ParserError:
@@ -628,6 +628,9 @@ def main(argv):
     elif (station_id in globals.ALERTARIO_GAUGE_STATION_IDS):
         # Its a gauge station.
         input_folder = globals.GS_ALERTARIO_DATA_DIR
+    elif (station_id in globals.SIRENES_GAUGE_STATION_IDS):
+        # Its a gauge station.
+        input_folder = globals.GS_SIRENES_DATA_DIR
 
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
     logging.basicConfig(level=logging.DEBUG, format = fmt)

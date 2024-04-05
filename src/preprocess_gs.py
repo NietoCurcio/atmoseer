@@ -55,6 +55,7 @@ def preprocess_gauge_station(station_id, df, output_folder):
     # Add the target column back to the DataFrame.
     df["barometric_pressure"] = barometric_pressure_column
     df[target_name] = target_column
+    assert (not df.isnull().values.any().any())
 
     #
     # Save preprocessed data to a parquet file.
@@ -80,7 +81,11 @@ def main(argv):
     
     station_id = args.station_id
 
-    if not (station_id == "all" or station_id in globals.ALERTARIO_GAUGE_STATION_IDS):
+    if not (
+        station_id == "all" or
+        station_id in globals.ALERTARIO_GAUGE_STATION_IDS or
+        station_id in globals.SIRENES_GAUGE_STATION_IDS
+    ):
         print(f"Invalid station identifier: {station_id}")
         parser.print_help()
         sys.exit(2)
