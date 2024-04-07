@@ -45,10 +45,13 @@ def fuse_rain_gauge_and_era5(df_station: pd.DataFrame, station_latitude: float, 
     print("Index of df_station:", df_station.index)
     print("Index of df_era5_data_for_station:", df_era5_data_for_station.index)
     # alertario resolution is '2016-01-01 02:00:00', 2016-01-01 02:15:00', '2016-01-01 02:30:00', ...
+    # UPDATE alertario during "data retrieval step" is 1 hour time resolution now
     # while ERA5 resolution is '1997-01-01 00:00:00'', '1997-01-01 01:00:00', '1997-01-01 02:00:00', ...
     # so at index 2:15, 2:30 and 2:45 barometric pressure will be NA
     df_fusion = pd.merge(df_station, df_era5_data_for_station, how='left', left_index=True, right_index=True)
-    df_fusion = df_fusion.dropna(subset=['pressure_1000'])
+    if df_fusion['pressure_1000'].isnull().values.any():
+        print("Time mismatch between df_station and df_era5_data_for_station detected, dropping extra data")
+        df_fusion = df_fusion.dropna(subset=['pressure_1000'])
     
     column_name_mapping = {
       "Temperature_1000_Celsius": "temperature",
