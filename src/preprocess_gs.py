@@ -63,8 +63,11 @@ def preprocess_gauge_station(station_id, df, output_folder):
     print(f"Saving preprocessed data to {filename}")
     df.to_parquet(filename, compression='gzip')
 
-def preprocess_all_gauge_stations(output_folder):
+def preprocess_all_gauge_stations(output_folder: str, station_id: str):
     alertario_stations_filename = "./data/ws/alertario_stations.parquet"
+
+    # TODO: check if station_id is alertario or websirenes station, see fuse scrip (we use a entity dict)
+
     df_alertario_stations = pd.read_parquet(alertario_stations_filename)
     for index, row in df_alertario_stations.iterrows():
         station_id = row["estacao_desc"]
@@ -94,7 +97,7 @@ def main(argv):
     output_folder = "./data/ws/alertario/rain_gauge_era5_fused/"
 
     if station_id == "all":
-        preprocess_all_gauge_stations(output_folder)
+        preprocess_all_gauge_stations(output_folder, station_id)
     else:
         print(f'Preprocessing data coming from weather station {station_id}')
         station_filename = input_folder + args.station_id + ".parquet"

@@ -4,7 +4,7 @@ INMET_API_BASE_URL = "https://apitempo.inmet.gov.br"
 WS_INMET_DATA_DIR = "./data/ws/inmet/"
 WS_ALERTARIO_DATA_DIR = "./data/ws/alertario/ws/"
 GS_ALERTARIO_DATA_DIR = "./data/ws/alertario/rain_gauge_era5_fused/"
-GS_SIRENES_DATA_DIR = "./data/ws/sirenes/"
+GS_WEBSIRENES_DATA_DIR = "./data/ws/websirenes/"
 
 # WS_GOES_DATA_DIR = "atmoseer/data/ws/goes16"
 GOES_DATA_DIR = "./data/goes16"
@@ -73,7 +73,7 @@ ALERTARIO_WEATHER_STATION_IDS = (
                          )
 
 SIRENES_GAUGE_STATION_IDS = (
-                         '',
+                         'TODO',
                          '',
                          '',
 )

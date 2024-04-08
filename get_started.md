@@ -50,6 +50,22 @@ Exporting an environment is useful if some contributor has installed a package n
 # conda install conda-forge::pandas==2.2.1
 ```
 
+## Execution pipeline
+
+The execution pipeline consists in the following steps:
+
+1. Retrieve raw data, it takes raw data and stores it into .parquet files
+
+see data retrieval
+
+2. Preprocess the data retrieved
+
+3. Build datasets, build the data preprocessed into train, val and test data
+
+4. Train and evaluate model passing the built data to a model
+
+5. Predict, use test data to predict a trained model
+
 ## Data retrieval
 
 Copy the [`WeatherStations.csv`] file into `./data/ws` folder.
@@ -93,7 +109,7 @@ Copy the [`WeatherStations.csv`] file into `./data/ws` folder.
         ```sh
         python src/retrieve_ERA5.py -b 1997-01 -e 2023-12
         ```
-        It creates the `./data/NWP/ERA5/RJ_1997_2023.nc` file. Note, this script also has a `--prepend_dataset` flag to merge new data with an existing dataset. For example, `python src/retrieve_ERA5.py -b 2023-05 -e 2024-03 --prepend_dataset data/NWP/ERA5/RJ_1997_2023.nc` will prepend `RJ_1997_2023.nc` into `RJ_2023_2024.nc`, creating the `RJ_1997_2024.nc` dataset.
+        It creates the `./data/NWP/ERA5/RJ_1997_2023.nc` file. Note, this script also has a `--prepend_dataset` flag to add new data with an existing dataset. For example, `python src/retrieve_ERA5.py -b 2023-05 -e 2024-03 --prepend_dataset data/NWP/ERA5/RJ_1997_2023.nc` will prepend `RJ_1997_2023.nc` into `RJ_2023_2024.nc`, creating the `RJ_1997_2024.nc` dataset.
 
     Second, create the `.parquet` files in the `./data/ws/alertario/rain_gauge/` and `./data/ws/alertario/rain_gauge_era5_fused/` folders:
     1. Execute the `create_alertario_gs_parquet.ipynb` notebook:
@@ -104,7 +120,7 @@ Copy the [`WeatherStations.csv`] file into `./data/ws` folder.
         This jupyter notebook creates the `./notebooks/alertario/alertario_stations.parquet` file and a list of parquet files `[alto_da_boa_vista.parquet, anchieta.parquet, ..., vidigal.parquet]`. Move `alertario_stations.parquet` into `./data/ws/alertario_stations.parquet`. Move the list of `.parquet` files into `./data/ws/alertario/rain_gauge/` folder. The notebook assumes the `./notebooks/alertario/alertario_rain_gauge` folder exists with the alertario rain gauge data within it.
     2. Execute the `fuse_rain_gauge_and_era5.py` script:
         ```sh
-        python src/fuse_rain_gauge_and_era5.py --dataset_file ./data/NWP/ERA5/RJ_1997_2024.nc
+        python src/fuse_rain_gauge_and_era5.py --dataset_file ./data/NWP/ERA5/RJ_1997_2024.nc -e alertario
         ```
         This script creates a list of parquet files `[alto_da_boa_vista.parquet, anchieta.parquet, ..., vidigal.parquet]` in the `./data/ws/alertario/rain_gauge_era5_fused/` folder.
 
@@ -112,7 +128,28 @@ Copy the [`WeatherStations.csv`] file into `./data/ws` folder.
 
 ### Sirenes
 
-Execute the
+- Sirenes rain gauge stations
+
+    Since rain gauge stations only have pluviometric info, we need to fuse this data with ERA5 NWP, to 
+    simulate values for temperature, relative humidity, barometric pressure, wind speed and wind direction.
+
+    First, retrieve ERA5 data: (same steps as Data_retrieval.alertariorio.1)
+
+    Second, create the `.parquet` files in the `./data/ws/websirenes/rain_gauge/` and `./data/ws/websirenes/rain_gauge_era5_fused/` folders:
+    1. Execute the `create_websirenes_gs_parquet.ipynb` notebook:
+        ```sh
+        jupyter nbconvert --execute --to notebook --inplace notebooks/websirenes/create_websirenes_gs_parquet.ipynb
+        ```
+        
+        This jupyter notebook creates a list of parquet files `[TODO]` and also the `websirenes_stations.parquet`. Move the list of `.parquet` files into `./data/ws/websirenes/rain_gauge/` folder. The notebook assumes the `./notebooks/websirenes/websirenes_defesa_civil` folder exists with the websirenes rain gauge data within it. It also assumes the file  `./notebooks/websirenes/websirenes_stations_original.parquet` exists. Also move `websirenes_stations.parquet` file produced by the notebook into `./data/ws/websirenessirenes_stations.parquet`.
+
+    2. Execute the `fuse_rain_gauge_and_era5.py` script:
+        ```sh
+        python src/fuse_rain_gauge_and_era5.py --dataset_file ./data/NWP/ERA5/RJ_1997_2024.nc -e sirenes
+        ```
+        This script creates a list of parquet files `[TODO]` in the `./data/ws/websirenes/rain_gauge_era5_fused/` folder.
+
+    TODO: automate the moving of .parquet files.
 
 ## Data preprocessing
 
@@ -141,7 +178,7 @@ Preprocess AlertaRio
 
     Note it assumes the files in the `./data/ws/alertario/rain_gauge_era5_fused/` folder exist.
     ```sh
-    python src/preprocess_gs.py --station_id jardim_botanico
+    python src/preprocess_gs.py --station_id jardim_botanico # we can use --station_id all here
     ```
     This script creates the `./data/ws/alertario/rain_gauge_era5_fused/jardim_botanico_preprocessed.parquet.gzip` file.
 
@@ -161,8 +198,13 @@ see src/globals.py
 
 ### AlertaRio
 
+```sh
 python src/build_datasets.py -s urca --train_test_threshold "2021-11-12"
-see src/globals.py
+# see src/globals:ALERTARIO_GAUGE_STATION_IDS for alertario rain gauge IDs
+```
+
+This script assumes the preprocessing was executed, so the `./data/ws/alertario/rain_gauge_era5_fused/urca_preprocessed.parquet.gzip` file must exist.
+
 
 ### Sirenes
 
@@ -170,4 +212,15 @@ TODO
 
 ## Model training and evaluation
 
-call src/train_model.py
+### Alertario
+
+```sh
+python src/train_model.py -p urca -t ORDINAL_CLASSIFICATION
+```
+
+This script assumes the data build was executed, so the `./data/datasets/urca.pickle` file must exist.
+
+### Sirenes
+
+```sh
+```

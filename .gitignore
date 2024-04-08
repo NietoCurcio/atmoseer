@@ -9,7 +9,9 @@ notebooks/alertario/alertario_rain_gauge
 notebooks/alertario/alertario_weather_station
 notebooks/alertario/*.parquet
 
-notebooks/sirenes/
+notebooks/websirenes/private
+notebooks/websirenes/websirenes_defesa_civil/
+notebooks/websirenes/*.parquet
 
 src/__pycache__/globals.cpython-38.pyc
 src/__pycache__/globals.cpython-310.pyc

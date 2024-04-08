@@ -71,32 +71,62 @@ def fuse_rain_gauge_and_era5(df_station: pd.DataFrame, station_latitude: float, 
 
     return df_fusion
 
-def fuse_rain_gauges_and_era5(dataset_file: str):
+def fuse_rain_gauges_and_era5(dataset_file: str, entity: str = "alertario"):
     era5_filename = dataset_file
     ds_era5 = xr.open_dataset(era5_filename)
     time_min = ds_era5.time.min().values
     time_max = ds_era5.time.max().values
     print(f"Range of timestamps in the ERA5 data: [{time_min}, {time_max}]")
 
-    alertario_stations_filename = "./data/ws/alertario_stations.parquet"
-    df_alertario_stations = pd.read_parquet(alertario_stations_filename)
-    for index, row in df_alertario_stations.iterrows():
+    entity_paths = {
+        "alertario": {
+            "stations_filename": "./data/ws/alertario_stations.parquet",
+            "rain_gauge_folder": "./data/ws/alertario/rain_gauge/",
+            "output_folder": "./data/ws/alertario/rain_gauge_era5_fused/"
+        },
+        "websirenes": {
+            "stations_filename": "./data/ws/websirenes_stations.parquet",
+            "rain_gauge_folder": "./data/ws/websirenes/rain_gauge/",
+            "output_folder": "./data/ws/websirenes/rain_gauge_era5_fused/"
+        }
+    }
+
+    entity_data = entity_paths.get(entity)
+
+    stations_filename = entity_data["stations_filename"]
+    rain_gauge_folder = entity_data["rain_gauge_folder"]
+    output_folder = entity_data["output_folder"]
+
+    df_stations = pd.read_parquet(stations_filename)
+    for index, row in df_stations.iterrows():
         station_id = row["estacao_desc"]
         print(f"Fusing data for gauge station {station_id}")
         station_latitude = row["latitude"]
         station_longitude = row["longitude"]
-        df_station = pd.read_parquet("./data/ws/alertario/rain_gauge/" + station_id + ".parquet")
+        df_station = pd.read_parquet(rain_gauge_folder + station_id + ".parquet")
         df_fusion_result = fuse_rain_gauge_and_era5(df_station, station_latitude, station_longitude, ds_era5)
-        df_fusion_result.to_parquet("./data/ws/alertario/rain_gauge_era5_fused/" + station_id + ".parquet")
+        df_fusion_result.to_parquet(output_folder + station_id + ".parquet")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Fuse rain gauge and ERA5 data')
     parser.add_argument('-ds', '--dataset_file', type=str, required=True, help='Path to the ERA5 dataset file (.nc)')
+    entity_action = parser.add_argument(
+            '-e',
+            '--entity',
+            type=str,
+            required=True,
+            help='Entity name', choices=["alertario", "websirenes"]
+    )
 
     args = parser.parse_args()
     dataset_file = args.dataset_file
+    entity = args.entity
+
+    if entity not in entity_action.choices:
+        parser.print_help()
+        raise ValueError(f"Invalid entity name: {entity}")
 
     if not Path(dataset_file).is_file():
         raise FileNotFoundError(f"Dataset file not found: {dataset_file}")
 
-    fuse_rain_gauges_and_era5(dataset_file)
+    fuse_rain_gauges_and_era5(dataset_file, entity)

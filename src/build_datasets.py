@@ -630,7 +630,7 @@ def main(argv):
         input_folder = globals.GS_ALERTARIO_DATA_DIR
     elif (station_id in globals.SIRENES_GAUGE_STATION_IDS):
         # Its a gauge station.
-        input_folder = globals.GS_SIRENES_DATA_DIR
+        input_folder = globals.GS_WEBSIRENES_DATA_DIR
 
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
     logging.basicConfig(level=logging.DEBUG, format = fmt)
