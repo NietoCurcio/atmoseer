@@ -56,8 +56,8 @@ class CDSDatasetDownloader:
 
     def _get_dates_generator(self) -> Generator[str, None, None]:
         current_date = datetime.strptime(f"{self.begin_year}-{self.begin_month}", "%Y-%m")
-        end_date = datetime.strptime(f"{self.end_year}-{self.end_month + 1}", "%Y-%m")
-        while current_date < end_date:
+        end_date = datetime.strptime(f"{self.end_year}-{self.end_month}", "%Y-%m")
+        while current_date <= end_date:
             year = int(current_date.year)
             month = int(current_date.month)
 
