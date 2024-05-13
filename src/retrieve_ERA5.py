@@ -88,10 +88,10 @@ class CDSDatasetDownloader:
             "product_type": "reanalysis",
             "format": "netcdf",
             "variable": [
-                "geopotential", "relative_humidity", "temperature",
-                "u_component_of_wind", "v_component_of_wind"
+                "10m_u_component_of_wind", "10m_v_component_of_wind", "2m_dewpoint_temperature",
+                "2m_temperature", "convective_available_potential_energy", "convective_inhibition",
+                "geopotential", "k_index", "total_totals_index",
             ],
-            "pressure_level": ['200', '700', '1000'],
             "year": year,
             "month": [month],
             "day": [f"{day:02d}" for day in range(1, 32)],
@@ -101,7 +101,7 @@ class CDSDatasetDownloader:
 
         print(f"Downloading ERA5 data at month {month} of year {year}...")
         self.dataset_client.call_retrieve(
-            name="reanalysis-era5-pressure-levels",
+            name="reanalysis-era5-single-levels",
             request=request,
             target=str(target_path_nc.resolve())
         )
@@ -179,15 +179,23 @@ def main(argv):
     parser.add_argument('-b', '--begin', type=valid_date, required=True, help='Begin date (YYYY-MM)')
     parser.add_argument('-e', '--end', type=valid_date, required=True, help='End date (YYYY-MM)')
     parser.add_argument('-pd', '--prepend_dataset', type=str, default=None, help='Dataset to merge datasets')
+    parser.add_argument('-n', '--north', type=float, default=REGION_OF_INTEREST['north'], help='Northernmost latitude')
+    parser.add_argument('-w', '--west', type=float, default=REGION_OF_INTEREST['west'], help='Westernmost longitude')
+    parser.add_argument('-s', '--south', type=float, default=REGION_OF_INTEREST['south'], help='Southernmost latitude')
+    parser.add_argument('-e', '--east', type=float, default=REGION_OF_INTEREST['east'], help='Easternmost longitude')
 
     args = parser.parse_args(argv[1:])
 
     begin_year, begin_month = args.begin
     end_year, end_month = args.end
     prepend_dataset = args.prepend_dataset
+    REGION_OF_INTEREST['north'] = args.north
+    REGION_OF_INTEREST['west'] = args.west
+    REGION_OF_INTEREST['south'] = args.south
+    REGION_OF_INTEREST['east'] = args.east
 
     # ERA5 data goes back to the year 1940. 
-    # see https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form
+    # see https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=form
     assert begin_year >= 1940, "ERA5 start year must be greater than or equal to 1940"
     assert begin_year <= end_year, "ERA5 start year must be less than or equal to end year"
 
