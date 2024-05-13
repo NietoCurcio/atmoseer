@@ -179,10 +179,10 @@ def main(argv):
     parser.add_argument('-b', '--begin', type=valid_date, required=True, help='Begin date (YYYY-MM)')
     parser.add_argument('-e', '--end', type=valid_date, required=True, help='End date (YYYY-MM)')
     parser.add_argument('-pd', '--prepend_dataset', type=str, default=None, help='Dataset to merge datasets')
-    parser.add_argument('-n', '--north', type=float, default=REGION_OF_INTEREST['north'], help='Northernmost latitude')
-    parser.add_argument('-w', '--west', type=float, default=REGION_OF_INTEREST['west'], help='Westernmost longitude')
-    parser.add_argument('-s', '--south', type=float, default=REGION_OF_INTEREST['south'], help='Southernmost latitude')
-    parser.add_argument('-e', '--east', type=float, default=REGION_OF_INTEREST['east'], help='Easternmost longitude')
+    parser.add_argument('-north', '--north', type=float, default=REGION_OF_INTEREST['north'], help='Northernmost latitude')
+    parser.add_argument('-west', '--west', type=float, default=REGION_OF_INTEREST['west'], help='Westernmost longitude')
+    parser.add_argument('-south', '--south', type=float, default=REGION_OF_INTEREST['south'], help='Southernmost latitude')
+    parser.add_argument('-east', '--east', type=float, default=REGION_OF_INTEREST['east'], help='Easternmost longitude')
 
     args = parser.parse_args(argv[1:])
 
