@@ -40,8 +40,8 @@ def compute_indices(df_launch):
 
 def main():
     parser = argparse.ArgumentParser(description='Generate instability indices from sounding measurements.')
-    parser.add_argument('--input_file', help='input Parquet file name containing the sounding measurements', required=True)
-    parser.add_argument('--output_file', help='output Parquet file name where the indices are going to be saved', required=True)
+    parser.add_argument('--input_file', help='Parquet file name containing the sounding measurements', required=True)
+    parser.add_argument('--output_file', help='Parquet file name where the indices are going to be saved', required=True)
     args = parser.parse_args()
 
     df_s = pd.read_parquet(args.input_file)

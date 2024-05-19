@@ -104,10 +104,11 @@ python src/retrieve_ws_inmet.py -s A627 -b 2018 -e 2023 --api_token <token>
 python src/retrieve_ws_inmet.py -s A636 -b 2017 -e 2023 --api_token <token>
 
 ==========================================
-=== retrieve_as
+=== retrieve_data
 ==========================================
-python src/retrieve_as.py --station_id SBGL --start_year 2023 --end_year 2023 
-python src/gen_sounding_indices.py --input_file ./data/as/SBGL_1997_2023.parquet.gzip --output_file ./data/as/SBGL_indices_1997_2023.parquet.gzip
+python src/sounding_retrieve_data.py --station_id SBGL --start_year 2023 --end_year 2023 
+python src/sounding_gen_indices.py --input_file ./data/as/SBGL_1997_2023.parquet.gzip --output_file ./data/as/SBGL_indices_1997_2023.parquet.gzip
+python src/sounding_gen_indices.py --input_file ./data/as/SBGL_2023_2024.parquet.gzip --output_file ./data/as/SBGL_indices_2023_2024.parquet.gzip
 
 ==========================================
 === retrieve_ERA5
