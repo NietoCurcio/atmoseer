@@ -19,7 +19,7 @@ REGION_OF_INTEREST = {'north': -22, 'west': -44, 'south': -23, 'east': -42}
 
 class DatasetClient:
     def __init__(self) -> None:
-        self.clientCDS = ClientCDS(timeout=10, retry_max=2, sleep_max=1)
+        self.clientCDS = ClientCDS(timeout=30, retry_max=5, sleep_max=30)
 
     def _convert_grib_to_netcdf(self, target: str):
         # please see, https://github.com/ecmwf/cfgrib
@@ -32,19 +32,29 @@ class DatasetClient:
         print(f"Converted grib data to netcdf")
 
     def call_retrieve(self, name: str, request: dict, target: str):
-        try:
-            self.clientCDS.retrieve(name=name, request=request, target=target)
-            print(f"Downloaded ERA5 data - {request['format']} format")
-            if request['format'] == 'grib': self._convert_grib_to_netcdf(target)
-        except Exception as e:
-            if request['format'] == 'grib':
-                print(f"Failed to download ERA5 data in grib format. Error {repr(e)}")
-                raise e
+        # Important note: this commit removing grib format download is jsut a test
+        # it does not mean that we will not use grib format any time if needed
+        # it also does not mean that the conversion from grib to netcdf is causing trouble
+        # needs further investigation
+        MAX_RETRIES = 5
+        for i in range(MAX_RETRIES):
+            try:
+                self.clientCDS.retrieve(name=name, request=request, target=target)
+                print(f"Downloaded ERA5 data - {request['format']} format")
+                # if request['format'] == 'grib': self._convert_grib_to_netcdf(target)
+                break
+            except Exception as e:
+                if request['format'] == 'grib':
+                    print(f"Failed to download ERA5 data in grib format. Error {repr(e)}")
+                    raise e
 
-            print(f"Failed to download ERA5 data in netcdf format. Downloading in grib format")
-            request['format'] = 'grib'
-            target = target.replace('.nc', '.grib')
-            self.call_retrieve(name, request, target)
+                # print(f"Failed to download ERA5 data in netcdf format. Downloading in grib format")
+                # request['format'] = 'grib'
+                # target = target.replace('.nc', '.grib')
+                print(f"Failed to download ERA5 data in netcdf format.")
+                print(f"Error message: {e} - {repr(e)}")
+                print(f"{i + 1}/{MAX_RETRIES} retries")
+                self.call_retrieve(name, request, target)
 
 class CDSDatasetDownloader:
     def __init__(self, begin_year: int, begin_month: int, end_year: int, end_month: int) -> None:
