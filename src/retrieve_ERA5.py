@@ -1,175 +1,214 @@
 import sys
-from datetime import datetime
-import time
-import cdsapi
-from pathlib import Path
-import xarray as xr
 import argparse
-import sys
-from enum import Enum
+from pathlib import Path
+from datetime import datetime
+from collections.abc import Generator
+from typing import Union
+
+from cdsapi.api import Client as ClientCDS
+import xarray as xr
+from xarray.core.dataset import Dataset
+
 import globals
 
 """
-    For using the CDS API to download ERA-5 data consult: https://cds.climate.copernicus.eu/api-how-to
+For using the CDS API to download ERA-5 data consult: https://cds.climate.copernicus.eu/api-how-to
 """
 
-# North -22°, West -44°, South -23°, East -42°
-REGION_OF_INTEREST = [-22, -44, -23, -42]
+REGION_OF_INTEREST = {'north': -22, 'west': -44, 'south': -23, 'east': -42}
 
-class Months(Enum):
-    JANUARY = 1
-    FEBRUARY = 2
-    MARCH = 3
-    APRIL = 4
-    MAY = 5
-    JUNE = 6
-    JULY = 7
-    AUGUST = 8
-    SEPTEMBER = 9
-    OCTOBER = 10
-    NOVEMBER = 11
-    DECEMBER = 12
+class DatasetClient:
+    def __init__(self) -> None:
+        self.clientCDS = ClientCDS(timeout=30, retry_max=5, sleep_max=30)
 
-def get_data(start_year, end_year):
+    def _convert_grib_to_netcdf(self, target: str):
+        # please see, https://github.com/ecmwf/cfgrib
+        # also, https://docs.xarray.dev/en/stable/user-guide/io.html#grib-format-via-cfgrib
+        print(f"Converting grib data to netcdf...")
+        assert target.endswith('.grib'), "The target file must be a grib file"
+        data = xr.open_dataset(target, engine='cfgrib')
+        target = target.replace('.grib', '.nc')
+        data.to_netcdf(target)
+        print(f"Converted grib data to netcdf")
 
-    end_year = min([end_year, datetime.today().year])
+    def call_retrieve(self, name: str, request: dict, target: str):
+        try:
+            self.clientCDS.retrieve(name=name, request=request, target=target)
+            print(f"Downloaded ERA5 data - {request['format']} format")
+            if request['format'] == 'grib': self._convert_grib_to_netcdf(target)
+        except Exception as e:
+            if request['format'] == 'grib':
+                print(f"Failed to download ERA5 data in grib format. Error {repr(e)}")
+                raise e
 
-    file = "RJ_" + str(start_year) + "_" + str(end_year)
+            print(f"Failed to download ERA5 data in netcdf format. Downloading in grib format")
+            request['format'] = 'grib'
+            target = target.replace('.nc', '.grib')
+            self.call_retrieve(name, request, target)
 
-    file_exist = Path(globals.NWP_DATA_DIR + "ERA5/" + file + ".nc")
+class CDSDatasetDownloader:
+    def __init__(self, begin_year: int, begin_month: int, end_year: int, end_month: int) -> None:
+        self.begin_year = begin_year
+        self.begin_month = begin_month
+        self.end_year = min([end_year, datetime.today().year])
+        self.end_month = end_month
+        self.dataset_client = DatasetClient()
 
-    months = range(Months.JANUARY.value, Months.DECEMBER.value+1)
+    def _get_dates_generator(self) -> Generator[str, None, None]:
+        current_date = datetime.strptime(f"{self.begin_year}-{self.begin_month}", "%Y-%m")
+        end_date = datetime.strptime(f"{self.end_year}-{self.end_month + 1}", "%Y-%m")
+        while current_date < end_date:
+            year = int(current_date.year)
+            month = int(current_date.month)
 
-    if file_exist.is_file():
-        ds = xr.open_dataset(globals.NWP_DATA_DIR + "ERA5/" + file + ".nc")
-    else:
-        c = cdsapi.Client()
-        years = list(map(str, range(int(start_year), int(end_year) + 1)))
-        for year in years:
-            for month in months:
-                print(f"Downloading ERA5 data at month {month} of year {year}...", end="")
-                try:
-                    c.retrieve(
-                        "reanalysis-era5-pressure-levels",
-                        {
-                            "product_type": "reanalysis",
-                            "format": "netcdf",
-                            "variable": [
-                                "geopotential",
-                                "relative_humidity",
-                                "temperature",
-                                "u_component_of_wind",
-                                "v_component_of_wind"
-                            ],
-                            "pressure_level": [
-                                '200', '700', '1000'
-                            ],
-                            "year": [
-                                year,
-                            ],
-                            "month": [
-                                str(month)
-                            ],
-                            "day": [
-                                "01",
-                                "02",
-                                "03",
-                                "04",
-                                "05",
-                                "06",
-                                "07",
-                                "08",
-                                "09",
-                                "10",
-                                "11",
-                                "12",
-                                "13",
-                                "14",
-                                "15",
-                                "16",
-                                "17",
-                                "18",
-                                "19",
-                                "20",
-                                "21",
-                                "22",
-                                "23",
-                                "24",
-                                "25",
-                                "26",
-                                "27",
-                                "28",
-                                "29",
-                                "30",
-                                "31",
-                            ],
-                            "time": [
-                                "00:00",
-                                "01:00",
-                                "02:00",
-                                "03:00",
-                                "04:00",
-                                "05:00",
-                                "06:00",
-                                "07:00",
-                                "08:00",
-                                "09:00",
-                                "10:00",
-                                "11:00",
-                                "12:00",
-                                "13:00",
-                                "14:00",
-                                "15:00",
-                                "16:00",
-                                "17:00",
-                                "18:00",
-                                "19:00",
-                                "20:00",
-                                "21:00",
-                                "22:00",
-                                "23:00",
-                            ],
-                            "area": REGION_OF_INTEREST,
-                        },
-                        globals.NWP_DATA_DIR + "ERA5/montly_data/RJ_" + year + "_" + str(month) + ".nc",
-                    )
-                    print("Done!")
-                except Exception as e:
-                    print(f"Unexpected error! {repr(e)}")
-                    sys.exit(2)
+            yield year, month
 
-        ds = None
-        for year in years:
-            for month in months:
-                if ds is None:
-                    ds = xr.open_dataset(globals.NWP_DATA_DIR + "ERA5/montly_data/RJ_" + year + "_" + str(month) + ".nc")
-                else:
-                    ds_aux = xr.open_dataset(globals.NWP_DATA_DIR + "ERA5/montly_data/RJ_" + year + "_" + str(month) + ".nc")
-                    ds = ds.merge(ds_aux)
+            if month == 12:
+                current_date = current_date.replace(year=current_date.year + 1, month=1)
+            else:
+                current_date = current_date.replace(month=current_date.month + 1)
 
-        print(f"Done!", end="")
-        filename = globals.NWP_DATA_DIR + "ERA5/" + file + ".nc"
-        print(f"Saving dowloaded data to {filename}")
-        ds.to_netcdf(filename)
+    def _get_datasets_generator(self) -> Generator[Dataset, None, None]:
+        for year, month in self._get_dates_generator():
+            yield xr.open_dataset(f"{globals.NWP_DATA_DIR}ERA5/montly_data/RJ_{year}_{month}.nc")
+
+    def _download_dataset(self, month: str, year: str):
+        target_path_nc = Path(f"{globals.NWP_DATA_DIR}ERA5/montly_data/RJ_{year}_{month}.nc")
+        if target_path_nc.is_file():
+            print(f"ERA5 data already downloaded for the month {month} of year {year}")
+            return
+        
+        target_path_grib = Path(f"{globals.NWP_DATA_DIR}ERA5/montly_data/RJ_{year}_{month}.grib")
+        if target_path_grib.is_file():
+            print(f"ERA5 data already downloaded for the month {month} of year {year} with GRIB format")
+            self.dataset_client._convert_grib_to_netcdf(str(target_path_grib.resolve()))
+            return
+        
+        request = {
+            "product_type": "reanalysis",
+            "format": "netcdf",
+            "variable": [
+                "10m_u_component_of_wind", "10m_v_component_of_wind", "2m_dewpoint_temperature",
+                "2m_temperature", "convective_available_potential_energy", "convective_inhibition",
+                "geopotential", "k_index", "total_totals_index",
+            ],
+            "year": year,
+            "month": [month],
+            "day": [f"{day:02d}" for day in range(1, 32)],
+            "time": [f"{hour:02d}:00" for hour in range(24)],
+            "area": [REGION_OF_INTEREST[key] for key in ['north', 'west', 'south', 'east']]
+        }
+
+        print(f"Downloading ERA5 data at month {month} of year {year}...")
+        self.dataset_client.call_retrieve(
+            name="reanalysis-era5-single-levels",
+            request=request,
+            target=str(target_path_nc.resolve())
+        )
+        print(f"Downloaded ERA5 data at month {month} of year {year}")
+
+    def download_datasets(self):
+        print(f"Downloading ERA5 data for the period {self.begin_year} to {self.end_year}...")
+        for year, month in self._get_dates_generator():
+            self._download_dataset(month, year)
+        print(f"Downloaded ERA5 data for the period {self.begin_year} to {self.end_year}")
+
+    def prepend_dataset(self, prepend_dataset: str):
+        if not Path(prepend_dataset).is_file():
+            raise FileNotFoundError(f"Dataset to prepend not found: {prepend_dataset}")
+
+        # filename follows this pattern: RJ_YYYY_YYYY.nc
+        prepend_dataset_name = Path(prepend_dataset).name
+        prepend_begin_year = int(prepend_dataset_name.split('_')[1])
+        prepend_end_year = int(prepend_dataset_name.split('_')[-1].split('.')[0])
+
+        target_path = Path(f"{globals.NWP_DATA_DIR}ERA5/RJ_{prepend_begin_year}_{self.end_year}.nc")
+        if target_path.is_file():
+            print(f"ERA5 data already prepended for the period {prepend_begin_year} to {self.end_year}")
+            return
+
+        print(f"""
+            Last dataset info:
+            Begin year: {prepend_begin_year}
+            End year: {prepend_end_year}
+        """)
+
+        print(f"""
+            Current CDSDatasetDownloader info:
+            Begin year: {self.begin_year}
+            End year: {self.end_year}
+        """)
+
+        assert self.end_year >= prepend_end_year, "The end year must be greater than the last year of the dataset to prepend"
+
+        print(f"Prepending ERA5 data {prepend_begin_year}-{prepend_end_year} to {self.begin_year}-{self.end_year}...")
+
+        prepend_ds = xr.open_dataset(prepend_dataset)
+        append_ds = xr.open_dataset(f"{globals.NWP_DATA_DIR}ERA5/RJ_{self.begin_year}_{self.end_year}.nc")
+
+        ds = prepend_ds.merge(append_ds)
+        ds.to_netcdf(str(target_path.resolve()))
+        print(f"ERA5 data prepended for the period {prepend_begin_year} to {self.end_year}")
+
+    def merge_datasets(self):
+        target_path = Path(f"{globals.NWP_DATA_DIR}ERA5/RJ_{self.begin_year}_{self.end_year}.nc")
+        if target_path.is_file():
+            print(f"ERA5 data already merged for the period {self.begin_year} to {self.end_year}")
+            return
+
+        print(f"Merging ERA5 data for the period {self.begin_year} to {self.end_year}...")
+        datasets_generator = self._get_datasets_generator()
+        ds = next(datasets_generator)
+        for dataset in datasets_generator:
+            ds = ds.merge(dataset)
+        ds.to_netcdf(str(target_path.resolve()))
+        print(f"ERA5 data merged for the period {self.begin_year} to {self.end_year}")
+
+def valid_date(arg: str):
+    try:
+        year_str, month_str = arg.split('-')
+        if len(month_str) != 2 or len(year_str) != 4: raise ValueError
+        year = int(year_str)
+        month = int(month_str)
+        return year, month
+    except ValueError:
+        raise argparse.ArgumentTypeError("Invalid date format. Please use YYYY-MM")
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Retrieve ERA5 data between two given years.')
-    parser.add_argument('-b', '--start_year', type=int, required=True, help='Start year')
-    parser.add_argument('-e', '--end_year', type=int, required=True, help='End year')
+    parser.add_argument('-b', '--begin', type=valid_date, required=True, help='Begin date (YYYY-MM)')
+    parser.add_argument('-e', '--end', type=valid_date, required=True, help='End date (YYYY-MM)')
+    parser.add_argument('-pd', '--prepend_dataset', type=str, default=None, help='Dataset to merge datasets')
+    parser.add_argument('-north', '--north', type=float, default=REGION_OF_INTEREST['north'], help='Northernmost latitude')
+    parser.add_argument('-west', '--west', type=float, default=REGION_OF_INTEREST['west'], help='Westernmost longitude')
+    parser.add_argument('-south', '--south', type=float, default=REGION_OF_INTEREST['south'], help='Southernmost latitude')
+    parser.add_argument('-east', '--east', type=float, default=REGION_OF_INTEREST['east'], help='Easternmost longitude')
 
     args = parser.parse_args(argv[1:])
 
-    start_year = args.start_year
-    end_year = args.end_year
+    begin_year, begin_month = args.begin
+    end_year, end_month = args.end
+    prepend_dataset = args.prepend_dataset
+    REGION_OF_INTEREST['north'] = args.north
+    REGION_OF_INTEREST['west'] = args.west
+    REGION_OF_INTEREST['south'] = args.south
+    REGION_OF_INTEREST['east'] = args.east
 
     # ERA5 data goes back to the year 1940. 
-    # see https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=overview
-    assert start_year >= 1940 
+    # see https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=form
+    assert begin_year >= 1940, "ERA5 start year must be greater than or equal to 1940"
+    assert begin_year <= end_year, "ERA5 start year must be less than or equal to end year"
 
-    assert start_year <= end_year
-
-    get_data(start_year, end_year)
+    dataset_downloader = CDSDatasetDownloader(
+        begin_year=begin_year,
+        begin_month=begin_month,
+        end_year=end_year,
+        end_month=end_month
+    )
+    dataset_downloader.download_datasets()
+    dataset_downloader.merge_datasets()
+    if prepend_dataset:
+        dataset_downloader.prepend_dataset(prepend_dataset)
 
 if __name__ == "__main__":
     main(sys.argv)
-
