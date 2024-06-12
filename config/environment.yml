@@ -54,3 +54,4 @@ dependencies:
       - sklearn==0.0
       - stack-data==0.3.0
       - threadpoolctl==3.1.0
+      - torchvision==0.18.1
