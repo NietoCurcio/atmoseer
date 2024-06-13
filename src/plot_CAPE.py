@@ -129,7 +129,7 @@ if __name__ == "__main__":
     extent = [-43.890602827150, -23.1339033365138, -43.0483514573222, -22.64972474827293]
 
     # Parameters to process
-    yyyymmdd = '20201217'
+    yyyymmdd = '20240113'
     product_name = 'ABI-L2-DSIF'
 
     # Initial time and date
@@ -177,12 +177,12 @@ if __name__ == "__main__":
         # Apply NaN's where the quality flag is greater than 0
         ds[ds_dqf > 0] = np.nan
 
-        # Reproject the file
+        # Reproject the data to the region (extent) of interest.
         filename_reprojected = f'{output}/{variable_name}_{yyyymmddhhmn}.nc'
         reproject(filename_reprojected, img, ds, extent, undef)
-        plot_data_for_this_timestamp(filename_reprojected, extent, variable_name, yyyymmddhhmn)
 
-        sys.exit(1)
+        # Now plot the region of interest and save it to a file.
+        plot_data_for_this_timestamp(filename_reprojected, extent, variable_name, yyyymmddhhmn)
 
         # Increment 1 hour
         date_ini = str(datetime.strptime(date_ini, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=10))
