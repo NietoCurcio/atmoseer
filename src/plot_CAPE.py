@@ -89,7 +89,7 @@ def plot_data_for_this_timestamp(filename_reprojected, extent, variable_name, yy
     #-----------------------------------------------------------------------------------------------------------
 
     #- Plot product image ----------------------------------------------------------------------------------------
-    img = ax.imshow(sat_array, vmin=0, vmax=150, cmap=cmap, origin='upper', extent=img_extent)
+    img = ax.imshow(sat_array, vmin=0, vmax=2500, cmap=cmap, origin='upper', extent=img_extent)
 
     # Add coastlines, borders and gridlines
     ax.coastlines(resolution='10m', color='black', linewidth=0.8)
@@ -109,7 +109,9 @@ def plot_data_for_this_timestamp(filename_reprojected, extent, variable_name, yy
     plt.title(f'Timestamp: {yyyymmddhhmn}', fontsize=10, loc='right')
     #-----------------------------------------------------------------------------------------------------------
     # Save the image
-    plt.savefig(f'{output}/{variable_name}_{yyyymmddhhmn}.png', bbox_inches='tight', pad_inches=0, dpi=300)
+    filename = f'{output}/{variable_name}_{yyyymmddhhmn}.png'
+    plt.savefig(filename, bbox_inches='tight', pad_inches=0, dpi=300)
+    print(f'Plot saved in file {filename}.')
 
     plt.close()
 
@@ -118,10 +120,13 @@ if __name__ == "__main__":
     output = "./data/goes16/Animation"
 
     # Desired extent
-    extent = [-74.0, -34.1, -34.8, 5.5] # Min lon, Max lon, Min lat, Max lat
+    # extent = [-74.0, -34.1, -34.8, 5.5] # Min lon, Max lon, Min lat, Max lat
     # extent = [-64.0, -35.0, -35.0, -15.0] # Min lon, Min lat, Max lon, Max lat
     # extent = [-45, -25, -40, -20]
     # extent = [-44, -24, -42, -20]
+    
+    # Region of Interest - Rio de Janeiro municipality
+    extent = [-43.890602827150, -23.1339033365138, -43.0483514573222, -22.64972474827293]
 
     # Parameters to process
     yyyymmdd = '20201217'
@@ -134,8 +139,6 @@ if __name__ == "__main__":
 
     date_ini = str(datetime(int(yyyy),int(mm),int(dd),12,0) - timedelta(hours=23))
     date_end = str(datetime(int(yyyy),int(mm),int(dd),12,0))
-
-    acum = np.zeros((1086,1086))
 
     #-----------------------------------------------------------------------------------------------------------
     # Loop to produce sequence of images (animation)

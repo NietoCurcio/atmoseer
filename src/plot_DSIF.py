@@ -130,7 +130,7 @@ def main(argv):
     parser = argparse.ArgumentParser(prog=argv[0], 
                                      description="""This script provides a simple interface for retrieving observations values 
                                        of DSIT indexes.""")
-    parser.add_argument("-i", "--index", required=True, help="DSIT index", metavar='')
+    parser.add_argument("-i", "--index", required=True, help="DSIF index", metavar='')
     parser.add_argument("-s", "--ws_id", required=True, help="Weather station ID", metavar='')
     parser.add_argument('-l', "--latlonlist", nargs='+', help='<Required> Set min and max latitude and longitude values', required=True)
     parser.add_argument('-d', "--day_of_retrieve_data", help='<Required> Set day to retrieve data', required=True )
