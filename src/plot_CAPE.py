@@ -164,6 +164,8 @@ if __name__ == "__main__":
         undef = float(metadata.get(variable_name + '#_FillValue'))
         dtime = metadata.get('NC_GLOBAL#time_coverage_start')
 
+        print(metadata)
+        
         # Load the data
         ds = img.ReadAsArray(0, 0, img.RasterXSize, img.RasterYSize).astype(float)
         ds_dqf = dqf.ReadAsArray(0, 0, dqf.RasterXSize, dqf.RasterYSize).astype(float)

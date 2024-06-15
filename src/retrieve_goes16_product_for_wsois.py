@@ -70,35 +70,35 @@ def download_data_for_a_day(df: pd.DataFrame,
         # Download the full disk file from the Amazon cloud.
         file_name = download_PROD(yyyymmddhhmn, product_name, temp_dir)
 
-        # try:
-        #     full_disk_filename = f'{temp_dir}/{file_name}.nc'
-        #     ds = open_dataset(full_disk_filename)
+        try:
+            full_disk_filename = f'{temp_dir}/{file_name}.nc'
+            ds = open_dataset(full_disk_filename)
 
-        #     if ds is not None:
-        #         for wsoi_id in stations_of_interest:
-        #             values_dict = OrderedDict()
-        #             for variable_name in variable_names:
-        #                 field, LonCen, LatCen = ds.image(variable_name, lonlat='center')
-        #                 lon = stations_of_interest[wsoi_id][1]
-        #                 lat = stations_of_interest[wsoi_id][0]
-        #                 x, y = find_pixel_of_coordinate(LonCen, LatCen, lon, lat)
-        #                 value = field.data[y,x]
-        #                 values_dict[variable_name] = value
-        #             new_row = {'timestamp': yyyymmddhhmn, 'station_id': wsoi_id}
-        #             new_row.update(values_dict)
-        #             df = df.append(new_row, ignore_index=True)
+            if ds is not None:
+                for wsoi_id in stations_of_interest:
+                    values_dict = OrderedDict()
+                    for variable_name in variable_names:
+                        field, LonCen, LatCen = ds.image(variable_name, lonlat='center')
+                        lon = stations_of_interest[wsoi_id][1]
+                        lat = stations_of_interest[wsoi_id][0]
+                        x, y = find_pixel_of_coordinate(LonCen, LatCen, lon, lat)
+                        value = field.data[y,x]
+                        values_dict[variable_name] = value
+                    new_row = {'timestamp': yyyymmddhhmn, 'station_id': wsoi_id}
+                    new_row.update(values_dict)
+                    df = df.append(new_row, ignore_index=True)
 
-        #         if remove_full_disk_file:
-        #             try:
-        #                 os.remove(full_disk_filename)  # Use os.remove() to delete the file
-        #             except FileNotFoundError:
-        #                 print(f"Error: File '{full_disk_filename}' not found.")
-        #             except PermissionError:
-        #                 print(f"Error: Permission denied to remove file '{full_disk_filename}'.")
-        #             except Exception as e:
-        #                 print(f"An error occurred: {e}")
-        # except FileNotFoundError:
-        #     print(f"Error: File '{full_disk_filename}' not found.")
+                if remove_full_disk_file:
+                    try:
+                        os.remove(full_disk_filename)  # Use os.remove() to delete the file
+                    except FileNotFoundError:
+                        print(f"Error: File '{full_disk_filename}' not found.")
+                    except PermissionError:
+                        print(f"Error: Permission denied to remove file '{full_disk_filename}'.")
+                    except Exception as e:
+                        print(f"An error occurred: {e}")
+        except FileNotFoundError:
+            print(f"Error: File '{full_disk_filename}' not found.")
 
         # Increment to get the next full disk observation.
         time_step = time_step + timedelta(minutes=temporal_resolution)

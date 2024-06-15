@@ -170,7 +170,6 @@ def obtain_index_values(path, file_name, date, extent):
     # close the file
     pkl_file.close()
 
-
 def main(argv):
     # ---------------------------------------------------------------------------------------------------------------
     # Command line argument section
@@ -178,7 +177,6 @@ def main(argv):
                                      description="""This script provides a simple interface for retrieve the partial
                                      or complete temporal series of a GOES16 Product.""")
     parser.add_argument("-p", "--product_name", required=True, help="product name", metavar='')
-    # parser.add_argument("-i", "--index_name", required=False, help="index name", metavar='')
     parser.add_argument('-di', "--initial_date", help='Initial date to retrieve data', required=False)
     parser.add_argument('-df', "--final_date", help='Final date to retrieve data', required=False)
     parser.add_argument('-l', "--latlonlist", nargs='+', help='<Required> Set min and max latitude and' +
@@ -219,9 +217,6 @@ def main(argv):
 
 if __name__ == "__main__":
     data_dir = "./data/goes16/dsif/"
-    # output = "./data/goes16/Animation"
-    # product_name = 'ABI-L2-DSIF'
     bucket_name = 'noaa-goes16'
-    # extent = [-74.0, -34.1, -34.8, 5.5]
     s3_client = boto3.client('s3', config=Config(signature_version=UNSIGNED))
     main(sys.argv)

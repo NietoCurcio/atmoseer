@@ -131,12 +131,8 @@ def download_data_for_a_day(yyyymmdd):
         ds = (ds * scale + offset)
 
         # Apply NaN's where the quality flag is greater than 1
-        # ds[ds_dqf > 0] = np.nan
+        ds[ds_dqf > 0] = np.nan
 
-        print('@@@@@@-ds.shape')
-        print(ds[y,x])
-        print(ds.shape)
-        print('@@@@@@')
         value2 = ds[y,x]#get_rrqpe_value(img)
         print(f'***Values for PoI at {yyyymmddhhmn}: {value1}/{value2}')
 
@@ -160,7 +156,6 @@ def download_data_for_a_day(yyyymmdd):
       except Exception as e:
           print(f"An error occurred: {e}")
       #-----------------------------------------------------------------------------------------------------------
-
 
 def main(argv):
 

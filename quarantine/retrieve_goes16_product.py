@@ -3,8 +3,6 @@ import matplotlib.pyplot as plt          # Plotting library
 from datetime import datetime            # Basic Dates and time types
 import cartopy, cartopy.crs as ccrs      # Plot maps
 import os                                # Miscellaneous operating system interfaces
-from goes16_utils import download_CMI       # Our own utilities
-from goes16_utils import geo2grid, convertExtent2GOESProjection      # Our own utilities
 from globals import GOES_DATA_DIR
 import argparse
 
