@@ -149,9 +149,11 @@ def main(argv):
     parser.add_argument("--date_ini", type=str, required=True, help="Start date (format: YYYY-MM-DD)")
     parser.add_argument("--date_end", type=str, required=True, help="End date (format: YYYY-MM-DD)")
     parser.add_argument("--prod", type=str, required=True, help="GOES16 product name (e.g., 'ABI-L2-TPWF', 'ABI-L2-DSIF')")
-    parser.add_argument("--vars", nargs='+', type=str, required=True, help="Variable names (e.g., CAPE, CIN, ...)")
+    parser.add_argument("--vars", nargs='+', type=str, required=True, help="At least one variable name (TPW, CAPE, CIN, ...)")
     parser.add_argument("--temporal_resolution", type=int, default=10, help="Temporal resolution of the observations, in minutes (default: 10)")
     
+    # TODO - check compatibility between the following cmd line args: "prod" and "vars"
+
     # TODO - change to cmd line args
     extent = [-43.890602827150, -23.1339033365138, -43.0483514573222, -22.64972474827293]
     dest_path = './data/goes16/DSI'

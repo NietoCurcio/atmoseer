@@ -147,10 +147,50 @@ python src/train_model.py -p A652_A621_A636_A627 -t ORDINAL_CLASSIFICATION
 
 python src/train_model.py -p sao_cristovao_tijuca_tijuca_muda_saude_grajau -t ORDINAL_CLASSIFICATION > sao_cristovao_tijuca_tijuca_muda_saude_grajau.txt
 
+MONAN Meeting 2024
+==================
+
+1)
+python src/retrieve_ws_inmet.py -s A601 -b 2019 -e 2024 --api_token <token>
+python src/retrieve_ws_inmet.py -s A602 -b 2007 -e 2024 --api_token <token>
+python src/retrieve_ws_inmet.py -s A621 -b 2007 -e 2024 --api_token <token>
+python src/retrieve_ws_inmet.py -s A627 -b 2018 -e 2024 --api_token <token>
+python src/retrieve_ws_inmet.py -s A636 -b 2017 -e 2024 --api_token <token>
+python src/retrieve_ws_inmet.py -s A652 -b 2007 -e 2024 --api_token <token>
+
+2)
+python src/preprocess_ws.py -s A601 > preprocess_A601.out
+python src/preprocess_ws.py -s A602 > preprocess_A602.out
+python src/preprocess_ws.py -s A621 > preprocess_A621.out
+python src/preprocess_ws.py -s A627 > preprocess_A627.out
+python src/preprocess_ws.py -s A636 > preprocess_A636.out
+python src/preprocess_ws.py -s A652 > preprocess_A652.out
+
+3)
+python src/retrieve_goes16_product_for_extent.py --date_ini "2019-12-05" --date_end "2024-06-15" --prod ABI-L2-DSIF --vars CAPE LI TT SI KI
+
+4)
+gen_dsi_dataframes.py
+
+5)
+python src/build_datasets.py -s A602 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A621 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A627 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A636 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A652 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+
+python src/build_datasets.py -s A602 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A621 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A627 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A636 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A652 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+
+
 
 LAFUSION 2023
-===========
+=============
 
+1)
 python src/retrieve_goes16_product_for_wsois.py --date_ini "2019-12-01" --date_ini "2019-12-31" --prod ABI-L2-TPWF --vars TPW
 python src/retrieve_goes16_product_for_wsois.py --date_ini "2020-01-01" --date_ini "2020-05-31" --prod ABI-L2-TPWF --vars TPW
 python src/retrieve_goes16_product_for_wsois.py --date_ini "2020-09-01" --date_ini "2020-12-31" --prod ABI-L2-TPWF --vars TPW
@@ -165,32 +205,37 @@ python src/retrieve_goes16_product_for_wsois.py --date_ini "2022-09-01" --date_i
 python src/retrieve_goes16_product_for_wsois.py --date_ini "2023-01-01" --date_ini "2023-05-31" --prod ABI-L2-TPWF --vars TPW
 python src/retrieve_goes16_product_for_wsois.py --date_ini "2023-06-01" --date_end "2023-12-31" --prod ABI-L2-TPWF --vars TPW
 
-python src/gen_tpw_datasets_per_wsois.py
+2)
+python src/fuse_goes16_tpw_data_with_wsois.py
 
+3)
 python src/retrieve_ws_inmet.py -s A602 -b 2007 -e 2023 --api_token <token>
 python src/retrieve_ws_inmet.py -s A621 -b 2007 -e 2023 --api_token <token>
 python src/retrieve_ws_inmet.py -s A627 -b 2018 -e 2023 --api_token <token>
 python src/retrieve_ws_inmet.py -s A636 -b 2017 -e 2023 --api_token <token>
 python src/retrieve_ws_inmet.py -s A652 -b 2007 -e 2023 --api_token <token>
 
+4)
 python src/preprocess_ws.py -s A602 > preprocess_A602.out
 python src/preprocess_ws.py -s A621 > preprocess_A621.out
 python src/preprocess_ws.py -s A627 > preprocess_A627.out
 python src/preprocess_ws.py -s A636 > preprocess_A636.out
 python src/preprocess_ws.py -s A652 > preprocess_A652.out
 
+5)
 python src/build_datasets.py -s A602 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
 python src/build_datasets.py -s A621 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
 python src/build_datasets.py -s A627 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
 python src/build_datasets.py -s A636 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
 python src/build_datasets.py -s A652 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
 
-python src/build_datasets.py -s A602 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
-python src/build_datasets.py -s A621 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
-python src/build_datasets.py -s A627 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
-python src/build_datasets.py -s A636 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
-python src/build_datasets.py -s A652 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A602 -d TPW --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A621 -d TPW --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A627 -d TPW --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A636 -d TPW --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A652 -d TPW --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
 
+6)
 python src/train_model.py -p A602_T -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A602_T_LstmNeuralNet.out
 python src/train_model.py -p A621_T -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A621_T_LstmNeuralNet.out
 python src/train_model.py -p A627_T -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A627_T_LstmNeuralNet.out

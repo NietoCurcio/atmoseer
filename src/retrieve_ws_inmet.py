@@ -55,11 +55,11 @@ def main(argv):
     station_id = ""
 
     parser = argparse.ArgumentParser(prog=argv[0], 
-                                     usage='{0} -s <ws_id> -b <begin_year> -e <end_year> -t <api_token>'.format(argv[0]), 
+                                     usage='{0} -s <station_id> -b <begin_year> -e <end_year> -t <api_token>'.format(argv[0]), 
                                      description="""This script provides a simple interface for retrieving observations
                                        made by a user-provided weather station from the INMET archive.""")
     parser.add_argument("-t", "--api_token", required=True, help="INMET API token", metavar='')
-    parser.add_argument("-s", "--ws_id", required=True, help="Weather station ID", metavar='')
+    parser.add_argument("-s", "--station_id", required=True, help="Weather station ID", metavar='')
     parser.add_argument("-b", "--begin_year", type=int, required=True, help="Start year", metavar='')
     parser.add_argument("-e", "--end_year", type=int, required=True, help="End year", metavar='')
 
@@ -67,8 +67,8 @@ def main(argv):
 
     api_token = args.api_token
     station_id = args.station_id
-    start_year = args.begin
-    end_year = args.end
+    start_year = args.begin_year
+    end_year = args.end_year
 
     if not (station_id in globals.INMET_WEATHER_STATION_IDS):
         parser.error(f'Invalid station ID: {station_id}')
