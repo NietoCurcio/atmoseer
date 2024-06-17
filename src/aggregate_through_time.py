@@ -70,10 +70,11 @@ def aggregate_to_hourly_resolution(df: pd.DataFrame, col_name: str):
         2023-01-01 03:00:00        4.0
     """
     # Resample the DataFrame to hourly frequency and compute the mean
-    df_resampled = df.resample('H').mean()
-    
-    return pd.DataFrame({col_name: df_resampled.values},
-                        index=df_resampled.index + pd.DateOffset(hours=1))
+    hourly_df = df.resample('H').mean()
+
+    hourly_df.set_index(hourly_df.index + pd.DateOffset(hours=1), inplace=True)
+
+    return hourly_df
 
 def main(argv):
     parser = argparse.ArgumentParser(description="Aggregate observations of a Pandas dataframe with a datatime as index to hourly temporal resolutio.")
