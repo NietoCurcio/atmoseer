@@ -249,17 +249,37 @@ def add_features_from_user_specified_data_sources(
     # DSI features
     ############################################################################################
     if join_goes16_dsi_features:
+        
+        # Remember: (y, x)
+        wsoi2cell_dict = dict()
+        wsoi2cell_dict["A627"] = (1, 6)
+        wsoi2cell_dict["A652"] = (2, 5)
+        wsoi2cell_dict["A636"] = (2, 4)
+        wsoi2cell_dict["A621"] = (1, 3)
+        wsoi2cell_dict["A602"] = (3, 2)
+        wsoi2cell_dict["A601"] = (0, 1)
+
+        associated_cell = wsoi2cell_dict[station_id]
+
         logging.info(f"Loading GOES16 DSI data for WSoI {station_id}...")
         dsi_variable_names = ['CAPE', 'LI', 'TT', 'SI', 'KI']
+        features_dict = dict()
         for variable_name in dsi_variable_names:
-            df_dsi = pd.read_parquet(f'{globals.DSI_DATA_DIR}/{variable_name}.parquet')
+            df_dsi = pd.read_parquet(f'{globals.DSI_DATA_DIR}/{variable_name}_1H.parquet')
             logging.info(f"Done! Shape = {df_dsi.shape}.")
 
             logging.info(f"Range of timestamps in the DSI data: [{min(df_dsi.index)}, {max(df_dsi.index)}]")
 
-            joined_df = joined_df.join(df_dsi, how='inner')
+            column_name = f'{variable_name}{associated_cell[0]}{associated_cell[1]}'
 
-            logging.info(f"TPW data successfully joined; resulting shape: {joined_df.shape}.")
+            features_dict[variable_name] = df_dsi[column_name]
+
+            # Transform the dictionary into a DataFrame
+            df_features = pd.DataFrame(features_dict)
+
+        joined_df = joined_df.join(df_features, how='inner')
+
+        logging.info(f"DSI features successfully joined; resulting shape: {joined_df.shape}.")
 
 
     assert (not joined_df.isnull().values.any().any())
