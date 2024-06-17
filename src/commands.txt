@@ -170,15 +170,24 @@ python src/preprocess_ws.py -s A652 > preprocess_A652.out
 python src/retrieve_goes16_product_for_extent.py --date_ini "2019-12-05" --date_end "2024-06-15" --prod ABI-L2-DSIF --vars CAPE LI TT SI KI
 
 4)
-gen_dsi_dataframes.py
+python src/gen_dsi_dataframes.py
 
 5)
+python src/aggregate_through_time.py --input_file ./data/goes16/DSI/DSI_CAPE.parquet --output_file ./data/goes16/DSI/DSI_CAPE_1H.parquet
+python src/aggregate_through_time.py --input_file ./data/goes16/DSI/DSI_LI.parquet --output_file ./data/goes16/DSI/DSI_LI_1H.parquet
+python src/aggregate_through_time.py --input_file ./data/goes16/DSI/DSI_TT.parquet --output_file ./data/goes16/DSI/DSI_TT_1H.parquet
+python src/aggregate_through_time.py --input_file ./data/goes16/DSI/DSI_SI.parquet --output_file ./data/goes16/DSI/DSI_SI_1H.parquet
+python src/aggregate_through_time.py --input_file ./data/goes16/DSI/DSI_KI.parquet --output_file ./data/goes16/DSI/DSI_KI_1H.parquet
+
+6)
+python src/build_datasets.py -s A601 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
 python src/build_datasets.py -s A602 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
 python src/build_datasets.py -s A621 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
 python src/build_datasets.py -s A627 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
 python src/build_datasets.py -s A636 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
 python src/build_datasets.py -s A652 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
 
+python src/build_datasets.py -s A601 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
 python src/build_datasets.py -s A602 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
 python src/build_datasets.py -s A621 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
 python src/build_datasets.py -s A627 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"

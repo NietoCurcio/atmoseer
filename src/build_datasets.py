@@ -10,10 +10,10 @@ import globals
 
 from util import find_contiguous_observation_blocks, add_missing_indicator_column, split_dataframe_by_date
 from utils.windowing import apply_windowing
-import util as util
-import argparse
 from subsampling import apply_subsampling
+import util as util
 import logging
+import argparse
 import yaml
 import datetime
 
@@ -413,22 +413,23 @@ def build_datasets(station_id: str,
     '''
 
     pipeline_id = station_id
-    if 'N' in fusion_sources:
-        pipeline_id = pipeline_id + '_N'
-    if 'R' in fusion_sources:
-        pipeline_id = pipeline_id + '_R'
-    if 'L' in fusion_sources:
-        pipeline_id = pipeline_id + '_L'
-    if 'DSI' in fusion_sources:
-        pipeline_id = pipeline_id + '_DSI'
-    if 'TPW' in fusion_sources:
-        pipeline_id = pipeline_id + '_TPW'
-    if 'I' in fusion_sources:
-        pipeline_id = pipeline_id + '_I'
-    if 'C' in fusion_sources:
-        pipeline_id = pipeline_id + '_C'
-    if 'A' in fusion_sources:
-        pipeline_id = pipeline_id + '_A'
+    if fusion_sources is not None:
+        if 'N' in fusion_sources:
+            pipeline_id = pipeline_id + '_N'
+        if 'R' in fusion_sources:
+            pipeline_id = pipeline_id + '_R'
+        if 'L' in fusion_sources:
+            pipeline_id = pipeline_id + '_L'
+        if 'DSI' in fusion_sources:
+            pipeline_id = pipeline_id + '_DSI'
+        if 'TPW' in fusion_sources:
+            pipeline_id = pipeline_id + '_TPW'
+        if 'I' in fusion_sources:
+            pipeline_id = pipeline_id + '_I'
+        if 'C' in fusion_sources:
+            pipeline_id = pipeline_id + '_C'
+        if 'A' in fusion_sources:
+            pipeline_id = pipeline_id + '_A'
     # if join_reanalisys_datasource:
     #     pipeline_id = pipeline_id + '_N'
     # if join_AS_data_source:
@@ -485,21 +486,22 @@ def build_datasets(station_id: str,
     #####
     # Now add features from the user-specified data sources.
     #####
-    logging.info(f'Going to add features from the user-specified data sources (if any)...')
-    joined_df = add_features_from_user_specified_data_sources(
-        station_id, 
-        fusion_sources,
-        # join_AS_data_source, 
-        # join_reanalisys_datasource, 
-        # join_goes16_glm_datasource, 
-        # join_goes16_tpw_datasource,
-        # join_colorcord_datasource,
-        # join_conv2d_datasource,
-        # join_autoencoder_datasource,     
-        df_ws, 
-        min_datetime, 
-        max_datetime)
-    logging.info(f'Done!\n')
+    if fusion_sources is not None:
+        logging.info(f'Going to add features from the user-specified data sources (if any)...')
+        joined_df = add_features_from_user_specified_data_sources(
+            station_id, 
+            fusion_sources,
+            # join_AS_data_source, 
+            # join_reanalisys_datasource, 
+            # join_goes16_glm_datasource, 
+            # join_goes16_tpw_datasource,
+            # join_colorcord_datasource,
+            # join_conv2d_datasource,
+            # join_autoencoder_datasource,     
+            df_ws, 
+            min_datetime, 
+            max_datetime)
+        logging.info(f'Done!\n')
 
     #
     # Save train/val/test DataFrames for future error analisys.
@@ -595,9 +597,9 @@ def build_datasets(station_id: str,
     assert not np.isnan(np.sum(y_test))
 
     #
-    # Now, we restore the target variable to their original values. This is needed in case a multiclass
+    # Now, we restore the target variable to its original values. This is needed in case a multiclass
     # classification task is defined down the pipeline.
-    logging.info('Restoring the target variable to their original values...')
+    logging.info('Restoring the target variable to its original values...')
     y_train = (y_train + min_target_value_in_train) * (max_target_value_in_train - min_target_value_in_train)
     y_val = (y_val + min_target_value_in_val) * (max_target_value_in_val - min_target_value_in_val)
     y_test = (y_test + min_target_value_in_test) * (max_target_value_in_test - min_target_value_in_test)
@@ -651,7 +653,7 @@ def main(argv):
     args = parser.parse_args(argv[1:])
 
     station_id = args.station_id
-    datasources = args.datasources
+    fusion_sources = args.datasources
     subsampling_procedure = args.subsampling_procedure
 
     try:
@@ -695,14 +697,14 @@ def main(argv):
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
     logging.basicConfig(level=logging.DEBUG, format = fmt)
 
-    join_goes16_tpw_data_source = False
-    join_goes16_dsi_data_source = False
-    join_as_data_source = False
-    join_nwp_data_source = False
-    join_lightning_data_source = False
-    join_colorcord_data_source = False
-    join_conv2d_data_source = False
-    join_autoencoder_data_source = False
+    # join_goes16_tpw_data_source = False
+    # join_goes16_dsi_data_source = False
+    # join_as_data_source = False
+    # join_nwp_data_source = False
+    # join_lightning_data_source = False
+    # join_colorcord_data_source = False
+    # join_conv2d_data_source = False
+    # join_autoencoder_data_source = False
 
     # fusion_list = list()
     # if datasources:
@@ -729,7 +731,7 @@ def main(argv):
                    input_folder,
                    train_start_threshold,
                    train_test_threshold,
-                   datasources,
+                   fusion_sources,
                 #    join_as_data_source, 
                 #    join_nwp_data_source, 
                 #    join_lightning_data_source, 
