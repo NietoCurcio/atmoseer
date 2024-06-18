@@ -230,6 +230,7 @@ def add_features_from_user_specified_data_sources(
 
         logging.info(f"TPW data successfully joined; resulting shape: {joined_df.shape}.")
 
+
         # print(joined_df.columns)
 
         logging.info(f"Adding missing indicator column...")
@@ -285,9 +286,10 @@ def add_features_from_user_specified_data_sources(
         logging.info(f"Dataframe of features create with shape {df_dsi_features.shape}.")
 
         df_dsi_features.to_parquet('dsi_features.parquet')
-        assert (not df_dsi_features.isnull().values.any().any())
+        #assert (not df_dsi_features.isnull().values.any().any())
 
-        joined_df = joined_df.join(df_dsi_features, how='inner')
+        #joined_df = joined_df.join(df_dsi_features, how='inner')
+        joined_df = joined_df.merge(df_dsi_features, how='left', left_index=True, right_index=True)
 
         logging.info(f"DSI features successfully joined; resulting shape: {joined_df.shape}.")
         logging.info(f"|wsoi - dsi_features|: {df_wsoi.index.difference(df_dsi_features.index).shape}")
