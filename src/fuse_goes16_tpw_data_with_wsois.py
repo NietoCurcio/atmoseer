@@ -60,8 +60,8 @@ def hourly_average_with_nan_handling(df: pd.DataFrame):
 
 
 if __name__ == "__main__":
-    # Set the folder containing the Parquet files
-    folder_path = './data/goes16/tpw'  # Replace with the path to your folder
+    # Set the folder containing the TPW parquet files
+    folder_path = './data/goes16/tpw'
 
     # Initialize an empty list to store DataFrames
     dataframes = []

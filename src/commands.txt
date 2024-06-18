@@ -159,15 +159,15 @@ python src/retrieve_ws_inmet.py -s A636 -b 2017 -e 2024 --api_token <token>
 python src/retrieve_ws_inmet.py -s A652 -b 2007 -e 2024 --api_token <token>
 
 2)
+python src/retrieve_goes16_product_for_extent.py --date_ini "2019-12-05" --date_end "2024-06-15" --prod ABI-L2-DSIF --vars CAPE LI TT SI KI
+
+3)
 python src/preprocess_ws.py -s A601 > preprocess_A601.out
 python src/preprocess_ws.py -s A602 > preprocess_A602.out
 python src/preprocess_ws.py -s A621 > preprocess_A621.out
 python src/preprocess_ws.py -s A627 > preprocess_A627.out
 python src/preprocess_ws.py -s A636 > preprocess_A636.out
 python src/preprocess_ws.py -s A652 > preprocess_A652.out
-
-3)
-python src/retrieve_goes16_product_for_extent.py --date_ini "2019-12-05" --date_end "2024-06-15" --prod ABI-L2-DSIF --vars CAPE LI TT SI KI
 
 4)
 python src/gen_dsi_dataframes.py
@@ -197,6 +197,7 @@ python src/build_datasets.py -s A652 -d DSI --train_test_threshold "2022-05-31" 
 6a)
 python src/build_datasets.py -s A601 --train_start_threshold "2019-12-06" --train_test_threshold "2022-05-31"  --test_end_threshold "2024-06-15"
 python src/build_datasets.py -s A601 --train_start_threshold "2019-12-06" --train_test_threshold "2022-05-31"  --test_end_threshold "2024-06-15" -d DSI
+
 
 
 
