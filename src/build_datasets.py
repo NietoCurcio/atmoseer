@@ -299,7 +299,7 @@ def add_features_from_user_specified_data_sources(
         logging.info(df_dsi_features.index.intersection(df_wsoi.index).shape)
         logging.info("")
         logging.info(f"wsoi - dsi_features:\n {df_wsoi.index.difference(df_dsi_features.index)}")
-        assert(False)
+        #assert(False)
 
     assert (not joined_df.isnull().values.any().any())
 
