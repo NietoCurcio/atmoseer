@@ -194,24 +194,28 @@ python src/build_datasets.py -s A627 -d DSI --train_test_threshold "2022-05-31" 
 python src/build_datasets.py -s A636 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
 python src/build_datasets.py -s A652 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
 
+6a)
+python src/build_datasets.py -s A601 --train_start_threshold "2019-12-06" --train_test_threshold "2022-05-31"  --test_end_threshold "2024-06-15"
+python src/build_datasets.py -s A601 --train_start_threshold "2019-12-06" --train_test_threshold "2022-05-31"  --test_end_threshold "2024-06-15" -d DSI
+
 
 
 LAFUSION 2023
 =============
 
 1)
-python src/retrieve_goes16_product_for_wsois.py --date_ini "2019-12-01" --date_ini "2019-12-31" --prod ABI-L2-TPWF --vars TPW
-python src/retrieve_goes16_product_for_wsois.py --date_ini "2020-01-01" --date_ini "2020-05-31" --prod ABI-L2-TPWF --vars TPW
-python src/retrieve_goes16_product_for_wsois.py --date_ini "2020-09-01" --date_ini "2020-12-31" --prod ABI-L2-TPWF --vars TPW
-python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-01-01" --date_ini "2021-05-31" --prod ABI-L2-TPWF --vars TPW
-python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-09-01" --date_ini "2021-12-31" --prod ABI-L2-TPWF --vars TPW
-python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-09-01" --date_ini "2021-09-30" --prod ABI-L2-TPWF --vars TPW
-python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-10-01" --date_ini "2021-10-31" --prod ABI-L2-TPWF --vars TPW
-python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-11-01" --date_ini "2021-11-30" --prod ABI-L2-TPWF --vars TPW
-python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-12-01" --date_ini "2021-12-31" --prod ABI-L2-TPWF --vars TPW
-python src/retrieve_goes16_product_for_wsois.py --date_ini "2022-01-01" --date_ini "2022-05-31" --prod ABI-L2-TPWF --vars TPW
-python src/retrieve_goes16_product_for_wsois.py --date_ini "2022-09-01" --date_ini "2022-12-31" --prod ABI-L2-TPWF --vars TPW
-python src/retrieve_goes16_product_for_wsois.py --date_ini "2023-01-01" --date_ini "2023-05-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2019-12-01" --date_end "2019-12-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2020-01-01" --date_end "2020-05-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2020-09-01" --date_end "2020-12-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-01-01" --date_end "2021-05-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-09-01" --date_end "2021-12-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-09-01" --date_end "2021-09-30" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-10-01" --date_end "2021-10-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-11-01" --date_end "2021-11-30" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-12-01" --date_end "2021-12-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2022-01-01" --date_end "2022-05-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2022-09-01" --date_end "2022-12-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2023-01-01" --date_end "2023-05-31" --prod ABI-L2-TPWF --vars TPW
 python src/retrieve_goes16_product_for_wsois.py --date_ini "2023-06-01" --date_end "2023-12-31" --prod ABI-L2-TPWF --vars TPW
 
 2)

@@ -8,11 +8,15 @@ from netCDF4 import Dataset
 from collections import OrderedDict
 
 def aggregate_to_hourly_resolution(df: pd.DataFrame):
+    assert (not df.isnull().values.any().any())
+
     # Resample the DataFrame to hourly frequency and compute the mean
     hourly_df = df.resample('H').mean()
 
     hourly_df.set_index(hourly_df.index + pd.DateOffset(hours=1), inplace=True)
 
+    hourly_df = hourly_df.dropna()
+    
     return hourly_df
 
 def main(argv):
