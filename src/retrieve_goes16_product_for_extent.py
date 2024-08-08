@@ -10,6 +10,7 @@ import argparse
 from typing import List
 import time
 import pickle
+import logging
 
 def save_extent_data(full_disk_filename, yyyymmddhhmn, variable_names, extent, dest_path):
     dqf_saved = False
@@ -116,27 +117,28 @@ def download_data_for_a_day(extent: List[float],
         # Date structure
         yyyymmddhhmn = datetime.strptime(str(time_step), '%Y-%m-%d %H:%M:%S').strftime('%Y%m%d%H%M')
 
-        print(f'-Getting data for {yyyymmddhhmn}...')
+        logging.info(f'-Getting data for {yyyymmddhhmn}...')
 
         # Download the full disk file from the Amazon cloud.
         file_name = download_PROD(yyyymmddhhmn, product_name, TEMP_DIR)
 
-        try:
-            full_disk_filename = f'{TEMP_DIR}/{file_name}.nc'
+        if file_name != -1:
+            try:
+                full_disk_filename = f'{TEMP_DIR}/{file_name}.nc'
 
-            save_extent_data(full_disk_filename, yyyymmddhhmn, variable_names, extent, dest_path)
+                save_extent_data(full_disk_filename, yyyymmddhhmn, variable_names, extent, dest_path)
 
-            if remove_full_disk_file:
-                try:
-                    os.remove(full_disk_filename)  # Use os.remove() to delete the file
-                except FileNotFoundError:
-                    print(f"Error: File '{full_disk_filename}' not found.")
-                except PermissionError:
-                    print(f"Error: Permission denied to remove file '{full_disk_filename}'.")
-                except Exception as e:
-                    print(f"An error occurred: {e}")
-        except FileNotFoundError:
-            print(f"Error: File '{full_disk_filename}' not found.")
+                if remove_full_disk_file:
+                    try:
+                        os.remove(full_disk_filename)  # Use os.remove() to delete the file
+                    except FileNotFoundError:
+                        logging.info(f"Error: File '{full_disk_filename}' not found.")
+                    except PermissionError:
+                        logging.info(f"Error: Permission denied to remove file '{full_disk_filename}'.")
+                    except Exception as e:
+                        logging.info(f"An error occurred: {e}")
+            except FileNotFoundError:
+                logging.info(f"Error: File '{full_disk_filename}' not found.")
 
         # Increment to get the next full disk observation.
         time_step = time_step + timedelta(minutes=temporal_resolution)
@@ -185,6 +187,9 @@ def main(argv):
 if __name__ == "__main__":
     ### Examples:
     # python src/retrieve_goes16_product_for_extent.py --date_ini "2024-01-13" --date_end "2024-01-13" --prod ABI-L2-DSIF --vars CAPE LI TT SI KI
+
+    fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
+    logging.basicConfig(level=logging.INFO, format = fmt)
 
     start_time = time.time()  # Record the start time
 
