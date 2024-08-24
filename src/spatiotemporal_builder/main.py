@@ -4,7 +4,9 @@ from typing import Optional
 import pandas as pd
 
 from .Logger import logger
+from .WebSirenesCoords import websirenes_coords_path
 from .WebSirenesKeys import websirenes_keys
+from .WebSirenesParser import WebSirenesParser
 from .WebsirenesTarget import websirenes_target
 
 log = logger.get_logger(__name__)
@@ -32,7 +34,38 @@ def validate_dates(
 
 
 def check_data_requirements():
-    ""
+    try:
+        websirenes_defesa_civil_path = WebSirenesParser.websirenes_defesa_civil_path
+        if not websirenes_defesa_civil_path.exists():
+            raise FileNotFoundError(
+                f"websirenes_defesa_civil folder not found in {websirenes_defesa_civil_path}. Please place the websirenes dataset in the expected folder"
+            )
+        if not any(websirenes_defesa_civil_path.glob("*.txt")):
+            raise FileNotFoundError(f"No txt files found in {websirenes_defesa_civil_path}")
+
+        if not websirenes_coords_path.exists():
+            raise FileNotFoundError(
+                f"websirenes_coords.parquet not found in {websirenes_coords_path}. Please place the websirenes coordinates dataset in the expected folder"
+            )
+
+        if not websirenes_target.era5land_path.exists():
+            raise FileNotFoundError(
+                f"ERA5Land folder not found in {websirenes_target.era5land_path}. Please place the ERA5Land dataset in the expected folder"
+            )
+
+        if not (websirenes_coords_path / "monthly_data").exists():
+            raise FileNotFoundError(
+                f"ERA5Land monthly_data folder not found in {websirenes_coords_path}. Please place the ERA5Land monthly data in the expected folder"
+            )
+
+        if not any((websirenes_coords_path / "monthly_data").glob("*.nc")):
+            raise FileNotFoundError(
+                f"No nc files found in {websirenes_coords_path / 'monthly_data'}. Please place the ERA5Land monthly data in the expected folder"
+            )
+
+    except Exception as e:
+        log.error(f"Error while checking data requirements: {e}")
+        exit(1)
 
 
 def build_target(start_date: Optional[pd.Timestamp], end_date: Optional[pd.Timestamp]):
