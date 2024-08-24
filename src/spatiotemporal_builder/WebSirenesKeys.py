@@ -54,8 +54,8 @@ class WebSirenesKeys:
 
     def _write_key(self, df: pd.DataFrame):
         row = df.iloc[0]
-        assert isinstance(row["latitude"], str)
-        assert isinstance(row["longitude"], str)
+        assert isinstance(row["latitude"], str), f"{type(row['latitude'])}"
+        assert isinstance(row["longitude"], str), f"{type(row['longitude'])}"
         key = f"{row['latitude']}_{row['longitude']}"
         df.to_parquet(self.websirenes_keys_path / f"{key}.parquet")
 
