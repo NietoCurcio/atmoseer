@@ -26,7 +26,9 @@ class WebSireneSchema(pa.DataFrameModel):
 
 
 class WebSirenesParser:
-    websirenes_defesa_civil_path = Path(__file__).parent / "websirenes_defesa_civil"
+    websirenes_defesa_civil_path = (
+        Path(__file__).parent.parent.parent / "data/ws" / "websirenes_defesa_civil"
+    )
     minimum_date = pd.Timestamp.max  # initialize as max to find the minimum date later
     maximum_date = pd.Timestamp.min  # initialize as min to find the maximum date later
 
