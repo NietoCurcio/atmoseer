@@ -54,10 +54,10 @@ class WebSirenesSquare:
         bottom_right = era5land_at_time.sel(latitude=br_lat, longitude=br_lon)
         top_right = era5land_at_time.sel(latitude=tr_lat, longitude=tr_lon)
 
-        assert top_left["tp"].size == 1
-        assert bottom_left["tp"].size == 1
-        assert bottom_right["tp"].size == 1
-        assert top_right["tp"].size == 1
+        assert top_left["tp"].size == 1, f"top_left['tp'].size: {top_left['tp'].size}"
+        assert bottom_left["tp"].size == 1, f"bottom_left['tp'].size: {bottom_left['tp'].size}"
+        assert bottom_right["tp"].size == 1, f"bottom_right['tp'].size: {bottom_right['tp'].size}"
+        assert top_right["tp"].size == 1, f"top_right['tp'].size: {top_right['tp'].size}"
 
         top_left = top_left["tp"].item()
         bottom_left = bottom_left["tp"].item()
