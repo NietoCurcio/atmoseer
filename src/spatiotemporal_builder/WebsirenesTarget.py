@@ -1,4 +1,6 @@
+import concurrent.futures
 import os
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -100,6 +102,24 @@ class WebsirenesTarget:
 
                 target[i, j] = precipitation_in_square
 
+    def _process_timestamp(self, timestamp: pd.Timestamp):
+        year = timestamp.year
+        month = timestamp.month
+        day = timestamp.day
+        hour = timestamp.hour
+
+        ds = self._get_era5land_dataset(year, month)
+
+        time = f"{year}-{month}-{day}T{hour}:00:00.000000000"
+        ds_time = ds.sel(time=time, method="nearest")
+        target = np.zeros(
+            (self.sorted_latitudes_ascending.size, self.sorted_longitudes_ascending.size),
+            dtype=np.float32,
+        )
+        # add features
+        self._process_grid(target, ds_time, timestamp)
+        self._write_target(target, timestamp)
+
     def build_timestamps_hourly(
         self,
         start_date: Optional[pd.Timestamp],
@@ -121,23 +141,24 @@ class WebsirenesTarget:
         timestamps = pd.date_range(start=minimum_date, end=maximum_date, freq="h")
 
         log.info(f"Building websirenes target from {timestamps[0]} to {timestamps[-1]}")
-        for timestamp in tqdm(timestamps):
-            year = timestamp.year
-            month = timestamp.month
-            day = timestamp.day
-            hour = timestamp.hour
-
-            ds = self._get_era5land_dataset(year, month)
-
-            time = f"{year}-{month}-{day}T{hour}:00:00.000000000"
-            ds_time = ds.sel(time=time, method="nearest")
-            target = np.zeros(
-                (self.sorted_latitudes_ascending.size, self.sorted_longitudes_ascending.size),
-                dtype=np.float32,
-            )
-            self._process_grid(target, ds_time, timestamp)
-            self._write_target(target, timestamp)
-
+        start_time = time.time()
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            futures = [
+                executor.submit(self._process_timestamp, timestamp) for timestamp in timestamps
+            ]
+            with tqdm(total=len(timestamps)) as pbar:
+                for _ in concurrent.futures.as_completed(futures):
+                    pbar.update()
+        """
+        benchmark for start_date=2011-04-12T21:00:00 end_date=2011-04-13T10:00:00 (14 timestamps)
+        for timestamp in tqdm(timestamps, desc="Processing timestamps"):
+            self._process_timestamp(timestamp)
+        without Executor = 55.45s
+        with ThreadPoolExecutor = 45.15s
+        with ProcessPoolExecutor = 22.27s
+        """
+        end_time = time.time()
+        log.info(f"Target built in {end_time - start_time:.2f} seconds")  # n 25.22 seconds
         log.success(f"Websirenes target built successfully in {self.websirenes_target_path}")
 
 
