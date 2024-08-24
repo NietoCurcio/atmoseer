@@ -30,15 +30,22 @@ class WebsirenesTarget:
         websirenes_square: WebSirenesSquare,
     ):
         self.websirenes_target_path = Path(__file__).parent / "target"
+        self.era5land_path = Path(__file__).parent.parent.parent / "data/reanalysis/ERA5Land"
         if not self.websirenes_target_path.exists():
             self.websirenes_target_path.mkdir()
+
+        if not self.era5land_path.exists():
+            log.error(
+                f"ERA5Land folder not found in {self.era5land_path}. Please place the ERA5Land dataset in the expected folder"
+            )
+            exit(1)
 
         self.current_ds = None
         self.current_year_month = None
         self.websirenes_parser = websirenes_parser
         self.websirenes_square = websirenes_square
 
-        lats, lons = get_grid_lats_lons()
+        lats, lons = self._get_grid_lats_lons()
 
         self.sorted_latitudes_ascending = np.sort(lats)
         self.sorted_longitudes_ascending = np.sort(lons)
@@ -47,15 +54,22 @@ class WebsirenesTarget:
         target_filename = self.websirenes_target_path / f"{timestamp.strftime('%Y_%m_%d_%H')}.npy"
         np.save(target_filename, target)
 
+    def _get_grid_lats_lons(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+        ds = self._get_era5land_dataset(2022, 1)
+        lats = ds.coords["latitude"].values
+        lons = ds.coords["longitude"].values
+        return lats, lons
+
     def _get_era5land_dataset(self, year: int, month: int) -> xr.Dataset:
         if self.current_year_month == (year, month) and self.current_ds is not None:
             return self.current_ds
 
-        df_era5land_path = Path(__file__).parent / f"ERA5Land/monthly_data/RJ_{year}_{month}.nc"
-        if not os.path.exists(df_era5land_path):
-            raise FileNotFoundError(f"File {df_era5land_path} not found")
+        era5land_year_month_path = self.era5land_path / "monthly_data" / f"RJ_{year}_{month}.nc"
 
-        ds = xr.open_dataset(df_era5land_path)
+        if not os.path.exists(era5land_year_month_path):
+            raise FileNotFoundError(f"File {era5land_year_month_path} not found")
+
+        ds = xr.open_dataset(era5land_year_month_path)
         if "expver" in list(ds.coords.keys()):
             log.warning(">>>Oops! expver dimension found. Going to remove it.<<<")
             ds_combine = ds.sel(expver=1).combine_first(ds.sel(expver=5))
