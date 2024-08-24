@@ -82,13 +82,13 @@ if __name__ == "__main__":
         "--start_date",
         type=str,
         required=False,
-        help="Start date in the format YYYY-MM-DD-H",
+        help="Start date in the format YYYY-MM-DDTHH:MM:SS",
     )
     parser.add_argument(
         "--end_date",
         type=str,
         required=False,
-        help="End date in the format YYYY-MM-DD-H",
+        help="End date in the format YYYY-MM-DDTHH:MM:SS",
     )
 
     check_data_requirements()
