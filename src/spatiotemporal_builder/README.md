@@ -6,6 +6,10 @@ This package build the dataset illustrated in the image below. Currently only in
 
 <img src="./.github/GRID_TARGET.png" alt="Spatiotemporal dataset" width="500"/>
 
+1- Place the WebSirenes dataset in the `atmoseer/data/ws/websirenes_defesa_civil` folder. In this folder should exist a list of `.txt` files with the stations' precipitation data.
+
+2- Place the WebSirenes coordinates in the `atmoseer/src/spatiotemporal_builder/websirenes_coords.parquet` folder. In this folder should exist a `websirenes_coords.parquet` file with the stations' coordinates.
+
 Usage for production (integreates Websirenes spatiotemporal data from `2011-04-12 20:30:00` to `2022-06-02 21:30:00`):
 ```sh
 python -m src.spatiotemporal_builder.main
@@ -66,6 +70,7 @@ classDiagram
         -_process_grid()
         -_get_era5land_dataset()
         -_write_target()
+        -_get_grid_lats_lons()
     }
 
     WebSirenesKeys --> WebSirenesParser
