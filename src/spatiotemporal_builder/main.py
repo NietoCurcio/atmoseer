@@ -53,14 +53,14 @@ def check_data_requirements():
                 f"ERA5Land folder not found in {websirenes_target.era5land_path}. Please place the ERA5Land dataset in the expected folder"
             )
 
-        if not (websirenes_coords_path / "monthly_data").exists():
+        if not (websirenes_target.era5land_path / "monthly_data").exists():
             raise FileNotFoundError(
-                f"ERA5Land monthly_data folder not found in {websirenes_coords_path}. Please place the ERA5Land monthly data in the expected folder"
+                f"ERA5Land monthly_data folder not found in {websirenes_target.era5land_path}. Please place the ERA5Land monthly data in the expected folder"
             )
 
-        if not any((websirenes_coords_path / "monthly_data").glob("*.nc")):
+        if not any((websirenes_target.era5land_path / "monthly_data").glob("*.nc")):
             raise FileNotFoundError(
-                f"No nc files found in {websirenes_coords_path / 'monthly_data'}. Please place the ERA5Land monthly data in the expected folder"
+                f"No nc files found in {websirenes_target.era5land_path / 'monthly_data'}. Please place the ERA5Land monthly data in the expected folder"
             )
 
     except Exception as e:
