@@ -17,7 +17,9 @@ class WebSireneCoordsSchemaLatLongStr(WebSireneCoordsSchema):
     longitude: str
 
 
-websirenes_coords = pd.read_parquet(Path(__file__).parent / "websirenes_coords.parquet")
+websirenes_coords_path = Path(__file__).parent / "websirenes_coords.parquet"
+
+websirenes_coords = pd.read_parquet(websirenes_coords_path)
 WebSireneCoordsSchema.validate(websirenes_coords)
 
 # store lat_long.parquet keys as string to avoid precision issues
