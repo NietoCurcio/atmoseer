@@ -1,3 +1,4 @@
+import io
 import logging
 from typing import cast
 
@@ -15,7 +16,7 @@ logging.setLoggerClass(MyLogger)
 
 
 class ColorFormatter(logging.Formatter):
-    grey_color = "\033[90m"
+    white_color = "\033[97m"
     error_color = "\033[91m"
     warning_color = "\033[93m"
     info_color = "\033[96m"
@@ -25,7 +26,7 @@ class ColorFormatter(logging.Formatter):
 
     FORMATS = {
         SUCCESS: f"{success_color}{log_format}{reset_color}",
-        logging.DEBUG: f"{grey_color}{log_format}{reset_color}",
+        logging.DEBUG: f"{white_color}{log_format}{reset_color}",
         logging.INFO: f"{info_color}{log_format}{reset_color}",
         logging.WARNING: f"{warning_color}{log_format}{reset_color}",
         logging.ERROR: f"{error_color}{log_format}{reset_color}",
@@ -54,6 +55,19 @@ class Logger:
 
     def get_logger(self, name: str) -> MyLogger:
         return self.logger.getChild(name)
+
+
+# https://stackoverflow.com/questions/14897756/python-progress-bar-through-logging-module
+class TqdmLogger(io.StringIO):
+    def __init__(self, logger: logging.Logger):
+        self.logger = logger
+        self.level = logging.DEBUG
+
+    def write(self, buf: str) -> None:
+        self.buf = buf.strip("\r\n\t ")
+
+    def flush(self) -> None:
+        self.logger.log(self.level, self.buf)
 
 
 logger = Logger()
