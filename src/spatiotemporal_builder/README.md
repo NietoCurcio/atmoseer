@@ -2,8 +2,6 @@
 
 This package build the dataset illustrated in the image below. Currently only integrates WebSirenes data with ERA5Land reanalysis model. A target grid corresponds to a 11x21 matrix of precipitation data, where each cell is a square of 0.1x0.1 degrees. The precipitation data is in mm/hour. The dataset is built hourly, so for each hour we have a grid of precipitation data. The dataset is built from 2011-04-12 20:30:00 to 2022-06-02 21:30:00. The dataset is built for the region of Rio de Janeiro, Brazil.
 
-> TODO integrate AlertaRio and INMET data
-
 <img src="./.github/GRID_TARGET.png" alt="Spatiotemporal dataset" width="500"/>
 
 1- Place the WebSirenes dataset in the `atmoseer/data/ws/websirenes_defesa_civil` folder. In this folder should exist a list of `.txt` files with the stations' precipitation data.
@@ -68,15 +66,19 @@ classDiagram
         +get_keys_in_square()
         +get_precipitation_in_square()
         +get_square()
+        +get_features_in_square()
         -_get_era5land_precipitation_in_square()
     }
 
     class WebSirenesTarget {
         +build_timestamps_hourly()
+        -_process_timestamp()
         -_process_grid()
         -_get_era5land_dataset()
         -_write_target()
+        -_write_features()
         -_get_grid_lats_lons()
+        -_get_relative_humidity()
     }
 
     WebSirenesKeys --> WebSirenesParser
@@ -99,3 +101,5 @@ The `WebSirenesSquare` is responsible for getting the precipitation data in the 
 The `WebSirenesTarget` is responsible for building the target dataset. The target dataset is a grid with the precipitation data. Its main function is `build_timestamps_hourly` where it will build a grid per hour for each day in the dataset. Foe each hour, it will call `_process_grid`, this function processes the grid latitudes top to bottom and longitudes left to right, to build the `Squares` or gridpoints in the grid. It depends on the `WebSirenesSquare` class to get the precipitation data in the square and on the `WebSirenesKeys` to get the minimum and maximum date of the dataset, that was set in the `WebSirenesKeys` when building the keys.
 
 The target dataset will be written in `.npy` files under the `target` folder. 
+
+TODO integrate AlertaRio and INMET data

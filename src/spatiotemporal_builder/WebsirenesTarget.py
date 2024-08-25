@@ -32,10 +32,14 @@ class WebsirenesTarget:
         websirenes_square: WebSirenesSquare,
     ):
         self.websirenes_target_path = Path(__file__).parent / "target"
-        self.era5land_path = Path(__file__).parent.parent.parent / "data/reanalysis/ERA5Land"
         if not self.websirenes_target_path.exists():
             self.websirenes_target_path.mkdir()
 
+        self.websirenes_features_path = Path(__file__).parent / "features"
+        if not self.websirenes_features_path.exists():
+            self.websirenes_features_path.mkdir()
+
+        self.era5land_path = Path(__file__).parent.parent.parent / "data/reanalysis/ERA5Land"
         if not self.era5land_path.exists():
             log.error(
                 f"ERA5Land folder not found in {self.era5land_path}. Please place the ERA5Land dataset in the expected folder"
@@ -52,9 +56,15 @@ class WebsirenesTarget:
         self.sorted_latitudes_ascending = np.sort(lats)
         self.sorted_longitudes_ascending = np.sort(lons)
 
-    def _write_target(self, target: np.ndarray, timestamp: pd.Timestamp):
+    def _write_target(self, target: npt.NDArray[np.float64], timestamp: pd.Timestamp):
         target_filename = self.websirenes_target_path / f"{timestamp.strftime('%Y_%m_%d_%H')}.npy"
         np.save(target_filename, target)
+
+    def _write_features(self, features: npt.NDArray[np.float64], timestamp: pd.Timestamp):
+        features_filename = (
+            self.websirenes_features_path / f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
+        )
+        np.save(features_filename, features)
 
     def _get_grid_lats_lons(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         ds = self._get_era5land_dataset(2022, 1)
@@ -82,7 +92,20 @@ class WebsirenesTarget:
         self.current_year_month = (year, month)
         return self.current_ds
 
-    def _process_grid(self, target: np.ndarray, ds_time: xr.Dataset, timestamp: pd.Timestamp):
+    def _get_relative_humidity(self, temperature: np.float64, dew_point: np.float64):
+        return (
+            100
+            * np.exp((17.625 * dew_point) / (243.04 + dew_point))
+            / np.exp((17.625 * temperature) / (243.04 + temperature))
+        )
+
+    def _process_grid(
+        self,
+        features: npt.NDArray[np.float64],
+        target: npt.NDArray[np.float64],
+        ds_time: xr.Dataset,
+        timestamp: pd.Timestamp,
+    ):
         top_down_lats = self.sorted_latitudes_ascending[::-1]
         left_right_lons = self.sorted_longitudes_ascending
         for i, lat in enumerate(top_down_lats):
@@ -102,6 +125,14 @@ class WebsirenesTarget:
 
                 target[i, j] = precipitation_in_square
 
+                u10, v10, t2m, sp, d2m = self.websirenes_square.get_features_in_square(
+                    square, ds_time
+                )
+                spd10 = np.sqrt(u10**2 + v10**2)
+                rh = self._get_relative_humidity(t2m, d2m)
+
+                features[i, j] = [u10, v10, spd10, t2m, sp, rh, precipitation_in_square]
+
     def _process_timestamp(self, timestamp: pd.Timestamp):
         year = timestamp.year
         month = timestamp.month
@@ -114,11 +145,30 @@ class WebsirenesTarget:
         ds_time = ds.sel(time=time, method="nearest")
         target = np.zeros(
             (self.sorted_latitudes_ascending.size, self.sorted_longitudes_ascending.size),
-            dtype=np.float32,
+            dtype=np.float64,
         )
-        # add features
-        self._process_grid(target, ds_time, timestamp)
+
+        features_tuple = {
+            "u10": "10 metre U wind component",
+            "v10": "10 metre V wind component",
+            "spd10": "10 metre wind speed",
+            "t2m": "2 metre temperature",
+            "sp": "Surface pressure",
+            "humidty": "Relative humidity from temp and dew point",
+            "tp": "Total precipitation",
+        }
+        features = np.zeros(
+            (
+                self.sorted_latitudes_ascending.size,
+                self.sorted_longitudes_ascending.size,
+                len(features_tuple),
+            ),
+            dtype=np.float64,
+        )
+
+        self._process_grid(features, target, ds_time, timestamp)
         self._write_target(target, timestamp)
+        self._write_features(features, timestamp)
 
     def build_timestamps_hourly(
         self,
@@ -156,14 +206,6 @@ class WebsirenesTarget:
             ) as pbar:
                 for _ in concurrent.futures.as_completed(futures):
                     pbar.update()
-        """
-        benchmark for start_date=2011-04-12T21:00:00 end_date=2011-04-13T10:00:00 (14 timestamps)
-        for timestamp in tqdm(timestamps, desc="Processing timestamps"):
-            self._process_timestamp(timestamp)
-        without Executor = 55.45s
-        with ThreadPoolExecutor = 45.15s
-        with ProcessPoolExecutor = 22.27s
-        """
         end_time = time.time()
         log.info(f"Target built in {end_time - start_time:.2f} seconds")  # n 25.22 seconds
         log.success(f"Websirenes target built successfully in {self.websirenes_target_path}")

@@ -44,38 +44,58 @@ class WebSirenesSquare:
     def _get_era5land_precipitation_in_square(
         self, square: Square, era5land_at_time: xr.Dataset
     ) -> float:
-        tl_lat, tl_lon = square.top_left
-        bl_lat, bl_lon = square.bottom_left
-        br_lat, br_lon = square.bottom_right
-        tr_lat, tr_lon = square.top_right
+        corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
+        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
 
-        top_left = era5land_at_time.sel(latitude=tl_lat, longitude=tl_lon)
-        bottom_left = era5land_at_time.sel(latitude=bl_lat, longitude=bl_lon)
-        bottom_right = era5land_at_time.sel(latitude=br_lat, longitude=br_lon)
-        top_right = era5land_at_time.sel(latitude=tr_lat, longitude=tr_lon)
+        corner_data = {
+            corner: era5land_at_time.sel(latitude=lat, longitude=lon)
+            for corner, (lat, lon) in zip(corners, coords)
+        }
 
-        assert top_left["tp"].size == 1, f"top_left['tp'].size: {top_left['tp'].size}"
-        assert bottom_left["tp"].size == 1, f"bottom_left['tp'].size: {bottom_left['tp'].size}"
-        assert bottom_right["tp"].size == 1, f"bottom_right['tp'].size: {bottom_right['tp'].size}"
-        assert top_right["tp"].size == 1, f"top_right['tp'].size: {top_right['tp'].size}"
+        for corner in corners:
+            assert (
+                corner_data[corner]["tp"].size == 1
+            ), f"{corner}['tp'].size: {corner_data[corner]['tp'].size}"
 
-        top_left = top_left["tp"].item()
-        bottom_left = bottom_left["tp"].item()
-        bottom_right = bottom_right["tp"].item()
-        top_right = top_right["tp"].item()
-
-        max_tp: float = max(
-            top_left,
-            bottom_left,
-            bottom_right,
-            top_right,
-        )
+        tp_values = [corner_data[corner]["tp"].item() for corner in corners]
+        max_tp = max(tp_values)
 
         if np.isnan(max_tp):
             # If max_tp is NaN between ERA5Land gridpoints, it means that we are out of land in the square
             # For now, we are returning 0, but we should consider a better approach. For example, using the nearest land gridpoint
             return 0.0
         return max_tp
+
+    def get_features_in_square(
+        self,
+        square: Square,
+        ds_time: xr.Dataset,
+    ) -> npt.NDArray[np.float64]:
+        corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
+        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+
+        variables = ["u10", "v10", "t2m", "sp", "d2m"]
+
+        corner_data = {
+            corner: ds_time.sel(latitude=lat, longitude=lon)
+            for corner, (lat, lon) in zip(corners, coords)
+        }
+
+        for var in variables:
+            assert (
+                corner_data["top_left"][var].size == 1
+            ), f"top_left['{var}'].size: {corner_data['top_left'][var].size}"
+
+        results = []
+        for var in variables:
+            values = [corner_data[corner][var].item() for corner in corners]
+            max_value = max(values)
+
+            if np.isnan(max_value):
+                max_value = 0.0
+
+            results.append(max_value)
+        return np.array(results)
 
     def get_precipitation_in_square(
         self,
