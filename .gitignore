@@ -5,6 +5,10 @@ backup/
 __pycache__/
 *.pyc
 
+src/spatiotemporal_builder/features
+src/spatiotemporal_builder/target
+src/spatiotemporal_builder/websirenes_keys
+
 notebooks/alertario/alertario_rain_gauge
 notebooks/alertario/alertario_weather_station
 notebooks/alertario/*.parquet
