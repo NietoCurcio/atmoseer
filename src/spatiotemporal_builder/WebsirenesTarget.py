@@ -10,7 +10,7 @@ import pandas as pd
 import xarray as xr
 from tqdm import tqdm
 
-from .Logger import logger
+from .Logger import TqdmLogger, logger
 from .WebSirenesParser import WebSirenesParser, websirenes_parser
 from .WebSirenesSquare import WebSirenesSquare, websirenes_square
 
@@ -142,11 +142,18 @@ class WebsirenesTarget:
 
         log.info(f"Building websirenes target from {timestamps[0]} to {timestamps[-1]}")
         start_time = time.time()
+        FIVE_MINUTES = 60 * 5
         with concurrent.futures.ProcessPoolExecutor() as executor:
             futures = [
                 executor.submit(self._process_timestamp, timestamp) for timestamp in timestamps
             ]
-            with tqdm(total=len(timestamps)) as pbar:
+            with tqdm(
+                total=len(timestamps),
+                desc="Processing timestamps",
+                file=TqdmLogger(log),
+                dynamic_ncols=True,
+                mininterval=FIVE_MINUTES,
+            ) as pbar:
                 for _ in concurrent.futures.as_completed(futures):
                     pbar.update()
         """
