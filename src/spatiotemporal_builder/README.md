@@ -102,6 +102,6 @@ The `WebSirenesSquare` is responsible for getting the precipitation data in the 
 
 The `WebSirenesTarget` is responsible for building the target dataset. The target dataset is a grid with the precipitation data. Its main function is `build_timestamps_hourly` where it will build a grid per hour for each day in the dataset. Foe each hour, it will call `_process_grid`, this function processes the grid latitudes top to bottom and longitudes left to right, to build the `Squares` or gridpoints in the grid. It depends on the `WebSirenesSquare` class to get the precipitation data in the square and on the `WebSirenesKeys` to get the minimum and maximum date of the dataset, that was set in the `WebSirenesKeys` when building the keys.
 
-The target dataset will be written in `.npy` files under the `target` folder. 
+The target dataset will be written in `.npy` files under the `src/spatiotemporal_builder/target` folder. The features dataset will be written in `.npy` files under the `src/spatiotemporal_builder/features` folder.
 
 TODO integrate AlertaRio and INMET data
