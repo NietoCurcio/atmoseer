@@ -10,15 +10,17 @@ import globals
 
 from util import find_contiguous_observation_blocks, add_missing_indicator_column, split_dataframe_by_date
 from utils.windowing import apply_windowing
-import util as util
-import argparse
 from subsampling import apply_subsampling
+import util as util
 import logging
+import argparse
 import yaml
 import datetime
 
 from statsmodels.stats.diagnostic import acorr_ljungbox
 import matplotlib.pyplot as plt
+
+from typing import List
 
 # def format_for_binary_classification(y_train, y_val, y_test):
 #     y_train_oc = map_to_binary_precipitation_levels(y_train)
@@ -121,21 +123,28 @@ def gaussian_noise(df, column_name, mu=0, sigma=1):
     return df
 
 
-def add_user_specified_data_sources(
+def add_features_from_user_specified_data_sources(
         station_id, 
-        join_AS_datasource, 
-        join_reanalisys_datasource, 
-        join_goes16_glm_datasource, 
-        join_goes16_tpw_datasource,
-        join_colorcord_datasource,
-        join_conv2d_datasource,
-        join_autoencoder_datasource,   
-        df_ws, 
+        fusion_sources: List[str],
+        df_wsoi, 
         min_datetime, 
         max_datetime):
-    joined_df = df_ws
 
-    if join_reanalisys_datasource:
+    join_radiosonde_features = ('R' in fusion_sources) 
+    join_reanalisys_features = ('ERA5' in fusion_sources) 
+    join_goes16_glm_features = ('L' in fusion_sources)  
+    join_goes16_tpw_features = ('TPW' in fusion_sources) 
+    join_goes16_dsi_features = ('DSI' in fusion_sources) 
+    join_colorcord_features =  ('I' in fusion_sources) 
+    join_conv2d_features = ('C' in fusion_sources) 
+    join_autoencoder_features = ('A' in fusion_sources)  
+
+    joined_df = df_wsoi
+
+    ############################################################################################
+    # ERA5 features
+    ############################################################################################
+    if join_reanalisys_features:
         logging.info(f"Loading reanalisys (ERA5) data near the weather station {station_id}...")
         data_source = Era5ReanalisysDataSource()
         df_era5_reanalisys = data_source.get_data(station_id, min_datetime, max_datetime)
@@ -144,14 +153,13 @@ def add_user_specified_data_sources(
 
         joined_df = pd.merge(joined_df, df_era5_reanalisys, how='left', left_index=True, right_index=True)
 
-        logging.info(f"Reanalisys data successfully joined; resulting shape = {joined_df.shape}.")
-        logging.info(df_ws.index.difference(joined_df.index).shape)
-        logging.info(joined_df.index.difference(df_ws.index).shape)
-
-        logging.info(df_era5_reanalisys.index.intersection(df_ws.index).shape)
-        logging.info(df_era5_reanalisys.index.difference(df_ws.index).shape)
-        logging.info(df_ws.index.difference(df_era5_reanalisys.index).shape)
-        logging.info(df_ws.index.difference(df_era5_reanalisys.index))
+        logging.info(f"Reanalisys data successfully joined; resulting shape: {joined_df.shape}.")
+        logging.info(df_wsoi.index.difference(joined_df.index).shape)
+        logging.info(df_wsoi.index.difference(df_era5_reanalisys.index).shape)
+        logging.info(df_wsoi.index.difference(df_era5_reanalisys.index))
+        logging.info(joined_df.index.difference(df_wsoi.index).shape)
+        logging.info(df_era5_reanalisys.index.intersection(df_wsoi.index).shape)
+        logging.info(df_era5_reanalisys.index.difference(df_wsoi.index).shape)
 
         shape_before_dropna = joined_df.shape
         joined_df = joined_df.dropna()
@@ -160,7 +168,10 @@ def add_user_specified_data_sources(
 
     assert (not joined_df.isnull().values.any().any())
 
-    if join_AS_datasource:
+    ############################################################################################
+    # SBGL features
+    ############################################################################################
+    if join_radiosonde_features:
         filename = globals.AS_DATA_DIR + 'SBGL_indices_1997_2023.parquet.gzip'
         logging.info(f"Loading atmospheric sounding indices from {filename}...")
         df_as = pd.read_parquet(filename)
@@ -202,11 +213,14 @@ def add_user_specified_data_sources(
         # TODO: data normalization 
         # TODO: implement interpolation
         # TODO: deal with missing values (see https://youtu.be/DKmDJJzayZw)
-        # TODO: Imputing with MICE (see https://towardsdatascience.com/imputing-missing-data-with-simple-and-advanced-techniques-f5c7b157fb87)
+        # TODO: test data imputing with MICE (see https://towardsdatascience.com/imputing-missing-data-with-simple-and-advanced-techniques-f5c7b157fb87)
         # TODO: use other sounding stations (?) (see tempo.inmet.gov.br/Sondagem/)
 
-    if join_goes16_tpw_datasource:
-        logging.info(f"Loading GOES16 TPW product for weather station {station_id}...")
+    ############################################################################################
+    # TPW features
+    ############################################################################################
+    if join_goes16_tpw_features:
+        logging.info(f"Loading GOES16 TPW data for WSoI {station_id}...")
         df_tpw = pd.read_parquet(f'{globals.TPW_DATA_DIR}/{station_id}.parquet')
         logging.info(f"Done! Shape = {df_tpw.shape}.")
 
@@ -215,6 +229,7 @@ def add_user_specified_data_sources(
         joined_df = joined_df.join(df_tpw, how='inner')
 
         logging.info(f"TPW data successfully joined; resulting shape: {joined_df.shape}.")
+
 
         # print(joined_df.columns)
 
@@ -236,16 +251,66 @@ def add_user_specified_data_sources(
         shape_after_dropna = joined_df.shape
         assert shape_before_dropna == shape_after_dropna
 
+    ############################################################################################
+    # DSI features
+    ############################################################################################
+    if join_goes16_dsi_features:
+        
+        # Remember: (y, x)
+        wsoi2cell_dict = dict()
+        wsoi2cell_dict["A627"] = (1, 6)
+        wsoi2cell_dict["A652"] = (2, 5)
+        wsoi2cell_dict["A636"] = (2, 4)
+        wsoi2cell_dict["A621"] = (1, 3)
+        wsoi2cell_dict["A602"] = (3, 2)
+        wsoi2cell_dict["A601"] = (0, 1)
+
+        associated_cell = wsoi2cell_dict[station_id]
+
+        logging.info(f"Loading GOES16 DSI data for WSoI {station_id}...")
+        dsi_variable_names = ['CAPE', 'LI', 'TT', 'SI', 'KI']
+        features_dict = dict()
+        for variable_name in dsi_variable_names:
+            logging.info(f"Adding feature - {variable_name}...")
+            df_dsi = pd.read_parquet(f'{globals.DSI_DATA_DIR}/DSI_{variable_name}_1H.parquet')
+            logging.info(f"Done! Shape = {df_dsi.shape}.")
+
+            logging.info(f"Range of timestamps in the DSI data: [{min(df_dsi.index)}, {max(df_dsi.index)}]")
+
+            column_name = f'{variable_name}{associated_cell[0]}{associated_cell[1]}'
+
+            features_dict[variable_name] = df_dsi[column_name]
+
+        # Transform the dictionary into a DataFrame
+        df_dsi_features = pd.DataFrame(features_dict)
+        logging.info(f"Dataframe of features create with shape {df_dsi_features.shape}.")
+
+        df_dsi_features.to_parquet('dsi_features.parquet')
+        #assert (not df_dsi_features.isnull().values.any().any())
+
+        #joined_df = joined_df.join(df_dsi_features, how='inner')
+        joined_df = joined_df.merge(df_dsi_features, how='left', left_index=True, right_index=True)
+
+        logging.info(f"DSI features successfully joined; resulting shape: {joined_df.shape}.")
+        logging.info(f"|wsoi - dsi_features|: {df_wsoi.index.difference(df_dsi_features.index).shape}")
+        logging.info(f"|dsi_features - wsoi|: {df_dsi_features.index.difference(df_wsoi.index).shape}")
+        logging.info(df_wsoi.index.difference(joined_df.index).shape)
+        logging.info(joined_df.index.difference(df_wsoi.index).shape)
+        logging.info(df_dsi_features.index.intersection(df_wsoi.index).shape)
+        logging.info("")
+        logging.info(f"wsoi - dsi_features:\n {df_wsoi.index.difference(df_dsi_features.index)}")
+        #assert(False)
+
     assert (not joined_df.isnull().values.any().any())
 
-    if join_goes16_glm_datasource:
+    if join_goes16_glm_features:
         print(f"Loading GLM (Goes 16) data near the weather station {station_id}...", end= "")
         df_lightning = pd.read_parquet(f'data/parquet_files/glm_{station_id}_preprocessed_file.parquet')
         df_lightning_filtered = get_goes16_data_for_weather_station(df_lightning)
         print(df_lightning_filtered.isnull().sum())
         df_lightning_filtered.fillna(method="bfill", inplace=True)
         assert (not df_lightning_filtered.isnull().values.any().any())
-        joined_df = pd.merge(df_ws, df_lightning_filtered, how='left', left_index=True, right_index=True)
+        joined_df = pd.merge(df_wsoi, df_lightning_filtered, how='left', left_index=True, right_index=True)
 
         joined_df['event_energy'].fillna(method="bfill", inplace=True)
 
@@ -259,13 +324,13 @@ def add_user_specified_data_sources(
         plt.show()
 
         print(f"GLM data successfully joined; resulting shape = {joined_df.shape}.")
-        print(df_ws.index.difference(joined_df.index).shape)
-        print(joined_df.index.difference(df_ws.index).shape)
+        print(df_wsoi.index.difference(joined_df.index).shape)
+        print(joined_df.index.difference(df_wsoi.index).shape)
 
-        print(df_lightning_filtered.index.intersection(df_ws.index).shape)
-        print(df_lightning_filtered.index.difference(df_ws.index).shape)
-        print(df_ws.index.difference(df_lightning_filtered.index).shape)
-        print(df_ws.index.difference(df_lightning_filtered.index))
+        print(df_lightning_filtered.index.intersection(df_wsoi.index).shape)
+        print(df_lightning_filtered.index.difference(df_wsoi.index).shape)
+        print(df_wsoi.index.difference(df_lightning_filtered.index).shape)
+        print(df_wsoi.index.difference(df_lightning_filtered.index))
 
         shape_before_dropna = joined_df.shape
         joined_df = joined_df.dropna()
@@ -274,7 +339,7 @@ def add_user_specified_data_sources(
 
     assert (not joined_df.isnull().values.any().any())
 
-    if join_colorcord_datasource:
+    if join_colorcord_features:
         filename = f'FEATURE_{station_id}_COLORCORD.csv'
         logging.info(f"Loading image features {filename}...")
         df_new = pd.read_csv(filename)
@@ -296,7 +361,7 @@ def add_user_specified_data_sources(
 
         logging.info(f"Image features data successfully joined; resulting shape: {joined_df.shape}.")
     
-    elif join_conv2d_datasource:
+    elif join_conv2d_features:
         filename = f'FEATURE_{station_id}_CONV2D.csv'
         logging.info(f"Loading image features {filename}...")
         df_new = pd.read_csv(filename)
@@ -318,7 +383,7 @@ def add_user_specified_data_sources(
 
         logging.info(f"Image features data successfully joined; resulting shape: {joined_df.shape}.")
 
-    elif join_autoencoder_datasource:
+    elif join_autoencoder_features:
         filename = f'FEATURE_{station_id}_AUTOENCODER.csv'
         logging.info(f"Loading image features {filename}...")
         df_new = pd.read_csv(filename)
@@ -348,100 +413,136 @@ def build_datasets(station_id: str,
                    input_folder: str,
                    train_start_threshold: datetime.datetime,
                    train_test_threshold: datetime.datetime,
-                   join_AS_data_source: bool, 
-                   join_reanalisys_datasource: bool, 
-                   join_goes16_glm_datasource: bool, 
-                   join_goes16_tpw_datasource: bool,
-                   join_colorcord_datasource: bool,
-                   join_conv2d_datasource: bool,
-                   join_autoencoder_datasource: bool,
+                   test_end_threshold: datetime.datetime,
+                   fusion_sources: List[str],
+                #    join_AS_data_source: bool, 
+                #    join_reanalisys_datasource: bool, 
+                #    join_goes16_glm_datasource: bool, 
+                #    join_goes16_tpw_datasource: bool,
+                #    join_colorcord_datasource: bool,
+                #    join_conv2d_datasource: bool,
+                #    join_autoencoder_datasource: bool,
                    subsampling_procedure: str):
     '''
-    This function joins a set of datasources to build datasets. These resulting datasets are used to fit the 
-    parameters of precipitation models down the AtmoSeer pipeline. Each datasource contributes with a group 
-    of features to build the datasets that are going to be used for training and validating the prediction models.
-    
-    Notice that, when joining the user-specified data sources, there is always a station of interest, that is, 
-    a weather station that will provide the values of the target variable (in our case, precipitation). 
-    It can even be the case that the only user-specified data source is this weather station. 
+    This function builds the train, validation and test datasets. These resulting datasets will used to fit the parameters
+    of precipitation models down the AtmoSeer pipeline. Notice that there is always a Weather Station of Interest (WSoI), 
+    that is, a weather station that will provide the values of the target variable (in our case, precipitation) and 
+    also some features (predictors).
+
+    This function can *optionally* use a set of extra data sources to build the datasets. Each data source contributes 
+    with a group of additional features. Notice that these extra data sources are not mandatory. Indeed, it can be the
+    case that the only features used are the ones extracted from the WSoI. 
     '''
 
     pipeline_id = station_id
-    if join_reanalisys_datasource:
-        pipeline_id = pipeline_id + '_N'
-    if join_AS_data_source:
-        pipeline_id = pipeline_id + '_R'
-    if join_goes16_glm_datasource:
-        pipeline_id = pipeline_id + '_L'
-    if join_goes16_tpw_datasource:
-        pipeline_id = pipeline_id + '_T'
-    if join_colorcord_datasource:
-        pipeline_id = pipeline_id + '_I'
-    if join_conv2d_datasource:
-        pipeline_id = pipeline_id + '_C'
-    if join_autoencoder_datasource:
-        pipeline_id = pipeline_id + '_A'
+    if fusion_sources is not None:
+        if 'ERA5' in fusion_sources:
+            pipeline_id = pipeline_id + '_ERA5'
+        if 'R' in fusion_sources:
+            pipeline_id = pipeline_id + '_R'
+        if 'L' in fusion_sources:
+            pipeline_id = pipeline_id + '_L'
+        if 'DSI' in fusion_sources:
+            pipeline_id = pipeline_id + '_DSI'
+        if 'TPW' in fusion_sources:
+            pipeline_id = pipeline_id + '_TPW'
+        if 'I' in fusion_sources:
+            pipeline_id = pipeline_id + '_I'
+        if 'C' in fusion_sources:
+            pipeline_id = pipeline_id + '_C'
+        if 'A' in fusion_sources:
+            pipeline_id = pipeline_id + '_A'
+    # if join_reanalisys_datasource:
+    #     pipeline_id = pipeline_id + '_N'
+    # if join_AS_data_source:
+    #     pipeline_id = pipeline_id + '_R'
+    # if join_goes16_glm_datasource:
+    #     pipeline_id = pipeline_id + '_L'
+    # if join_goes16_tpw_datasource:
+    #     pipeline_id = pipeline_id + '_T'
+    # if join_colorcord_datasource:
+    #     pipeline_id = pipeline_id + '_I'
+    # if join_conv2d_datasource:
+    #     pipeline_id = pipeline_id + '_C'
+    # if join_autoencoder_datasource:
+    #     pipeline_id = pipeline_id + '_A'
 
     logging.info(f"Loading observations for weather station {station_id}...")
-    df_ws = pd.read_parquet(input_folder + station_id + "_preprocessed.parquet.gzip")
-    logging.info(f"Done! Shape = {df_ws.shape}.\n")
+    df_wsoi = pd.read_parquet(input_folder + station_id + "_preprocessed.parquet.gzip")
+    logging.info(f"Done! Shape = {df_wsoi.shape}.\n")
 
     ####
-    # Apply a filtering step, with the purpose of disregarding all observations 
-    # before a user-specified timestamp. This is useful when doing training 
-    # experiments with datasources whose start of operation was AFTER the one 
-    # corresponding to the WSoI.
+    # Apply a filtering step to disregard all observations before a user-specified timestamp. 
+    # This is useful when doing training experiments with datasources whose start of operation 
+    # was AFTER the one corresponding to the WSoI.
     ####
     if train_start_threshold is not None:
         logging.info(f"Applying start threshold filtering...")
         logging.info(f'Timestamp from which examples will be considered: {train_start_threshold}')
-        shape_before_month_filtering = df_ws.shape
-        df_ws = df_ws[df_ws.index >= train_start_threshold]
-        shape_after_month_filtering = df_ws.shape
-        logging.info(f"Done! Shapes before/after: {shape_before_month_filtering}/{shape_after_month_filtering}\n")
+        shape_before_filtering = df_wsoi.shape
+        df_wsoi = df_wsoi[df_wsoi.index >= train_start_threshold]
+        shape_after_filtering = df_wsoi.shape
+        logging.info(f"Done! Shapes before/after: {shape_before_filtering}/{shape_after_filtering}\n")
+
+    ####
+    # Apply a filtering step to disregard all observations after a user-specified timestamp.
+    ####
+    if test_end_threshold is not None:
+        logging.info(f"Applying end threshold filtering...")
+        logging.info(f'Timestamp up until which examples will be considered: {test_end_threshold}')
+        shape_before_filtering = df_wsoi.shape
+        df_wsoi = df_wsoi[df_wsoi.index <= test_end_threshold]
+        shape_after_filtering = df_wsoi.shape
+        logging.info(f"Done! Shapes before/after: {shape_before_filtering}/{shape_after_filtering}\n")
 
     ####
     # Apply a filtering step, with the purpose of disregarding all observations made between  
     # what we consider to be the drought period of a year (months of June, July, and August).
     ####
-    logging.info(f"Applying month filtering...")
-    shape_before_month_filtering = df_ws.shape
-    df_ws = df_ws[df_ws.index.month.isin([9, 10, 11, 12, 1, 2, 3, 4, 5])].sort_index(ascending=True)
-    shape_after_month_filtering = df_ws.shape
-    logging.info(f"Done! Shapes before/after: {shape_before_month_filtering}/{shape_after_month_filtering}\n")
+    # TODO: parameterize with user-defined months.
+    logging.info(f'Applying month filtering...')
+    shape_before_month_filtering = df_wsoi.shape
+    df_wsoi = df_wsoi[df_wsoi.index.month.isin([9, 10, 11, 12, 1, 2, 3, 4, 5])].sort_index(ascending=True)
+    shape_after_month_filtering = df_wsoi.shape
+    logging.info(f'Done! Shapes before/after: {shape_before_month_filtering}/{shape_after_month_filtering}\n')
 
-    assert (not df_ws.isnull().values.any().any())
+    assert (not df_wsoi.isnull().values.any().any())
 
     #####
     # Start with the mandatory data source (i.e., the one represented by the weather 
     # station of interest) and sequentially join the other user-specified datasources.
     #####
-    joined_df = df_ws
-    min_datetime = min(joined_df.index)
-    max_datetime = max(joined_df.index)
+    joined_df = df_wsoi
+    min_timestamp = min(joined_df.index)
+    max_timestamp = max(joined_df.index)
+    logging.info(f'Range of timestamps after applying temporal filtering: ({min_timestamp}, {max_timestamp})\n')
 
     #####
-    # Now add user-specified data sources.
+    # Now add features from the user-specified data sources, if any.
     #####
-    logging.info(f'Going to add features from the user-specified datasources...')
-    joined_df = add_user_specified_data_sources(
-        station_id, 
-        join_AS_data_source, 
-        join_reanalisys_datasource, 
-        join_goes16_glm_datasource, 
-        join_goes16_tpw_datasource,
-        join_colorcord_datasource,
-        join_conv2d_datasource,
-        join_autoencoder_datasource,     
-        df_ws, 
-        min_datetime, 
-        max_datetime)
-    logging.info(f'Done!\n')
+    if fusion_sources is not None:
+        logging.info(f'Going to add features from the user-specified data sources (if any)...')
+        joined_df = add_features_from_user_specified_data_sources(
+            station_id, 
+            fusion_sources,
+            # join_AS_data_source, 
+            # join_reanalisys_datasource, 
+            # join_goes16_glm_datasource, 
+            # join_goes16_tpw_datasource,
+            # join_colorcord_datasource,
+            # join_conv2d_datasource,
+            # join_autoencoder_datasource,     
+            df_wsoi, 
+            min_timestamp, 
+            max_timestamp)
+        min_timestamp = min(joined_df.index)
+        max_timestamp = max(joined_df.index)
+        logging.info(f'Done! New range of timestamps: ({min_timestamp}, {max_timestamp})\n')
 
     #
-    # Save train/val/test DataFrames for future error analisys.
+    # Save train/val/test dataFrames for future error analisys.
     filename = globals.DATASETS_DIR + pipeline_id + '.parquet.gzip'
-    logging.info(f'Saving joined dataset for pipeline {pipeline_id} to file {filename}.')
+    logging.info(f'Saving joined dataframe for pipeline {pipeline_id} to file {filename}.')
     joined_df.to_parquet(filename, compression='gzip')
     logging.info(f'Done!\n')
 
@@ -454,10 +555,10 @@ def build_datasets(station_id: str,
     logging.info(f'Timestamp used to split train and test examples: {train_test_threshold}')
     df_train_val, df_test = split_dataframe_by_date(joined_df, train_test_threshold)
 
-    # TODO: parameterize with user-defined train/val splitting proportions.
+    # TODO: parameterize with user-defined train/val splitting proportion.
     n = len(df_train_val)
-    train_val_split = 0.8
-    train_upper_limit = int(n*train_val_split)
+    train_val_splitting_proportion = 0.8
+    train_upper_limit = int(n*train_val_splitting_proportion)
     df_train = df_train_val[0:train_upper_limit]
     df_val = df_train_val[train_upper_limit:]
 
@@ -472,7 +573,7 @@ def build_datasets(station_id: str,
     logging.info(f'Done!\n')
 
     #
-    # Save train/val/test DataFrames for future error analisys.
+    # Save train/val/test observations for future error analisys.
     logging.info(f'Saving each train/val/test dataset for pipeline {pipeline_id} as a parquet file.')
     df_train.to_parquet(globals.DATASETS_DIR + pipeline_id + '_train.parquet.gzip', compression='gzip')
     df_val.to_parquet(globals.DATASETS_DIR + pipeline_id + '_val.parquet.gzip', compression='gzip')
@@ -532,9 +633,9 @@ def build_datasets(station_id: str,
     assert not np.isnan(np.sum(y_test))
 
     #
-    # Now, we restore the target variable to their original values. This is needed in case a multiclass
+    # Now, we restore the target variable to its original values. This is needed in case a multiclass
     # classification task is defined down the pipeline.
-    logging.info('Restoring the target variable to their original values...')
+    logging.info('Restoring the target variable to its original values...')
     y_train = (y_train + min_target_value_in_train) * (max_target_value_in_train - min_target_value_in_train)
     y_val = (y_val + min_target_value_in_val) * (max_target_value_in_val - min_target_value_in_val)
     y_test = (y_test + min_target_value_in_test) * (max_target_value_in_test - min_target_value_in_test)
@@ -582,14 +683,24 @@ def main(argv):
         description="""This script builds the train/val/test datasets for a given weather station, by using the user-specified data sources.""")
     parser.add_argument('-s', '--station_id', type=str, required=True, help='station id')
     parser.add_argument('-tt', '--train_test_threshold', type=str, required=True, help='The limiting date between train and test examples (format: YYYY-MM-DD).')
-    parser.add_argument('-ts', '--train_start_threshold', type=str, required=False, help='The limiting date from which to consider examples (format: YYYY-MM-DD).')
-    parser.add_argument('-d', '--datasources', type=str, help='data source spec')
+    parser.add_argument('-b', '--train_start_threshold', type=str, required=False, help='The lower limiting date from which to consider examples (format: YYYY-MM-DD).')
+    parser.add_argument('-e', '--test_end_threshold', type=str, required=False, help='The upper limiting date from which to consider examples (format: YYYY-MM-DD).')
+    parser.add_argument('-d', '--datasources', nargs='+', type=str, help='List of data sources to fuse with')
     parser.add_argument('-sp', '--subsampling_procedure', type=str, default='NONE', help='Subsampling procedure do be applied.')
     args = parser.parse_args(argv[1:])
 
     station_id = args.station_id
-    datasources = args.datasources
+    fusion_sources = args.datasources
     subsampling_procedure = args.subsampling_procedure
+
+    try:
+        train_start_threshold = args.train_start_threshold
+        if  train_start_threshold is not None:
+            train_start_threshold = pd.to_datetime(args.train_start_threshold)
+    except pd.errors.ParserError:
+        print(f"Invalid date format: {args.train_start_threshold}.")
+        parser.print_help()
+        sys.exit(2)
 
     try:
         if (station_id in globals.ALERTARIO_WEATHER_STATION_IDS or station_id in globals.ALERTARIO_GAUGE_STATION_IDS):
@@ -602,13 +713,15 @@ def main(argv):
         sys.exit(2)
 
     try:
-        train_start_threshold = args.train_start_threshold
-        if  train_start_threshold is not None:
-            train_start_threshold = pd.to_datetime(args.train_start_threshold)
+        test_end_threshold = args.test_end_threshold
+        if  test_end_threshold is not None:
+            test_end_threshold = pd.to_datetime(args.test_end_threshold)
     except pd.errors.ParserError:
         print(f"Invalid date format: {args.train_start_threshold}.")
         parser.print_help()
         sys.exit(2)
+
+    assert((train_start_threshold <= train_test_threshold) and (train_test_threshold <= test_end_threshold))
 
     lst_subsampling_procedures = ["NONE", "NAIVE", "NEGATIVE"]
     if not (subsampling_procedure in lst_subsampling_procedures):
@@ -632,29 +745,33 @@ def main(argv):
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
     logging.basicConfig(level=logging.DEBUG, format = fmt)
 
-    join_goes16_tpw_data_source = False
-    join_as_data_source = False
-    join_nwp_data_source = False
-    join_lightning_data_source = False
-    join_colorcord_data_source = False
-    join_conv2d_data_source = False
-    join_autoencoder_data_source = False
+    # join_goes16_tpw_data_source = False
+    # join_goes16_dsi_data_source = False
+    # join_as_data_source = False
+    # join_nwp_data_source = False
+    # join_lightning_data_source = False
+    # join_colorcord_data_source = False
+    # join_conv2d_data_source = False
+    # join_autoencoder_data_source = False
 
-    if datasources:
-        if 'R' in datasources:
-            join_as_data_source = True
-        if 'N' in datasources:
-            join_nwp_data_source = True
-        if 'L' in datasources:
-            join_lightning_data_source = True
-        if 'T' in datasources:
-            join_goes16_tpw_data_source = True
-        if "I" in datasources:
-            join_colorcord_data_source = True
-        if "C" in datasources:
-            join_conv2d_data_source = True
-        if "A" in datasources:
-            join_autoencoder_data_source = True
+    # fusion_list = list()
+    # if datasources:
+    #     if 'R' in datasources:
+    #         join_as_data_source = True
+    #     if 'ERA5' in datasources:
+    #         join_nwp_data_source = True
+    #     if 'L' in datasources:
+    #         join_lightning_data_source = True
+    #     if 'TPW' in datasources:
+    #         join_goes16_tpw_data_source = True
+    #     if 'DSI' in datasources:
+    #         join_goes16_dsi_data_source = True
+    #     if "I" in datasources:
+    #         join_colorcord_data_source = True
+    #     if "C" in datasources:
+    #         join_conv2d_data_source = True
+    #     if "A" in datasources:
+    #         join_autoencoder_data_source = True
 
     assert(station_id is not None) and (station_id != "")
 
@@ -662,13 +779,15 @@ def main(argv):
                    input_folder,
                    train_start_threshold,
                    train_test_threshold,
-                   join_as_data_source, 
-                   join_nwp_data_source, 
-                   join_lightning_data_source, 
-                   join_goes16_tpw_data_source,
-                   join_colorcord_data_source,
-                   join_conv2d_data_source,
-                   join_autoencoder_data_source,
+                   test_end_threshold,
+                   fusion_sources,
+                #    join_as_data_source, 
+                #    join_nwp_data_source, 
+                #    join_lightning_data_source, 
+                #    join_goes16_tpw_data_source,
+                #    join_colorcord_data_source,
+                #    join_conv2d_data_source,
+                #    join_autoencoder_data_source,
                    subsampling_procedure)
 
 if __name__ == "__main__":

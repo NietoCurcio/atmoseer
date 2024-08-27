@@ -104,10 +104,11 @@ python src/retrieve_ws_inmet.py -s A627 -b 2018 -e 2023 --api_token <token>
 python src/retrieve_ws_inmet.py -s A636 -b 2017 -e 2023 --api_token <token>
 
 ==========================================
-=== retrieve_as
+=== retrieve_data
 ==========================================
-python src/retrieve_as.py --station_id SBGL --start_year 2023 --end_year 2023 
-python src/gen_sounding_indices.py --input_file ./data/as/SBGL_1997_2023.parquet.gzip --output_file ./data/as/SBGL_indices_1997_2023.parquet.gzip
+python src/sounding_retrieve_data.py --station_id SBGL --start_year 2023 --end_year 2023 
+python src/sounding_gen_indices.py --input_file ./data/as/SBGL_1997_2023.parquet.gzip --output_file ./data/as/SBGL_indices_1997_2023.parquet.gzip
+python src/sounding_gen_indices.py --input_file ./data/as/SBGL_2023_2024.parquet.gzip --output_file ./data/as/SBGL_indices_2023_2024.parquet.gzip
 
 ==========================================
 === retrieve_ERA5
@@ -146,50 +147,109 @@ python src/train_model.py -p A652_A621_A636_A627 -t ORDINAL_CLASSIFICATION
 
 python src/train_model.py -p sao_cristovao_tijuca_tijuca_muda_saude_grajau -t ORDINAL_CLASSIFICATION > sao_cristovao_tijuca_tijuca_muda_saude_grajau.txt
 
+MONAN Meeting 2024
+==================
 
-LAFUSION 2023
-===========
+1)
+python src/retrieve_ws_inmet.py -s A601 -b 2019 -e 2024 --api_token <token>
+python src/retrieve_ws_inmet.py -s A602 -b 2007 -e 2024 --api_token <token>
+python src/retrieve_ws_inmet.py -s A621 -b 2007 -e 2024 --api_token <token>
+python src/retrieve_ws_inmet.py -s A627 -b 2018 -e 2024 --api_token <token>
+python src/retrieve_ws_inmet.py -s A636 -b 2017 -e 2024 --api_token <token>
+python src/retrieve_ws_inmet.py -s A652 -b 2007 -e 2024 --api_token <token>
 
-python src/retrieve_goes16_tpwf.py --date_ini "2019-12-01" --date_ini "2019-12-31"
-python src/retrieve_goes16_tpwf.py --date_ini "2020-01-01" --date_ini "2020-05-31"
-python src/retrieve_goes16_tpwf.py --date_ini "2020-09-01" --date_ini "2020-12-31"
-python src/retrieve_goes16_tpwf.py --date_ini "2021-01-01" --date_ini "2021-05-31"
-python src/retrieve_goes16_tpwf.py --date_ini "2021-09-01" --date_ini "2021-12-31"
-python src/retrieve_goes16_tpwf.py --date_ini "2021-09-01" --date_ini "2021-09-30"
-python src/retrieve_goes16_tpwf.py --date_ini "2021-10-01" --date_ini "2021-10-31"
-python src/retrieve_goes16_tpwf.py --date_ini "2021-11-01" --date_ini "2021-11-30"
-python src/retrieve_goes16_tpwf.py --date_ini "2021-12-01" --date_ini "2021-12-31"
-python src/retrieve_goes16_tpwf.py --date_ini "2022-01-01" --date_ini "2022-05-31"
-python src/retrieve_goes16_tpwf.py --date_ini "2022-09-01" --date_ini "2022-12-31"
-python src/retrieve_goes16_tpwf.py --date_ini "2023-01-01" --date_ini "2023-05-31"
-python src/retrieve_goes16_tpwf.py --date_ini "2023-06-01" --date_end "2023-12-31"
+2)
+python src/retrieve_goes16_product_for_extent.py --date_ini "2019-12-05" --date_end "2024-06-15" --prod ABI-L2-DSIF --vars CAPE LI TT SI KI
 
-python src/gen_tpw_datasets_per_wsois.py
-
-python src/retrieve_ws_inmet.py -s A602 -b 2007 -e 2023 --api_token <token>
-python src/retrieve_ws_inmet.py -s A621 -b 2007 -e 2023 --api_token <token>
-python src/retrieve_ws_inmet.py -s A627 -b 2018 -e 2023 --api_token <token>
-python src/retrieve_ws_inmet.py -s A636 -b 2017 -e 2023 --api_token <token>
-python src/retrieve_ws_inmet.py -s A652 -b 2007 -e 2023 --api_token <token>
-
+3)
+python src/preprocess_ws.py -s A601 > preprocess_A601.out
 python src/preprocess_ws.py -s A602 > preprocess_A602.out
 python src/preprocess_ws.py -s A621 > preprocess_A621.out
 python src/preprocess_ws.py -s A627 > preprocess_A627.out
 python src/preprocess_ws.py -s A636 > preprocess_A636.out
 python src/preprocess_ws.py -s A652 > preprocess_A652.out
 
-python src/build_datasets.py -s A636 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
-python src/build_datasets.py -s A621 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+4)
+python src/gen_dsi_dataframes.py
+
+5)
+python src/aggregate_through_time.py --input_file ./data/goes16/DSI/DSI_CAPE.parquet --output_file ./data/goes16/DSI/DSI_CAPE_1H.parquet
+python src/aggregate_through_time.py --input_file ./data/goes16/DSI/DSI_LI.parquet --output_file ./data/goes16/DSI/DSI_LI_1H.parquet
+python src/aggregate_through_time.py --input_file ./data/goes16/DSI/DSI_TT.parquet --output_file ./data/goes16/DSI/DSI_TT_1H.parquet
+python src/aggregate_through_time.py --input_file ./data/goes16/DSI/DSI_SI.parquet --output_file ./data/goes16/DSI/DSI_SI_1H.parquet
+python src/aggregate_through_time.py --input_file ./data/goes16/DSI/DSI_KI.parquet --output_file ./data/goes16/DSI/DSI_KI_1H.parquet
+
+6)
+python src/build_datasets.py -s A601 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A602 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A621 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A627 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A636 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A652 --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+
+python src/build_datasets.py -s A601 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A602 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A621 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A627 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A636 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+python src/build_datasets.py -s A652 -d DSI --train_test_threshold "2022-05-31" --train_start_threshold "2019-12-05"
+
+6a)
+python src/build_datasets.py -s A601 --train_start_threshold "2019-12-06" --train_test_threshold "2022-05-31"  --test_end_threshold "2024-06-15"
+python src/build_datasets.py -s A601 --train_start_threshold "2019-12-06" --train_test_threshold "2022-05-31"  --test_end_threshold "2024-06-15" -d DSI
+
+
+
+
+LAFUSION 2023
+=============
+
+1)
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2019-12-01" --date_end "2019-12-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2020-01-01" --date_end "2020-05-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2020-09-01" --date_end "2020-12-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-01-01" --date_end "2021-05-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-09-01" --date_end "2021-12-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-09-01" --date_end "2021-09-30" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-10-01" --date_end "2021-10-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-11-01" --date_end "2021-11-30" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2021-12-01" --date_end "2021-12-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2022-01-01" --date_end "2022-05-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2022-09-01" --date_end "2022-12-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2023-01-01" --date_end "2023-05-31" --prod ABI-L2-TPWF --vars TPW
+python src/retrieve_goes16_product_for_wsois.py --date_ini "2023-06-01" --date_end "2023-12-31" --prod ABI-L2-TPWF --vars TPW
+
+2)
+python src/fuse_goes16_tpw_data_with_wsois.py
+
+3)
+python src/retrieve_ws_inmet.py -s A602 -b 2007 -e 2023 --api_token <token>
+python src/retrieve_ws_inmet.py -s A621 -b 2007 -e 2023 --api_token <token>
+python src/retrieve_ws_inmet.py -s A627 -b 2018 -e 2023 --api_token <token>
+python src/retrieve_ws_inmet.py -s A636 -b 2017 -e 2023 --api_token <token>
+python src/retrieve_ws_inmet.py -s A652 -b 2007 -e 2023 --api_token <token>
+
+4)
+python src/preprocess_ws.py -s A602 > preprocess_A602.out
+python src/preprocess_ws.py -s A621 > preprocess_A621.out
+python src/preprocess_ws.py -s A627 > preprocess_A627.out
+python src/preprocess_ws.py -s A636 > preprocess_A636.out
+python src/preprocess_ws.py -s A652 > preprocess_A652.out
+
+5)
 python src/build_datasets.py -s A602 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
-python src/build_datasets.py -s A652 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A621 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
 python src/build_datasets.py -s A627 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A636 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A652 --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
 
-python src/build_datasets.py -s A602 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
-python src/build_datasets.py -s A621 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
-python src/build_datasets.py -s A627 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
-python src/build_datasets.py -s A636 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
-python src/build_datasets.py -s A652 -d T --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A602 -d TPW --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A621 -d TPW --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A627 -d TPW --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A636 -d TPW --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
+python src/build_datasets.py -s A652 -d TPW --train_test_threshold "2021-11-30" --train_start_threshold "2019-12-04"
 
+6)
 python src/train_model.py -p A602_T -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A602_T_LstmNeuralNet.out
 python src/train_model.py -p A621_T -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A621_T_LstmNeuralNet.out
 python src/train_model.py -p A627_T -t BINARY_CLASSIFICATION > ./data/goes16/tpw/out_files/train_model_A627_T_LstmNeuralNet.out

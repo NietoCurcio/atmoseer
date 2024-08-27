@@ -14,7 +14,10 @@ NWP_DATA_DIR = "./data/NWP/"
 # Atmospheric sounding datasource directory
 AS_DATA_DIR = "./data/as/"
 
-# TPW GOES16 datasource directory
+#GOES16/DSI directory
+DSI_DATA_DIR = "./data/goes16/DSI"
+
+# GOES16/TPW directory
 TPW_DATA_DIR = "./data/goes16/wsoi"
 
 # Directory to store the train/val/test datasets for each weather station of interest
@@ -25,11 +28,12 @@ MODELS_DIR = './models/'
 
 # see https://portal.inmet.gov.br/paginas/catalogoaut
 INMET_WEATHER_STATION_IDS = (
-    'A636', # Jacarepagua
-    'A621', # Vila militar
+    'A601', # Seropédica
     'A602', # Marambaia
-    'A652', # Forte de Copacabana
-    'A627'  # Niteroi
+    'A621', # Vila militar
+    'A627', # Niteroi
+    'A636', # Jacarepagua
+    'A652'  # Forte de Copacabana
 )
 
 ALERTARIO_GAUGE_STATION_IDS = (

@@ -11,7 +11,41 @@ import logging
 
 import pandas as pd
 
-import pandas as pd
+import os
+
+def split_filename(full_filename):
+    """
+    Splits a full filename into its directory path, base name, and file extension.
+    
+    Parameters:
+    full_filename (str): The full path of the file, including directory, base name, and extension.
+    
+    Returns:
+    tuple: A tuple containing:
+        - dir_path (str): The directory path.
+        - base_name (str): The base name of the file without the extension.
+        - file_ext (str): The file extension.
+    
+    Examples:
+    >>> split_filename('/home/user/docs/report.pdf')
+    ('/home/user/docs', 'report', '.pdf')
+    
+    >>> split_filename('C:\\Users\\user\\Desktop\\image.png')
+    ('C:\\Users\\user\\Desktop', 'image', '.png')
+    
+    >>> split_filename('archive.tar.gz')
+    ('', 'archive.tar', '.gz')
+    
+    >>> split_filename('README')
+    ('', 'README', '')
+    """
+    # Extract the directory path and the filename with extension
+    dir_path, filename_with_ext = os.path.split(full_filename)
+    
+    # Extract the base name and the extension
+    base_name, file_ext = os.path.splitext(filename_with_ext)
+    
+    return (dir_path, base_name, file_ext)
 
 def add_missing_indicator_column(df: pd.DataFrame, indicator_col_name: str):
     """

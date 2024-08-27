@@ -1,4 +1,15 @@
-# -----------------------------------------------------------------------------------------------------------
+'''
+Retrieve GOES16 Data Script
+ Command line inputs:
+    -p: Product Name
+    -di: Initial date
+    -df: Final date
+    -l: Extent (Min lon, Min lat, Max lon, Max lat)
+
+  Example:
+    python src/retrieve_goes16_data.py -p ABI-L2-DSIF -di 20200201 -df 20200201 -l -74.0 34.1 -34.8 5.5
+'''
+
 # Required modules
 
 from datetime import timedelta, datetime  # Basic Dates and time types
@@ -6,13 +17,14 @@ import os
 import sys
 import argparse
 import boto3  # type: ignore
-from botocore import UNSIGNED            # type: ignore # boto3 config
+from botocore import UNSIGNED  # type: ignore # boto3 config
 from botocore.config import Config  # type: ignore
 from osgeo import gdal                          # Python bindings for GDAL
 # from goes16_utils import reproject
 from netCDF4 import Dataset  # type: ignore
 import math
 import pickle
+
 gdal.PushErrorHandler('CPLQuietErrorHandler')   # Ignore GDAL warnings
 
 
@@ -87,7 +99,6 @@ def geo2grid(lat, lon, nc):
     # Apply scale and offset
     xscale, xoffset = nc.variables['x'].scale_factor, nc.variables['x'].add_offset
     yscale, yoffset = nc.variables['y'].scale_factor, nc.variables['y'].add_offset
-
     x, y = latlon2xy(lat, lon)
     col = (x - xoffset)/xscale
     lin = (y - yoffset)/yscale
@@ -98,7 +109,7 @@ def latlon2xy(lat, lon):
     # goes_imagery_projection:semi_major_axis
     req = 6378137  # meters
     #  goes_imagery_projection:inverse_flattening
-    invf = 298.257222096
+    # invf = 298.257222096
     # goes_imagery_projection:semi_minor_axis
     rpol = 6356752.31414  # meters
     e = 0.0818191910435
@@ -129,7 +140,7 @@ def latlon2xy(lat, lon):
     return x, y
 
 
-def obtain_index_values(path, file_name, date):
+def obtain_index_values(path, file_name, date, extent):
 
     file = Dataset(path + file_name)
 
@@ -139,6 +150,7 @@ def obtain_index_values(path, file_name, date):
     lly, llx = geo2grid(extent[1], extent[0], file)
     ury, urx = geo2grid(extent[3], extent[2], file)
 
+    print(lly, llx, ury, urx)
     dict_indices = {}
     for instability_index_name in ['CAPE', 'LI', 'TT', 'SI', 'KI']:
         # Get the pixel values
@@ -158,7 +170,6 @@ def obtain_index_values(path, file_name, date):
     # close the file
     pkl_file.close()
 
-
 def main(argv):
     # ---------------------------------------------------------------------------------------------------------------
     # Command line argument section
@@ -166,16 +177,16 @@ def main(argv):
                                      description="""This script provides a simple interface for retrieve the partial
                                      or complete temporal series of a GOES16 Product.""")
     parser.add_argument("-p", "--product_name", required=True, help="product name", metavar='')
-    # parser.add_argument("-i", "--index_name", required=False, help="index name", metavar='')
     parser.add_argument('-di', "--initial_date", help='Initial date to retrieve data', required=False)
     parser.add_argument('-df', "--final_date", help='Final date to retrieve data', required=False)
-    # parser.add_argument('-l', "--latlonlist", nargs='+', help='<Required> Set min and max latitude and longitude',
-    #                   required=True)
+    parser.add_argument('-l', "--latlonlist", nargs='+', help='<Required> Set min and max latitude and' +
+                        'longitude values', required=True)
     args = parser.parse_args(argv[1:])
 
     product_name = args.product_name
     initial_date = args.initial_date
     final_date = args.final_date
+    extent = [float(x) for x in args.latlonlist]
 
     minutes = [0, 10, 20, 30, 40, 50]
     years = get_sub_folder_list(product_name + "/")
@@ -193,21 +204,19 @@ def main(argv):
                     current_date_string = datetime.strptime(str(yyyy_mm_dd), '%Y-%m-%d %H:%M:%S').strftime('%Y%m%d%H%M')
 
                     if not os.path.exists(data_dir + current_date_string + '.pkl'):
-                        full_disk_downloaded = download_full_disk(product_name, year, day_of_year, hour, minute, data_dir)
+                        full_disk_downloaded = download_full_disk(product_name, year, day_of_year,
+                                                                  hour, minute, data_dir)
 
                         if full_disk_downloaded is not None:
                             print("Retrieving data for " + str(yyyy_mm_dd))
                             current_date_string = datetime.strptime(str(yyyy_mm_dd), '%Y-%m-%d %H:%M:%S').strftime('%Y%m%d%H%M')
 
-                            obtain_index_values(data_dir, full_disk_downloaded + '.nc', current_date_string)
+                            obtain_index_values(data_dir, full_disk_downloaded + '.nc', current_date_string, extent)
                             os.remove(data_dir + "/" + full_disk_downloaded + '.nc')
 
 
 if __name__ == "__main__":
-    data_dir = "./data/goes16/temp/"
-    output = "./data/goes16/Animation"
-    # product_name = 'ABI-L2-DSIF'
+    data_dir = "./data/goes16/dsif/"
     bucket_name = 'noaa-goes16'
-    extent = [-74.0, -34.1, -34.8, 5.5]
     s3_client = boto3.client('s3', config=Config(signature_version=UNSIGNED))
     main(sys.argv)

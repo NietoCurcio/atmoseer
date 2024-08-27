@@ -47,3 +47,7 @@ These scripts will build the train, validation and test dataset from the times s
 
 The model generation script is responsible for performing the training and exporting the results obtained by the model after testing. 
 # r2t
+
+## Notebooks
+
+There are several Jupyter Notebooks in the notebooks directory. They were used for initial experiments and explorarory data analisys. These notebooks are not guaranteed to run 100% correctly due to the subsequent code refactor.
