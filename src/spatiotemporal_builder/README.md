@@ -8,6 +8,8 @@ This package build the dataset illustrated in the image below. Currently only in
 
 2- Place the WebSirenes coordinates in the `atmoseer/src/spatiotemporal_builder/websirenes_coords.parquet` folder. In this folder should exist a `websirenes_coords.parquet` file with the stations' coordinates.
 
+3- Place the ERA5Land reanalysis data in the `atmoseer/data/reanalysis/ERA5Land` folder. In this folder should exist a `monthly_data` folder with a list of `RJ_YEAR_MONTH.nc` files with the reanalysis data.
+
 Usage for production (integreates Websirenes spatiotemporal data from `2011-04-12 20:30:00` to `2022-06-02 21:30:00`):
 ```sh
 python -m src.spatiotemporal_builder.main
