@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -12,6 +13,8 @@ from .Logger import TqdmLogger, logger
 from .WebsirenesTarget import WebsirenesTarget, websirenes_target
 
 log = logger.get_logger(__name__)
+
+os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
 
 class WebsirenesDataset:
