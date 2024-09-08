@@ -83,6 +83,14 @@ classDiagram
         -_get_relative_humidity()
     }
 
+    class WebsirenesDataset {
+        +build_netcdf()
+        -_process_timestamp()
+        -_get_dataset_with_timesteps()
+        -_has_timesteps()
+        -_process_timestamps_in_target()
+    }
+
     WebSirenesKeys --> WebSirenesParser
     WebSirenesKeys --> WebSirenesCoords
 
@@ -90,7 +98,11 @@ classDiagram
 
     WebSirenesTarget --> WebSirenesParser: minimum_date, maximum_date
     WebSirenesTarget --> WebSirenesSquare
+
+    WebsirenesDataset --> WebSirenesTarget
 ```
+
+TODO, improve the text and add WebsirenesDataset text
 
 The `WebSirenesParser` class is responsible for ETL, by reading the WebSirenes dataset in the `websirenes_defesa_civil` folder and extracting the features from the `.txt` files, it returns the data as a pandas Dataframe, the main function of this class is `get_dataframe`.
 
