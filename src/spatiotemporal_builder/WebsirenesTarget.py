@@ -168,17 +168,17 @@ class WebsirenesTarget:
         end_date: Optional[pd.Timestamp],
         use_cache: bool = True,
     ):
-        minimum_date = self.websirenes_parser.minimum_date if start_date is None else start_date
-        maximum_date = self.websirenes_parser.maximum_date if end_date is None else end_date
-
-        assert minimum_date != pd.Timestamp.max, "minimum_date should be set during keys building"
-        assert maximum_date != pd.Timestamp.min, "maximum_date should be set during keys building"
-
         if use_cache and len(list(self.websirenes_target_path.glob("*.npy"))) > 0:
             log.warning(
                 f"Using cached target. To clear cache delete the {self.websirenes_target_path} folder"
             )
             return
+
+        minimum_date = self.websirenes_parser.minimum_date if start_date is None else start_date
+        maximum_date = self.websirenes_parser.maximum_date if end_date is None else end_date
+
+        assert minimum_date != pd.Timestamp.max, "minimum_date should be set during keys building"
+        assert maximum_date != pd.Timestamp.min, "maximum_date should be set during keys building"
 
         timestamps = pd.date_range(start=minimum_date, end=maximum_date, freq="h")
 

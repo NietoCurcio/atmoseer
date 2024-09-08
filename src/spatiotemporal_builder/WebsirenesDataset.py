@@ -6,8 +6,9 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import xarray as xr
+from tqdm import tqdm
 
-from .Logger import logger
+from .Logger import TqdmLogger, logger
 from .WebsirenesTarget import WebsirenesTarget, websirenes_target
 
 log = logger.get_logger(__name__)
@@ -95,10 +96,10 @@ class WebsirenesDataset:
         if not self._has_timesteps(year_y, month_y, day_y, hour_y, self.TIMESTEPS):
             return None, None
 
-        log.debug(f"Loading data_x for {year:02}-{month:02}-{day:02} {hour}:00")
+        # log.debug(f"Loading data_x for {year:02}-{month:02}-{day:02} {hour}:00")
         data_x = self._get_dataset_with_timesteps(year, month, day, hour)
 
-        log.debug(f"Loading data_y for {year:02}-{month:02}-{day:02} {hour + self.TIMESTEPS}:00")
+        # log.debug(f"Loading data_y for {year:02}-{month:02}-{day:02} {hour + self.TIMESTEPS}:00")
         data_y = self._get_dataset_with_timesteps(year_y, month_y, day_y, hour_y)
 
         return data_x, data_y
@@ -123,7 +124,7 @@ class WebsirenesDataset:
 
         data_x_list = []
         data_y_list = []
-        for timestamp in timestamps:
+        for timestamp in tqdm(timestamps, mininterval=60, file=TqdmLogger(log)):
             data_x, data_y = self._process_timestamp(timestamp)
             if data_x is None and data_y is None:
                 continue
