@@ -46,6 +46,28 @@ class WebsirenesDataset:
             exit(1)
         return total_files, min_timestamp, max_timestamp
 
+    def _validate_timestamps(
+        self, min_timestamp: pd.Timestamp, max_timestamp: pd.Timestamp
+    ) -> None:
+        if min_timestamp == pd.Timestamp.max or max_timestamp == pd.Timestamp.min:
+            log.error(
+                "No timestamps found in target directory, please execute WebsirenesTarget first"
+            )
+            exit(1)
+        timestamps = pd.date_range(start=min_timestamp, end=max_timestamp, freq="h")
+        for timestamp in timestamps:
+            year = timestamp.year
+            month = timestamp.month
+            day = timestamp.day
+            hour = timestamp.hour
+            file = Path(__file__).parent / "target" / f"{year:04}_{month:02}_{day:02}_{hour:02}.npy"
+            if not Path(file).exists():
+                log.error(f"Missing timestamp file: {file}")
+                exit(1)
+        log.info(
+            f"All timestamps found in target directory from {min_timestamp} to {max_timestamp}"
+        )
+
     def _has_timesteps(self, year: int, month: int, day: int, hour: int, timesteps: int) -> bool:
         start_time = pd.Timestamp(year=year, month=month, day=day, hour=hour)
         for timestep in range(timesteps):
@@ -112,6 +134,9 @@ class WebsirenesDataset:
             return
 
         total_timestamps, min_timestamp, max_timestamp = self._process_timestamps_in_target()
+
+        self._validate_timestamps(min_timestamp, max_timestamp)
+
         total_samples = total_timestamps - (2 * self.TIMESTEPS) + 1
         log.info(f"""
             Total timestamps: {total_timestamps}
