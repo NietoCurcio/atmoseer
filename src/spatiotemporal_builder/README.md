@@ -21,9 +21,9 @@ python -m src.spatiotemporal_builder.main --start_date 2011-04-12T20:30:00 --end
 ```
 Passing the `--start_date` and `--end_date` arguments, has the advantage of not having to process keys again to find minimum and maximum dates of the dataset.
 
-For example, usage for building a small dataset. The command below will process 4 hours (i.e. 4 grids of precipitation data) from 2011-04-12-21 to 2011-04-13-00:
+For example, usage for building a small dataset. The command below will process 14 hours (i.e. 14 grids of precipitation data) from 2011-04-12-21 to 2011-04-13-00:
 ```sh
-python -m src.spatiotemporal_builder.main --start_date 2011-04-12T21:00:00 --end_date 2011-04-13T00:00:00
+python -m src.spatiotemporal_builder.main --start_date 2011-04-12T21:00:00 --end_date 2011-04-13T10:00:00
 ```
 
 The diagram below presents the classes and their methods

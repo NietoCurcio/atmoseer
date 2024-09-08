@@ -102,7 +102,7 @@ class WebSirenesKeys:
             and end_date is not None
             and len(list(self.websirenes_keys_path.glob("*.parquet"))) > 0
         ):
-            log.info(
+            log.warning(
                 f"Using cached keys. To clear cache delete the {self.websirenes_keys_path} folder"
             )
             return
