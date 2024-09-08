@@ -55,6 +55,7 @@ class WebsirenesDataset:
             )
             exit(1)
         timestamps = pd.date_range(start=min_timestamp, end=max_timestamp, freq="h")
+        not_found = []
         for timestamp in timestamps:
             year = timestamp.year
             month = timestamp.month
@@ -62,8 +63,10 @@ class WebsirenesDataset:
             hour = timestamp.hour
             file = Path(__file__).parent / "target" / f"{year:04}_{month:02}_{day:02}_{hour:02}.npy"
             if not Path(file).exists():
-                log.error(f"Missing timestamp file: {file}")
-                exit(1)
+                not_found.append(timestamp)
+        if len(not_found) > 0:
+            log.error(f"Missing timestamps: {not_found}")
+            exit(1)
         log.info(
             f"All timestamps found in target directory from {min_timestamp} to {max_timestamp}"
         )
