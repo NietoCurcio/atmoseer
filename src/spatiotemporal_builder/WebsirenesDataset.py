@@ -76,7 +76,7 @@ class WebsirenesDataset:
 
     def _has_timesteps(self, year: int, month: int, day: int, hour: int, timesteps: int) -> bool:
         start_time = pd.Timestamp(year=year, month=month, day=day, hour=hour)
-        for timestep in range(timesteps):
+        for timestep in reversed(range(timesteps)):
             current_time = start_time - pd.Timedelta(hours=timestep)
             file = (
                 Path(__file__).parent
@@ -92,7 +92,7 @@ class WebsirenesDataset:
     ) -> npt.NDArray[np.float64]:
         start_time = pd.Timestamp(year=year, month=month, day=day, hour=hour)
         timesteps = []
-        for timestep in range(time_step):
+        for timestep in reversed(range(time_step)):
             current_time = start_time - pd.Timedelta(hours=timestep)
             file = f"{current_time.year:04}_{current_time.month:02}_{current_time.day:02}_{current_time.hour:02}.npy"
             try:
