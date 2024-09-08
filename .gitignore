@@ -5,9 +5,13 @@ backup/
 __pycache__/
 *.pyc
 
+notebooks/era5
+./notebooks/copernicus
+
 src/spatiotemporal_builder/features
 src/spatiotemporal_builder/target
 src/spatiotemporal_builder/websirenes_keys
+src/spatiotemporal_builder/output_dataset.nc
 
 notebooks/alertario/alertario_rain_gauge
 notebooks/alertario/alertario_weather_station

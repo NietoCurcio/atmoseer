@@ -5,6 +5,7 @@ import pandas as pd
 
 from .Logger import logger
 from .WebSirenesCoords import websirenes_coords_path
+from .WebsirenesDataset import websirenes_dataset
 from .WebSirenesKeys import websirenes_keys
 from .WebSirenesParser import WebSirenesParser
 from .WebsirenesTarget import websirenes_target
@@ -72,6 +73,7 @@ def build_target(start_date: Optional[pd.Timestamp], end_date: Optional[pd.Times
     try:
         websirenes_keys.build_keys(start_date, end_date)
         websirenes_target.build_timestamps_hourly(start_date, end_date)
+        websirenes_dataset.build_netcdf()
     except Exception as e:
         log.error(f"Error while building target: {e}")
 

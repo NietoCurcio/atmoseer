@@ -17,14 +17,6 @@ from .WebSirenesSquare import WebSirenesSquare, websirenes_square
 log = logger.get_logger(__name__)
 
 
-def get_grid_lats_lons() -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
-    era5land_path = Path(__file__).parent / "ERA5Land/monthly_data/RJ_2022_1.nc"
-    ds = xr.open_dataset(era5land_path)
-    lats = ds.coords["latitude"].values
-    lons = ds.coords["longitude"].values
-    return lats, lons
-
-
 class WebsirenesTarget:
     def __init__(
         self,
@@ -183,7 +175,7 @@ class WebsirenesTarget:
         assert maximum_date != pd.Timestamp.min, "maximum_date should be set during keys building"
 
         if use_cache and len(list(self.websirenes_target_path.glob("*.npy"))) > 0:
-            log.info(
+            log.warning(
                 f"Using cached target. To clear cache delete the {self.websirenes_target_path} folder"
             )
             return
