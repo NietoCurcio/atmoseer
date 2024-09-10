@@ -117,13 +117,13 @@ class WebsirenesTarget:
 
                 target[i, j] = precipitation_in_square
 
-                u10, v10, t2m, sp, d2m = self.websirenes_square.get_features_in_square(
-                    square, ds_time
-                )
-                spd10 = np.sqrt(u10**2 + v10**2)
-                rh = self._get_relative_humidity(t2m, d2m)
+                # u10, v10, t2m, sp, d2m = self.websirenes_square.get_features_in_square(
+                #     square, ds_time
+                # )
+                # spd10 = np.sqrt(u10**2 + v10**2)
+                # rh = self._get_relative_humidity(t2m, d2m)
 
-                features[i, j] = [u10, v10, spd10, t2m, sp, rh, precipitation_in_square]
+                # features[i, j] = [u10, v10, spd10, t2m, sp, rh, precipitation_in_square]
 
     def _process_timestamp(self, timestamp: pd.Timestamp):
         year = timestamp.year
@@ -160,7 +160,7 @@ class WebsirenesTarget:
 
         self._process_grid(features, target, ds_time, timestamp)
         self._write_target(target, timestamp)
-        self._write_features(features, timestamp)
+        # self._write_features(features, timestamp)
 
     def build_timestamps_hourly(
         self,
@@ -189,17 +189,37 @@ class WebsirenesTarget:
             futures = [
                 executor.submit(self._process_timestamp, timestamp) for timestamp in timestamps
             ]
-            with tqdm(
+            pbar = tqdm(
                 total=len(timestamps),
                 desc="Processing timestamps",
                 file=TqdmLogger(log),
                 dynamic_ncols=True,
                 mininterval=FIVE_MINUTES,
-            ) as pbar:
-                for _ in concurrent.futures.as_completed(futures):
-                    pbar.update()
+            )
+            for _ in concurrent.futures.as_completed(futures):
+                pbar.update()
+            pbar.close()
+        # multiprocessing version took 22.98s 2011-04-12T21:00:00 2011-04-13T10:00:00
+        """
+        for i in tqdm(
+            range(len(timestamps)),
+            desc="Processing timestamps",
+            file=TqdmLogger(log),
+            dynamic_ncols=True,
+            mininterval=FIVE_MINUTES,
+        ):
+            self._process_timestamp(timestamps[i])
+        sequential/synchronous version took 62.7s 2011-04-12T21:00:00 2011-04-13T10:00:00
+        """
         end_time = time.time()
-        log.info(f"Target built in {end_time - start_time:.2f} seconds")  # n 25.22 seconds
+        log.info(f"Target built in {end_time - start_time:.2f} seconds")
+
+        if len(list(self.websirenes_target_path.glob("*.npy"))) != len(timestamps):
+            log.error(
+                f"Error building target. Expected {len(timestamps)} files but found {len(list(self.websirenes_target_path.glob('*.npy')))}"
+            )
+            exit(1)
+
         log.success(f"Websirenes target built successfully in {self.websirenes_target_path}")
 
 
