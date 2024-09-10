@@ -9,7 +9,10 @@ import xarray as xr
 from pydantic import BaseModel
 
 from .get_neighbors import get_bottom_neighbor, get_right_neighbor, get_upper_neighbor
+from .Logger import logger
 from .WebSirenesKeys import WebSirenesKeys, websirenes_keys
+
+log = logger.get_logger(__name__)
 
 
 class Square(BaseModel):
@@ -41,9 +44,38 @@ class WebSirenesSquare:
             websirenes_keys.append(key)
         return websirenes_keys
 
-    def _get_era5land_precipitation_in_square(
-        self, square: Square, era5land_at_time: xr.Dataset
+    def _find_nearest_non_null(
+        self, ds_time: xr.Dataset, lat: float, lon: float, data_var: str, max_radius=1.0, step=0.1
     ) -> float:
+        radius = 0.0
+        while radius <= max_radius:
+            ds_lat_lon = ds_time.sel(latitude=lat, longitude=lon, method="nearest")
+            value = ds_lat_lon[data_var].values
+            if not np.isnan(value):
+                return float(value)
+            lat_range = np.arange(lat - radius, lat + radius, step)
+            lon_range = np.arange(lon - radius, lon + radius, step)
+            for new_lat in lat_range:
+                for new_lon in lon_range:
+                    ds_lat_lon = ds_time.sel(latitude=new_lat, longitude=new_lon, method="nearest")
+                    value = ds_lat_lon[data_var].values
+                    if not np.isnan(value):
+                        return float(value)
+            radius += step
+        log.warning(
+            f"Could not find a non-null value for lat={lat}, lon={lon}, returning median of the ds_time to avoid bias"
+        )
+        median_ds_time = ds_time[data_var].median().item()
+        if np.isnan(median_ds_time):
+            log.error("median_ds_time is NaN")
+            exit(1)
+        return median_ds_time
+
+    def _get_era5land_precipitation_in_square(
+        self, square: Square, era5land_at_time: xr.Dataset, data_var="tp"
+    ) -> float:
+        # TODO REMOVE IT
+        data_var = "t2m"
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
         coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
 
@@ -54,16 +86,15 @@ class WebSirenesSquare:
 
         for corner in corners:
             assert (
-                corner_data[corner]["tp"].size == 1
-            ), f"{corner}['tp'].size: {corner_data[corner]['tp'].size}"
+                corner_data[corner][data_var].size == 1
+            ), f"{corner}['{data_var}'].size: {corner_data[corner][{data_var}].size}"
 
-        tp_values = [corner_data[corner]["tp"].item() for corner in corners]
+        tp_values = [corner_data[corner][data_var].item() for corner in corners]
         max_tp = max(tp_values)
 
         if np.isnan(max_tp):
-            # If max_tp is NaN between ERA5Land gridpoints, it means that we are out of land in the square
-            # For now, we are returning 0, but we should consider a better approach. For example, using the nearest land gridpoint
-            return 0.0
+            lat_mean, lon_mean = np.mean(coords, axis=0)
+            return self._find_nearest_non_null(era5land_at_time, lat_mean, lon_mean, data_var)
         return max_tp
 
     def get_features_in_square(
@@ -104,6 +135,9 @@ class WebSirenesSquare:
         timestamp: pd.Timestamp,
         ds_time: xr.Dataset,
     ) -> float:
+        # TODO REMOVE IT
+        return self._get_era5land_precipitation_in_square(square, ds_time)
+
         if len(websirenes_keys) == 0:
             # No stations in the square, use ERA5Land precipitation in square
             return self._get_era5land_precipitation_in_square(square, ds_time)
@@ -127,9 +161,9 @@ class WebSirenesSquare:
                 m15 = np.array(self._get_era5land_precipitation_in_square(square, ds_time))
             precipitations_15_min_aggregated.append(m15.sum().item())
         max_precipitation = max(precipitations_15_min_aggregated)
-        # see "ge=0, but txt has -99.99 values"
+        # see "ge=0, but txt has -99.99 values" comment in WebSirenesParser.py
         if max_precipitation < 0:
-            return 0.0
+            return self._get_era5land_precipitation_in_square(square, ds_time)
         return max_precipitation
 
     def get_square(
