@@ -146,18 +146,18 @@ def download_data_for_a_day(extent: List[float],
 def main(argv):
     # Create an argument parser
     parser = argparse.ArgumentParser(description="Retrieve GOES16's data for (user-provided) product, variable, and date range.")
-    
+
     # Add command line arguments for date_ini and date_end
     parser.add_argument("--date_ini", type=str, required=True, help="Start date (format: YYYY-MM-DD)")
     parser.add_argument("--date_end", type=str, required=True, help="End date (format: YYYY-MM-DD)")
     parser.add_argument("--prod", type=str, required=True, help="GOES16 product name (e.g., 'ABI-L2-TPWF', 'ABI-L2-DSIF')")
     parser.add_argument("--vars", nargs='+', type=str, required=True, help="At least one variable name (TPW, CAPE, CIN, ...)")
     parser.add_argument("--temporal_resolution", type=int, default=10, help="Temporal resolution of the observations, in minutes (default: 10)")
+    parser.add_argument("--ignored_months", nargs='+', type=int, required=False, default=[6, 7, 8],
+                        help="Months to ignore (e.g., --ignored_months 6 7 8)")
     
     # TODO - check compatibility between the following cmd line args: "prod" and "vars"
 
-    # TODO - change to cmd line args
-    extent = [-43.890602827150, -23.1339033365138, -43.0483514573222, -22.64972474827293]
     dest_path = './data/goes16/DSI'
 
     args = parser.parse_args()
@@ -166,6 +166,16 @@ def main(argv):
     product_name = args.prod
     variable_names = args.vars
     temporal_resolution = args.temporal_resolution
+    ignored_months = args.ignored_months
+
+    # Add command line arguments for extent (bounding box)
+    parser.add_argument("--lon_min", type=float, required=True, help="Minimum longitude (west)")
+    parser.add_argument("--lat_min", type=float, required=True, help="Minimum latitude (south)")
+    parser.add_argument("--lon_max", type=float, required=True, help="Maximum longitude (east)")
+    parser.add_argument("--lat_max", type=float, required=True, help="Maximum latitude (north)")
+
+    # Use the provided extent values
+    extent = [args.lon_min, args.lat_min, args.lon_max, args.lat_max]
 
     # Convert start_date and end_date to datetime objects
     from datetime import datetime
@@ -177,7 +187,7 @@ def main(argv):
     current_datetime = start_datetime
     while current_datetime <= end_datetime:
         # Ignore winter months
-        if current_datetime.month not in [6, 7, 8]:
+        if current_datetime.month not in ignored_months:
             yyyymmdd = current_datetime.strftime('%Y%m%d')
             df = download_data_for_a_day(extent, dest_path, yyyymmdd, product_name, variable_names, temporal_resolution=temporal_resolution)
         # Increment the current date by one day
@@ -185,8 +195,8 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    ### Examples:
-    # python src/retrieve_goes16_product_for_extent.py --date_ini "2024-01-13" --date_end "2024-01-13" --prod ABI-L2-DSIF --vars CAPE LI TT SI KI
+    ### Example usage:
+    # python src/retrieve_goes16_product_for_extent.py --date_ini "2024-01-13" --date_end "2024-01-13" --prod ABI-L2-DSIF --vars CAPE LI TT SI KI --ignored_months 6 7 8 --lon_min -45.05290312102409 --lat_min -23.801876626302175 --lon_max -42.35676996062447 --lat_max -21.699774257353113
 
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
     logging.basicConfig(level=logging.INFO, format = fmt)

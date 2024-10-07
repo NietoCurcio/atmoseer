@@ -42,7 +42,7 @@ def save_extent_data(full_disk_filename, yyyymmddhhmn, variable_names, extent, d
         ds = (ds * scale + offset)
 
         # Apply NaN's where the quality flag is greater than 1
-        # ds[ds_dqf > 1] = np.nan
+        ds[ds_dqf > 1] = np.nan
 
         # Read the original file projection and configure the output projection
         source_prj = osr.SpatialReference()
@@ -156,7 +156,20 @@ def main(argv):
     parser.add_argument("--temporal_resolution", type=int, default=10, help="Temporal resolution of the observations, in minutes (default: 10)")
   
     # TODO - change to cmd line args
-    extent = [-43.890602827150, -23.1339033365138, -43.0483514573222, -22.64972474827293]
+    # extent = [-43.890602827150, -23.1339033365138, -43.0483514573222, -22.64972474827293]
+
+    lat_max, lon_max = (
+        -21.699774257353113,
+        -42.35676996062447,
+    )  # canto superior direito
+    lat_min, lon_min = (
+        -23.801876626302175,
+        -45.05290312102409,
+    )  # canto inferior esquerdo
+
+    extent = [lon_min, lat_min, lon_max, lat_max]
+
+
     dest_path = "data/goes16"
 
     args = parser.parse_args()
@@ -196,7 +209,6 @@ def main(argv):
 if __name__ == "__main__":
     ### Examples:
     # python src/python retrieve_goes16_cmi_for_extent.py --date_ini "2024-02-08" --date_end "2024-02-08" --vars CMI --bands 9 13
-
 
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
     logging.basicConfig(level=logging.INFO, format = fmt)
