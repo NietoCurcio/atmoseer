@@ -208,7 +208,7 @@ def main(argv):
 
 if __name__ == "__main__":
     ### Examples:
-    # python src/python retrieve_goes16_cmi_for_extent.py --date_ini "2024-02-08" --date_end "2024-02-08" --vars CMI --bands 9 13
+    # python src/python retrieve_goes16_cmi_for_extent.py --date_ini "2024-02-08" --date_end "2024-02-08" --vars CMI --bands 7 9 11 13 14 15
 
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
     logging.basicConfig(level=logging.INFO, format = fmt)
