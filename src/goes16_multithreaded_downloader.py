@@ -74,8 +74,9 @@ def download_goes16_data_for_period(start_date, end_date, ignored_months, channe
 
 if __name__ == "__main__":
     '''
-    Example usgage:
+    Example usage:
     python src/goes16_multithreaded_downloader.py --start_date "2024-02-08" --end_date "2024-02-08" --channel 7 --save_dir "./goes16_data"
+    python src/goes16_multithreaded_downloader.py --start_date "2023-01-01" --end_date "2023-12-31" --channel 7 --save_dir "./goes16_data"
     '''
     # Create an argument parser to accept start and end dates, and channel number from the command line
     parser = argparse.ArgumentParser(description="Download GOES-16 data for a specific date range.")
