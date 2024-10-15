@@ -126,7 +126,6 @@ class CDSDatasetDownloader:
         print(f"Downloading ERA5 data for the period {self.begin_year} to {self.end_year}...")
         for year, month in self._get_dates_generator():
             self._download_dataset(month, year)
-            break
         print(f"Downloaded ERA5 data for the period {self.begin_year} to {self.end_year}")
     
     def check_datasets(self):
