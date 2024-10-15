@@ -5,24 +5,29 @@ import os                                # Miscellaneous operating system interf
 import numpy as np                       # Import the Numpy package
 from botocore import UNSIGNED            # boto3 config
 from botocore.config import Config       # boto3 config                       
-from datetime import timedelta, date, datetime           # Basic Dates and time types
+from datetime import timedelta, datetime           # Basic Dates and time types
 from osgeo import osr                    # Python bindings for GDAL
 from osgeo import gdal                   # Python bindings for GDAL
 import sys
 import argparse
 from typing import List
 import time
-import pickle
 import logging
 from netCDF4 import Dataset 
 from goes16_utils import download_CMI
 
 
-def save_extent_data(full_disk_filename, yyyymmddhhmn, variable_names, extent, dest_path, band):
-    datetimeAgain = datetime.strptime(yyyymmddhhmn, '%Y%m%d%H%M')
-    formatted_date = datetimeAgain.strftime('%Y-%m-%d')
+def crop_full_disk_and_save(full_disk_filename, variable_names, extent, dest_path, band):
+    # datetimeAgain = datetime.strptime(yyyymmddhhmn, '%Y%m%d%H%M')
+    # formatted_date = datetimeAgain.strftime('%Y-%m-%d')
 
-  
+    file = Dataset(full_disk_filename)
+    date = (datetime.strptime(file.time_coverage_start, '%Y-%m-%dT%H:%M:%S.%fZ'))
+    # print('date1: ', date.strftime('%Y_%m_%d_%H_%M'))
+    # print('date2: ', yyyymmddhhmn)
+
+    yyyymmddhhmn = date.strftime('%Y_%m_%d_%H_%M')
+
     for var in variable_names:
    
         # Open the file
@@ -33,16 +38,13 @@ def save_extent_data(full_disk_filename, yyyymmddhhmn, variable_names, extent, d
         scale = float(metadata.get(var + '#scale_factor'))
         offset = float(metadata.get(var + '#add_offset'))
         undef = float(metadata.get(var + '#_FillValue'))
-        dtime = metadata.get('NC_GLOBAL#time_coverage_start')
+        # dtime = metadata.get('NC_GLOBAL#time_coverage_start')
 
         # Load the data
         ds = img.ReadAsArray(0, 0, img.RasterXSize, img.RasterYSize).astype(float)
 
         # Apply the scale and offset
         ds = (ds * scale + offset)
-
-        # Apply NaN's where the quality flag is greater than 1
-        ds[ds_dqf > 1] = np.nan
 
         # Read the original file projection and configure the output projection
         source_prj = osr.SpatialReference()
@@ -72,7 +74,7 @@ def save_extent_data(full_disk_filename, yyyymmddhhmn, variable_names, extent, d
         img = None  # Close file
 
         # Write the reprojected file on disk
-        filename_reprojected = f'{dest_path}/{yyyymmddhhmn}band{band}_{var}.nc'
+        filename_reprojected = f'{dest_path}/{var}_band{band}_{yyyymmddhhmn}.nc'
         gdal.Warp(filename_reprojected, raw, options=options)
 
 
@@ -127,7 +129,7 @@ def download_data_for_a_day(extent: List[float],
                 try:
                     full_disk_filename = f'{TEMP_DIR}/{file_name}.nc'
 
-                    save_extent_data(full_disk_filename, yyyymmddhhmn, variable_names, extent, dest_path, band)
+                    crop_full_disk_and_save(full_disk_filename, yyyymmddhhmn, variable_names, extent, dest_path, band)
 
                     if remove_full_disk_file:
                         try:
@@ -156,8 +158,6 @@ def main(argv):
     parser.add_argument("--temporal_resolution", type=int, default=10, help="Temporal resolution of the observations, in minutes (default: 10)")
   
     # TODO - change to cmd line args
-    # extent = [-43.890602827150, -23.1339033365138, -43.0483514573222, -22.64972474827293]
-
     lat_max, lon_max = (
         -21.699774257353113,
         -42.35676996062447,
@@ -208,7 +208,7 @@ def main(argv):
 
 if __name__ == "__main__":
     ### Examples:
-    # python src/python retrieve_goes16_cmi_for_extent.py --date_ini "2024-02-08" --date_end "2024-02-08" --vars CMI --bands 7 9 11 13 14 15
+    # python src/retrieve_goes16_cmi_for_extent.py --date_ini "2024-02-08" --date_end "2024-02-08" --vars CMI --bands 7 9 11 13 14 15
 
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
     logging.basicConfig(level=logging.INFO, format = fmt)
@@ -220,4 +220,4 @@ if __name__ == "__main__":
     end_time = time.time()  # Record the end time
     duration = (end_time - start_time) / 60  # Calculate duration in minutes
     
-    print(f"Script duration: {duration:.2f} minutes") 
+    print(f"Script execution time: {duration:.2f} minutes.")
