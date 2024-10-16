@@ -80,6 +80,7 @@ if __name__ == "__main__":
 
     librae
     python src/goes16_multithreaded_downloader.py --start_date "2023-01-01" --end_date "2023-12-31" --channel 7 --save_dir "./data/goes16/cmi/fulldisk"
+    python src/goes16_multithreaded_downloader.py --start_date "2023-01-01" --end_date "2023-12-31" --channel 11 --save_dir "./data/goes16/cmi/fulldisk"
 
     tauri
     python src/goes16_multithreaded_downloader.py --start_date "2022-01-01" --end_date "2023-12-31" --channel 9 --save_dir "./data/goes16/cmi/fulldisk"

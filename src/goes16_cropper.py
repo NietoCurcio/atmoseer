@@ -18,7 +18,7 @@ def extract_middle_part(file_path):
 def crop_full_disk_and_save(full_disk_filename, variable_names, extent, dest_path):
     file = Dataset(full_disk_filename)
     dtime = datetime.strptime(file.time_coverage_start, '%Y-%m-%dT%H:%M:%S.%fZ')
-    print(f'dtime1: {dtime}')
+    # print(f'dtime1: {dtime}')
     yyyymmddhhmn = dtime.strftime('%Y_%m_%d_%H_%M')
 
     for var in variable_names:
