@@ -18,9 +18,6 @@ from goes16_utils import download_CMI
 
 
 def crop_full_disk_and_save(full_disk_filename, variable_names, extent, dest_path, band):
-    # datetimeAgain = datetime.strptime(yyyymmddhhmn, '%Y%m%d%H%M')
-    # formatted_date = datetimeAgain.strftime('%Y-%m-%d')
-
     file = Dataset(full_disk_filename)
     date = (datetime.strptime(file.time_coverage_start, '%Y-%m-%dT%H:%M:%S.%fZ'))
     # print('date1: ', date.strftime('%Y_%m_%d_%H_%M'))
