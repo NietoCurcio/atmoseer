@@ -19,7 +19,7 @@ def download_file(fs, file, local_path):
         print(f"Error downloading {os.path.basename(file)}: {e}")
 
 # Function to download files from GOES-16 for a specific hour
-def download_goes16_hour_data(fs, s3_path, channel, save_dir):
+def download_goes16_data_for_hour(fs, s3_path, channel, save_dir):
     # List all files in the given hour directory
     try:
         files = fs.ls(s3_path)
@@ -40,7 +40,7 @@ def download_goes16_hour_data(fs, s3_path, channel, save_dir):
                 executor.submit(download_file, fs, file, local_path)
 
 # Function to download all files for a given day
-def download_goes16_data(date, channel, save_dir='goes16_data'):
+def download_goes16_data_for_day(date, channel, save_dir):
     # Set up S3 access
     fs = s3fs.S3FileSystem(anon=True)
     bucket = 'noaa-goes16'
@@ -61,16 +61,17 @@ def download_goes16_data(date, channel, save_dir='goes16_data'):
             s3_path = f'{bucket}/{product}/{year}/{julian_day}/{hour_str}/'
             
             # Submit each hour's download process to the thread pool
-            executor.submit(download_goes16_hour_data, fs, s3_path, channel, save_dir)
+            executor.submit(download_goes16_data_for_hour, fs, s3_path, channel, save_dir)
 
 # Main function to download data for a range of dates
-def download_goes16_data_for_period(start_date, end_date, ignored_months, channel, save_dir='goes16_data'):
+def download_goes16_data_for_period(start_date, end_date, ignored_months, channel, save_dir):
     current_date = start_date
-    if current_date.month not in ignored_months:
-        while current_date <= end_date:
-            print(f"Downloading data for {current_date.strftime('%Y-%m-%d')}")
-            download_goes16_data(current_date, channel, save_dir)
-            current_date += timedelta(days=1)
+    while current_date <= end_date:
+        if current_date.month in ignored_months:
+            continue
+        print(f"Downloading data for {current_date.strftime('%Y-%m-%d')}")
+        download_goes16_data_for_day(current_date, channel, save_dir)
+        current_date += timedelta(days=1)
 
 if __name__ == "__main__":
     '''
@@ -83,7 +84,8 @@ if __name__ == "__main__":
     python src/goes16_multithreaded_downloader.py --start_date "2023-01-01" --end_date "2023-12-31" --channel 11 --save_dir "./data/goes16/cmi/fulldisk"
 
     tauri
-    python src/goes16_multithreaded_downloader.py --start_date "2022-01-01" --end_date "2023-12-31" --channel 9 --save_dir "./data/goes16/cmi/fulldisk"
+    python src/goes16_multithreaded_downloader.py --start_date "2022-01-01" --end_date "2022-12-31" --channel 9 --save_dir "./data/goes16/cmi/fulldisk"
+    python src/goes16_multithreaded_downloader.py --start_date "2023-01-01" --end_date "2023-12-31" --channel 9 --save_dir "./data/goes16/cmi/fulldisk"
     '''
     # Create an argument parser to accept start and end dates, and channel number from the command line
     parser = argparse.ArgumentParser(description="Download GOES-16 data for a specific date range.")

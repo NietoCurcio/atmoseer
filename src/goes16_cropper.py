@@ -76,7 +76,7 @@ def crop_full_disk_and_save(full_disk_filename, variable_names, extent, dest_pat
         prefix = extract_middle_part(full_disk_filename)
         # print("prefix: ", prefix)
         filename_reprojected = f'{dest_path}/{prefix}_{var}_{yyyymmddhhmn}.nc'
-        print(f"Saving {filename_reprojected}")
+        print(f"Saving crop: {filename_reprojected}")
         gdal.Warp(filename_reprojected, raw, options=options)
 
 # Simulate file preprocessing
@@ -114,13 +114,14 @@ def monitor_folder_and_preprocess(full_disk_dir, variable_names, save_dir):
 
                 # Delete the file after processing
                 os.remove(file_path)
-                print(f"Deleted {file_path} after processing.")
+                print(f"Deleting FD file: {file_path}.\n")
 
                 # Mark file as processed
                 processed_files.add(file)
 
-            except OSError:
-                print(f'File {file_path} still being downloaded...moving to the next available file.')
+            except OSError as error:
+                print(error)
+                print(f'File {file_path} still being downloaded...moving to the next available file.\n')
                 continue
 
         # Sleep for a short period before checking again
