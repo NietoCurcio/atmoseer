@@ -8,19 +8,22 @@ from osgeo import osr, gdal
 import argparse
 import logging
 
+# Lock to synchronize access to shared resources
+download_lock = threading.Lock()
+
+# Thread-safe dict to keep track of cropped content
+cropped_dict = {}
+cropped_dict_lock = threading.Lock()  # Initialize the lock
+
 ########################################################################
 ### DOWNLOADER
 ########################################################################
 
-# Lock to synchronize access to shared resources
-download_lock = threading.Lock()
-
-# Full disk download function
-def download_and_crop_file(fs, file_name, local_path, crop_dir, variable_names):
-    """Download a file and put it into the download directory."""
+# Full disk download and crop function
+def download_and_crop_full_disk(fs, remote_path: str, local_path: str, variable_names: str):
     try:
-        fs.get(file_name, local_path)
-        # print(f"Processing {file_path}")
+        fs.get(remote_path, local_path)
+        # print(f"Processing {remote_path}")
         lat_max, lon_max = (
             -21.699774257353113,
             -42.35676996062447,
@@ -30,21 +33,25 @@ def download_and_crop_file(fs, file_name, local_path, crop_dir, variable_names):
             -45.05290312102409,
         )  # canto inferior esquerdo
         extent = [lon_min, lat_min, lon_max, lat_max]
-        crop_full_disk_and_save(full_disk_filename = local_path, 
-                                variable_names = variable_names, 
-                                extent = extent, 
-                                dest_path = crop_dir)
-        # print(f"Downloaded and cropped {os.path.basename(file_name)}")
-        os.remove(local_path)  # Delete the file after processing
+        cropped_content = crop_full_disk(full_disk_filename = local_path,
+                                         variable_names = variable_names,
+                                         extent = extent)
+
+        # Lock to ensure thread-safe access
+        with cropped_dict_lock:
+            # print('Updating cropped_dict')
+            cropped_dict.update(cropped_content)  # Add the cropped content in a thread-safe way
+
+        os.remove(local_path)  # Delete the local copy of the FD file after processing
     except Exception as e:
-        print(f"Error downloading {os.path.basename(file_name)}: {e}")
+        print(f"Error downloading {os.path.basename(remote_path)}: {e}")
 
 # Function to convert a regular date to the Julian day of the year
 def get_julian_day(date):
     return date.strftime('%j')
 
 # Function to download files from GOES-16 for a specific hour
-def process_goes16_data_for_hour(fs, s3_path, channel, download_dir, crop_dir, variable_names):
+def process_goes16_data_for_hour(fs, s3_path, channel, download_dir, variable_names):
     # List all files in the given hour directory
     try:
         files = fs.ls(s3_path)
@@ -59,14 +66,14 @@ def process_goes16_data_for_hour(fs, s3_path, channel, download_dir, crop_dir, v
 
     # Download each file using threads
     with ThreadPoolExecutor() as executor:
-        for file in channel_files:
-            file_name = os.path.basename(file)
+        for remote_path in channel_files:
+            file_name = os.path.basename(remote_path)
             local_path = os.path.join(download_dir, file_name)
             if not os.path.exists(local_path):
-                executor.submit(download_and_crop_file, fs, file, local_path, crop_dir, variable_names)
+                executor.submit(download_and_crop_full_disk, fs, remote_path, local_path, variable_names)
 
 # Function to download all files for a given day
-def process_goes16_data_for_day(date, channel, download_dir, crop_dir, variable_names):
+def process_goes16_data_for_day(date, channel, download_dir, variable_names):
     # Set up S3 access
     fs = s3fs.S3FileSystem(anon=True)
     bucket = 'noaa-goes16'
@@ -83,7 +90,7 @@ def process_goes16_data_for_day(date, channel, download_dir, crop_dir, variable_
                 hour_str = f'{hour:02d}'
                 s3_path = f'{bucket}/{product}/{year}/{julian_day}/{hour_str}/'
                 # Submit each hour's download process to the thread pool
-                executor.submit(process_goes16_data_for_hour, fs, s3_path, channel, download_dir, crop_dir, variable_names)
+                executor.submit(process_goes16_data_for_hour, fs, s3_path, channel, download_dir, variable_names)
 
 # Main function to process files for a range of dates
 def process_goes16_data_for_period(start_date, end_date, ignored_months, channel, download_dir, crop_dir, variable_names):
@@ -91,8 +98,16 @@ def process_goes16_data_for_period(start_date, end_date, ignored_months, channel
     while current_date <= end_date:
         if current_date.month in ignored_months:
             continue
-        print(f"Processing data for {current_date.strftime('%Y-%m-%d')}")
-        process_goes16_data_for_day(current_date, channel, download_dir, crop_dir, variable_names)
+
+        day = current_date.strftime('%Y_%m_%d')
+        print(f"Processing data for {day}")
+        process_goes16_data_for_day(current_date, channel, download_dir, variable_names)
+
+        netcdf_filename = f'{crop_dir}/{day}.nc'
+        global cropped_dict
+        save_to_netcdf(cropped_dict, netcdf_filename)
+        cropped_dict = {}
+
         current_date += timedelta(days=1)
 
 ########################################################################
@@ -108,16 +123,21 @@ def extract_middle_part(file_path):
     
     return middle_part
 
-def crop_full_disk_and_save(full_disk_filename, variable_names, extent, dest_path):
-    for var in variable_names:
-   
-        # Open the file
-        img = gdal.Open(f'NETCDF:{full_disk_filename}:' + var)
+def crop_full_disk(full_disk_filename, variable_names, extent):
+    # Explicitly choose to use exceptions
+    # gdal.UseExceptions()
 
-        assert (img is not None)
+    cropped_content_dict = dict()
+
+    for var in variable_names:
+        # Open the file
+        fd_dataset = gdal.Open(f'NETCDF:{full_disk_filename}:' + var)
+        if fd_dataset is None:
+            print("Unable to open the input file.")
+            exit(1)
 
         # Read the header metadata
-        metadata = img.GetMetadata()
+        metadata = fd_dataset.GetMetadata()
         scale = float(metadata.get(var + '#scale_factor'))
         offset = float(metadata.get(var + '#add_offset'))
         undef = float(metadata.get(var + '#_FillValue'))
@@ -126,45 +146,151 @@ def crop_full_disk_and_save(full_disk_filename, variable_names, extent, dest_pat
         dtime = datetime.strptime(dtime, '%Y-%m-%dT%H:%M:%S.%fZ')
         yyyymmddhhmn = dtime.strftime('%Y_%m_%d_%H_%M')
 
-        # Load the data
-        ds = img.ReadAsArray(0, 0, img.RasterXSize, img.RasterYSize).astype(float)
+        # Read the full disk data into a NumPy array
+        ds = fd_dataset.ReadAsArray(0, 0, fd_dataset.RasterXSize, fd_dataset.RasterYSize).astype(float)
 
         # Apply the scale and offset
         ds = (ds * scale + offset)
+        # print(f'offset={offset}, scale={scale}')
 
         # Read the original file projection and configure the output projection
         source_prj = osr.SpatialReference()
-        source_prj.ImportFromProj4(img.GetProjectionRef())
+        source_prj.ImportFromProj4(fd_dataset.GetProjectionRef())
 
         target_prj = osr.SpatialReference()
         target_prj.ImportFromProj4("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
         # Reproject the data
-        GeoT = img.GetGeoTransform()
-        driver = gdal.GetDriverByName('MEM')
-        raw = driver.Create('raw', ds.shape[0], ds.shape[1], 1, gdal.GDT_Float32)
+        GeoT = fd_dataset.GetGeoTransform()
+        mem_driver = gdal.GetDriverByName('MEM')
+        raw = mem_driver.Create('raw', ds.shape[0], ds.shape[1], 1, gdal.GDT_Float32)
         raw.SetGeoTransform(GeoT)
         raw.GetRasterBand(1).WriteArray(ds)
 
-        # Define the parameters of the output file  
-        options = gdal.WarpOptions(format = 'netCDF', 
-                srcSRS = source_prj, 
-                dstSRS = target_prj,
-                outputBounds = (extent[0], extent[3], extent[2], extent[1]), 
-                outputBoundsSRS = target_prj, 
-                outputType = gdal.GDT_Float32, 
-                srcNodata = undef, 
-                dstNodata = 'nan', 
-                resampleAlg = gdal.GRA_NearestNeighbour)
-        
-        img = None  # Close file
+        # Define the parameters for the reprojection  
+        warp_options = gdal.WarpOptions(format = 'MEM', 
+                                    srcSRS = source_prj, 
+                                    dstSRS = target_prj,
+                                    outputBounds = (extent[0], extent[3], extent[2], extent[1]), 
+                                    outputBoundsSRS = target_prj, 
+                                    outputType = gdal.GDT_Float32, 
+                                    srcNodata = undef, 
+                                    dstNodata = 'nan', 
+                                    resampleAlg = gdal.GRA_NearestNeighbour)
 
-        # Write the reprojected file on disk
-        prefix = extract_middle_part(full_disk_filename)
-        # print("prefix: ", prefix)
-        filename_reprojected = f'{dest_path}/{prefix}_{var}_{yyyymmddhhmn}.nc'
-        # print(f"Saving crop: {filename_reprojected}")
-        gdal.Warp(filename_reprojected, raw, options=options)
+        # Apply the transformation and write to the virtual dataset
+        mem_dataset = gdal.Warp('', raw, options=warp_options)
+
+        # Check if the warp operation succeeded
+        if mem_dataset is None:
+            print("Warping failed.")
+            exit(1)
+
+        # Now access the warped data from the virtual memory
+        mem_band = mem_dataset.GetRasterBand(1)
+        warped_data = mem_band.ReadAsArray()
+
+        key = f'{var}_{yyyymmddhhmn}'
+        cropped_content_dict[key] = warped_data
+
+        # Clean up
+        fd_dataset = None
+        mem_dataset = None
+
+    return cropped_content_dict
+
+
+# def save_numpy_to_netcdf(cropped_dict, output_netcdf):
+#     """
+#     Creates a netCDF file with NumPy arrays as subdatasets based on cropped_dict.
+    
+#     Parameters:
+#         cropped_dict (dict): Dictionary with string keys in the format '%Y_%m_%d_%H_%M'
+#                              and NumPy arrays as values.
+#         output_netcdf (str): Path to the output netCDF file.
+#     """
+
+#     print(f'# cropped files: {len(cropped_dict)}')
+#     for key in cropped_dict:
+#         print(f'{key}:\n{cropped_dict[key]}')
+
+#     # Create an empty netCDF file using the gdal driver
+#     driver = gdal.GetDriverByName('netCDF')
+#     netcdf_dataset = driver.Create(output_netcdf, 0, 0, 0, gdal.GDT_Unknown)
+    
+#     if netcdf_dataset is None:
+#         raise RuntimeError("Failed to create netCDF file.")
+    
+#     # Create a subdataset for each NumPy array in the dictionary
+#     for key, np_array in cropped_dict.items():
+#         # Assume the NumPy array is 2D (you can modify this if your arrays have different shapes)
+#         rows, cols = np_array.shape
+        
+#         # Create a new subdataset
+#         subdataset_name = f"NETCDF:\"{output_netcdf}\":{key}"
+#         subdataset = driver.Create(subdataset_name, cols, rows, 1, gdal.GDT_Float32)
+        
+#         if subdataset is None:
+#             raise RuntimeError(f"Failed to create subdataset for {key}.")
+        
+#         # Get the band of the subdataset and write the NumPy array to it
+#         band = subdataset.GetRasterBand(1)
+#         band.WriteArray(np_array)
+        
+#         # Optionally, you can set geospatial information if you have it (e.g., projection, geotransform)
+#         # subdataset.SetGeoTransform(geotransform)  # Set the geo-transform if necessary
+#         # subdataset.SetProjection(projection)      # Set the projection if necessary
+        
+#         # Set metadata or descriptions for the subdataset if needed
+#         band.SetDescription(f"Data for {key}")
+        
+#         # Flush the data to the netCDF file
+#         band.FlushCache()
+        
+#         # Close the subdataset
+#         subdataset = None
+    
+#     # Close the main netCDF dataset
+#     netcdf_dataset = None
+    
+#     print(f"NetCDF file '{output_netcdf}' created with {len(cropped_dict)} subdatasets.")
+
+import netCDF4 as nc
+import numpy as np
+
+def save_to_netcdf(cropped_dict, filename):
+    """
+    Creates a netCDF file from a dictionary where the keys are date strings
+    and the values are numpy arrays.
+    
+    Args:
+    cropped_dict (dict): Dictionary with keys in the format '%Y_%m_%d_%H_%M'
+                         and numpy arrays as values.
+    filename (str): Path and name of the netCDF file to be created.
+    """
+    print(f'# cropped files: {len(cropped_dict)}')
+
+    # Create a new netCDF file
+    with nc.Dataset(filename, 'w', format='NETCDF4') as dataset:
+        # Loop through the dictionary and add data to the netCDF file
+        for timestamp, data_array in cropped_dict.items():
+            # Replace ':' and spaces with underscores in timestamp to create valid variable names
+            sanitized_name = timestamp.replace(":", "_").replace(" ", "_")
+            
+            # Create dimensions based on the shape of the numpy array
+            for i, dim_size in enumerate(data_array.shape):
+                dim_name = f"dim_{i}_{sanitized_name}"
+                if dim_name not in dataset.dimensions:
+                    dataset.createDimension(dim_name, dim_size)
+            
+            # Create a variable with the timestamp as its name
+            var = dataset.createVariable(sanitized_name, data_array.dtype, tuple(f"dim_{i}_{sanitized_name}" for i in range(data_array.ndim)))
+            
+            # Assign the data from the numpy array to the variable
+            var[:] = data_array
+            
+        print(f"netCDF file '{filename}' created successfully.")
+
 
 ########################################################################
 ### MAIN
@@ -182,7 +308,7 @@ if __name__ == "__main__":
     parser.add_argument('--start_date', type=str, required=True, help="Start date (format: YYYY-MM-DD)")
     parser.add_argument('--end_date', type=str, required=True, help="End date (format: YYYY-MM-DD)")
     parser.add_argument('--channel', type=int, required=True, help="GOES-16 channel number (1-16)")
-    parser.add_argument('--download_dir', type=str, default='./downloads', help="Directory to save downloaded FD files")
+    parser.add_argument('--download_dir', type=str, default='./downloads', help="Directory to (temporarily) save downloaded FD files")
     parser.add_argument('--crop_dir', type=str, default='./data/goes16/CMI/cropped', help="Directory to save cropped files")
     parser.add_argument("--ignored_months", nargs='+', type=int, required=False, default=[6, 7, 8],
                         help="Months to ignore (e.g., --ignored_months 6 7 8)")
@@ -206,7 +332,20 @@ if __name__ == "__main__":
     download_dir = './downloads'
     if not os.path.exists(download_dir):
         os.makedirs(download_dir)
-    process_goes16_data_for_period(start_date, end_date, ignored_months, channel = channel, download_dir = download_dir, crop_dir = crop_dir, variable_names = variable_names)
+    process_goes16_data_for_period(start_date, 
+                                   end_date, 
+                                   ignored_months, 
+                                   channel = channel, 
+                                   download_dir = download_dir, 
+                                   crop_dir = crop_dir,
+                                   variable_names = variable_names)
     end_time = time.time()  # Record the end time
     duration = (end_time - start_time) / 60  # Calculate duration in minutes
     print(f"Script execution time: {duration:.2f} minutes.")
+
+    # print(f'# cropped files: {len(cropped_dict)}')
+    # for key in cropped_dict:
+    #     print(cropped_dict[key].shape)
+
+    # output_netcdf = 'output_data.nc'
+    # save_numpy_to_netcdf(cropped_dict, output_netcdf)
