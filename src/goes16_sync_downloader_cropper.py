@@ -96,10 +96,12 @@ def process_goes16_data_for_day(date, channel, download_dir, variable_names):
 def process_goes16_data_for_period(start_date, end_date, ignored_months, channel, download_dir, crop_dir, variable_names):
     current_date = start_date
     while current_date <= end_date:
-        if current_date.month in ignored_months:
-            continue
-
         day = current_date.strftime('%Y_%m_%d')
+        if (current_date.month in ignored_months) or any(day in filename for filename in os.listdir(crop_dir)):
+                print(f"Ignoring data for {day}")
+                current_date += timedelta(days=1)
+                continue
+
         print(f"Processing data for {day}")
         process_goes16_data_for_day(current_date, channel, download_dir, variable_names)
 
