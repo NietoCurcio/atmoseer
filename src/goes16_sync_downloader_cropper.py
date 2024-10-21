@@ -7,6 +7,9 @@ from concurrent.futures import ThreadPoolExecutor
 from osgeo import osr, gdal
 import argparse
 import logging
+import netCDF4 as nc
+import numpy as np
+
 
 # Lock to synchronize access to shared resources
 download_lock = threading.Lock()
@@ -105,7 +108,7 @@ def process_goes16_data_for_period(start_date, end_date, ignored_months, channel
         print(f"Processing data for {day}")
         process_goes16_data_for_day(current_date, channel, download_dir, variable_names)
 
-        netcdf_filename = f'{crop_dir}/{day}.nc'
+        netcdf_filename = f'{crop_dir}/C{channel:02d}_{day}.nc'
         global cropped_dict
         save_to_netcdf(cropped_dict, netcdf_filename)
         cropped_dict = {}
@@ -201,64 +204,6 @@ def crop_full_disk(full_disk_filename, variable_names, extent):
 
     return cropped_content_dict
 
-
-# def save_numpy_to_netcdf(cropped_dict, output_netcdf):
-#     """
-#     Creates a netCDF file with NumPy arrays as subdatasets based on cropped_dict.
-    
-#     Parameters:
-#         cropped_dict (dict): Dictionary with string keys in the format '%Y_%m_%d_%H_%M'
-#                              and NumPy arrays as values.
-#         output_netcdf (str): Path to the output netCDF file.
-#     """
-
-#     print(f'# cropped files: {len(cropped_dict)}')
-#     for key in cropped_dict:
-#         print(f'{key}:\n{cropped_dict[key]}')
-
-#     # Create an empty netCDF file using the gdal driver
-#     driver = gdal.GetDriverByName('netCDF')
-#     netcdf_dataset = driver.Create(output_netcdf, 0, 0, 0, gdal.GDT_Unknown)
-    
-#     if netcdf_dataset is None:
-#         raise RuntimeError("Failed to create netCDF file.")
-    
-#     # Create a subdataset for each NumPy array in the dictionary
-#     for key, np_array in cropped_dict.items():
-#         # Assume the NumPy array is 2D (you can modify this if your arrays have different shapes)
-#         rows, cols = np_array.shape
-        
-#         # Create a new subdataset
-#         subdataset_name = f"NETCDF:\"{output_netcdf}\":{key}"
-#         subdataset = driver.Create(subdataset_name, cols, rows, 1, gdal.GDT_Float32)
-        
-#         if subdataset is None:
-#             raise RuntimeError(f"Failed to create subdataset for {key}.")
-        
-#         # Get the band of the subdataset and write the NumPy array to it
-#         band = subdataset.GetRasterBand(1)
-#         band.WriteArray(np_array)
-        
-#         # Optionally, you can set geospatial information if you have it (e.g., projection, geotransform)
-#         # subdataset.SetGeoTransform(geotransform)  # Set the geo-transform if necessary
-#         # subdataset.SetProjection(projection)      # Set the projection if necessary
-        
-#         # Set metadata or descriptions for the subdataset if needed
-#         band.SetDescription(f"Data for {key}")
-        
-#         # Flush the data to the netCDF file
-#         band.FlushCache()
-        
-#         # Close the subdataset
-#         subdataset = None
-    
-#     # Close the main netCDF dataset
-#     netcdf_dataset = None
-    
-#     print(f"NetCDF file '{output_netcdf}' created with {len(cropped_dict)} subdatasets.")
-
-import netCDF4 as nc
-import numpy as np
 
 def save_to_netcdf(cropped_dict, filename):
     """
