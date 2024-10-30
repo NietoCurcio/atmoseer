@@ -29,7 +29,7 @@ def download_file(files):
     
     def process_file(file):
         print(f"Reading file: {file}")
-        filename = f"data/goes16/glm_files/{file.split('/')[-1]}"
+        filename = f"data/goes16/glm/{file.split('/')[-1]}"
         try:
             fs.get(file, filename)
         except Exception as e:
