@@ -256,7 +256,7 @@ if __name__ == "__main__":
     parser.add_argument('--end_date', type=str, required=True, help="End date (format: YYYY-MM-DD)")
     parser.add_argument('--channel', type=int, required=True, help="GOES-16 channel number (1-16)")
     parser.add_argument('--download_dir', type=str, default='./downloads', help="Directory to (temporarily) save downloaded FD files")
-    parser.add_argument('--crop_dir', type=str, default='./data/goes16/CMI/cropped', help="Directory to save cropped files")
+    parser.add_argument('--crop_dir', type=str, required=True, help="Directory to save cropped files")
     parser.add_argument("--ignored_months", nargs='+', type=int, required=False, default=[6, 7, 8],
                         help="Months to ignore (e.g., --ignored_months 6 7 8)")
     parser.add_argument("--vars", nargs='+', type=str, required=True, help="At least one variable name (CMI, ...)")
@@ -289,10 +289,3 @@ if __name__ == "__main__":
     end_time = time.time()  # Record the end time
     duration = (end_time - start_time) / 60  # Calculate duration in minutes
     print(f"Script execution time: {duration:.2f} minutes.")
-
-    # print(f'# cropped files: {len(cropped_dict)}')
-    # for key in cropped_dict:
-    #     print(cropped_dict[key].shape)
-
-    # output_netcdf = 'output_data.nc'
-    # save_numpy_to_netcdf(cropped_dict, output_netcdf)
