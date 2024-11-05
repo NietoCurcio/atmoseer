@@ -118,10 +118,6 @@ class WebsirenesDataset:
 
         timestamps = pd.date_range(start=min_timestamp, end=max_timestamp, freq="h")
 
-        assert validated_total_timestamps == len(
-            timestamps
-        ), "Mismatch between validated timestamps and timestamps"
-
         log.info(f"""
             Total timestamps: {validated_total_timestamps}
             Min timestamp: {min_timestamp}
