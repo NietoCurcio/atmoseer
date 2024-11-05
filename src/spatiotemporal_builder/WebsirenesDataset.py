@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -24,60 +23,6 @@ class WebsirenesDataset:
         self.websirenes_target = websirenes_target
         self.features_path = Path(__file__).parent / "features"
         self.TIMESTEPS = 5
-
-    def _process_timestamps_in_features(self) -> tuple[int, pd.Timestamp, pd.Timestamp]:
-        folder_path = self.features_path
-        min_timestamp = pd.Timestamp.max
-        max_timestamp = pd.Timestamp.min
-        total_files = 0
-        for file in folder_path.glob("*.npy"):
-            total_files += 1
-            date_str = file.stem
-            try:
-                date_obj = datetime.strptime(date_str, "%Y_%m_%d_%H_features")
-            except ValueError:
-                log.error(f"Invalid timestamp format in filename: {file.name}")
-                exit(1)
-            date_ts = pd.Timestamp(date_obj)
-            if date_ts < min_timestamp:
-                min_timestamp = date_ts
-            if date_ts > max_timestamp:
-                max_timestamp = date_ts
-        if total_files == 0:
-            log.error(
-                f"No timestamps found in {folder_path} directory, please execute SpatioTemporalFeatures first"
-            )
-            exit(1)
-        return total_files, min_timestamp, max_timestamp
-
-    def _validate_timestamps(self, min_timestamp: pd.Timestamp, max_timestamp: pd.Timestamp) -> int:
-        if min_timestamp == pd.Timestamp.max or max_timestamp == pd.Timestamp.min:
-            log.error(
-                "No timestamps found in target directory, please execute WebsirenesTarget first"
-            )
-            exit(1)
-        timestamps = pd.date_range(start=min_timestamp, end=max_timestamp, freq="h")
-        not_found = []
-        total_timestamps = len(timestamps)
-        total_files = 0
-        for timestamp in timestamps:
-            year = timestamp.year
-            month = timestamp.month
-            day = timestamp.day
-            hour = timestamp.hour
-            file = self.features_path / f"{year:04}_{month:02}_{day:02}_{hour:02}_features.npy"
-            if not Path(file).exists():
-                not_found.append(timestamp)
-                continue
-            total_files += 1
-        if len(not_found) > 0:
-            log.error(f"Missing timestamps: {not_found}")
-            exit(1)
-        assert total_files == total_timestamps, "Mismatch between timestamps and files"
-        log.success(
-            f"All timestamps found in target directory from {min_timestamp} to {max_timestamp}"
-        )
-        return total_timestamps
 
     def _has_timesteps(self, year: int, month: int, day: int, hour: int) -> bool:
         start_time = pd.Timestamp(year=year, month=month, day=day, hour=hour)
@@ -141,7 +86,12 @@ class WebsirenesDataset:
         return data_x, data_y
 
     def build_netcdf(
-        self, ignored_months: list[int], use_cache: bool = True, overlapping: bool = True
+        self,
+        min_timestamp: pd.Timestamp,
+        max_timestamp: pd.Timestamp,
+        ignored_months: list[int],
+        use_cache: bool = True,
+        overlapping: bool = True,
     ) -> None:
         if use_cache and self.dataset_path.exists():
             log.warning(
@@ -151,10 +101,9 @@ class WebsirenesDataset:
 
         log.info(f"Building dataset in {self.dataset_path}")
 
-        total_files, min_timestamp, max_timestamp = self._process_timestamps_in_features()
-        # max_timestamp = pd.Timestamp(year=2007, month=1, day=1, hour=10) # for testing purposes
-
-        validated_total_timestamps = self._validate_timestamps(min_timestamp, max_timestamp)
+        validated_total_timestamps = self.websirenes_target.validate_timestamps(
+            min_timestamp, max_timestamp
+        )
 
         has_last_timestamp_plus_one_hour = self._has_timesteps(
             max_timestamp.year, max_timestamp.month, max_timestamp.day, max_timestamp.hour + 1
@@ -174,7 +123,6 @@ class WebsirenesDataset:
         ), "Mismatch between validated timestamps and timestamps"
 
         log.info(f"""
-            Total files in {self.features_path}: {total_files}
             Total timestamps: {validated_total_timestamps}
             Min timestamp: {min_timestamp}
             Max timestamp: {max_timestamp}

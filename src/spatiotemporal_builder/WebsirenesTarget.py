@@ -23,9 +23,9 @@ class SpatioTemporalFeatures:
         websirenes_parser: WebSirenesParser,
         websirenes_square: WebSirenesSquare,
     ):
-        self.websirenes_features_path = Path(__file__).parent / "features"
-        if not self.websirenes_features_path.exists():
-            self.websirenes_features_path.mkdir()
+        self.features_path = Path(__file__).parent / "features"
+        if not self.features_path.exists():
+            self.features_path.mkdir()
 
         self.era5_single_levels_path = (
             Path(__file__).parent.parent.parent / "data/reanalysis/ERA5-single-levels"
@@ -52,9 +52,7 @@ class SpatioTemporalFeatures:
         )
 
     def _write_features(self, features: npt.NDArray[np.float64], timestamp: pd.Timestamp):
-        features_filename = (
-            self.websirenes_features_path / f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
-        )
+        features_filename = self.features_path / f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
         np.save(features_filename, features)
 
     def _get_grid_lats_lons(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
@@ -238,12 +236,6 @@ class SpatioTemporalFeatures:
         ignored_months: list[int],
         use_cache: bool = True,
     ):
-        if use_cache and len(list(self.websirenes_features_path.glob("*.npy"))) > 0:
-            log.warning(
-                f"Using cached target. To clear cache delete the {self.websirenes_features_path} folder"
-            )
-            return
-
         minimum_date = self.websirenes_parser.minimum_date if start_date is None else start_date
         maximum_date = self.websirenes_parser.maximum_date if end_date is None else end_date
 
@@ -259,9 +251,12 @@ class SpatioTemporalFeatures:
             futures = []
 
             for timestamp in timestamps:
-                if self.websirenes_features_path.joinpath(
-                    f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
-                ).exists():
+                if (
+                    use_cache
+                    and self.features_path.joinpath(
+                        f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
+                    ).exists()
+                ):
                     continue
 
                 if timestamp.month in ignored_months:
@@ -269,16 +264,16 @@ class SpatioTemporalFeatures:
 
                 futures.append(executor.submit(self._process_timestamp, timestamp))
 
-            pbar = tqdm(
-                total=len(timestamps),
-                desc="Processing timestamps",
-                file=TqdmLogger(log),
-                dynamic_ncols=True,
-                mininterval=THREE_MINUTES,
-            )
-            for _ in concurrent.futures.as_completed(futures):
+        with tqdm(
+            total=len(timestamps),
+            desc="Processing timestamps",
+            file=TqdmLogger(log),
+            dynamic_ncols=True,
+            mininterval=THREE_MINUTES,
+        ) as pbar:
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
                 pbar.update()
-            pbar.close()
         # multiprocessing version took 22.98s 2011-04-12T21:00:00 2011-04-13T10:00:00
         # for i in tqdm(
         #     range(len(timestamps)),
@@ -287,7 +282,7 @@ class SpatioTemporalFeatures:
         #     dynamic_ncols=True,
         #     mininterval=THREE_MINUTES,
         # ):
-        #     if self.websirenes_features_path.joinpath(
+        #     if self.features_path.joinpath(
         #         f"{timestamps[i].strftime('%Y_%m_%d_%H')}_features.npy"
         #     ).exists():
         #         continue
@@ -300,15 +295,40 @@ class SpatioTemporalFeatures:
         end_time = time.time()
         log.info(f"Target built in {end_time - start_time:.2f} seconds")
 
-        if len(list(self.websirenes_features_path.glob("*.npy"))) != len(timestamps):
-            log.error(
-                f"Error building target. Expected {len(timestamps)} files but found {len(list(self.websirenes_features_path.glob('*.npy')))}"
-            )
-            exit(1)
+        validated_total_timestamps = self.validate_timestamps(minimum_date, maximum_date)
 
         log.success(
-            f"Websirenes features hourly built successfully in {self.websirenes_features_path}"
+            f"Websirenes features hourly built successfully in {self.features_path} - {validated_total_timestamps} files"
         )
+
+    def validate_timestamps(self, min_timestamp: pd.Timestamp, max_timestamp: pd.Timestamp) -> int:
+        if min_timestamp == pd.Timestamp.max or max_timestamp == pd.Timestamp.min:
+            log.error(
+                "No timestamps found in target directory, please execute WebsirenesTarget first"
+            )
+            exit(1)
+        timestamps = pd.date_range(start=min_timestamp, end=max_timestamp, freq="h")
+        not_found = []
+        total_timestamps = len(timestamps)
+        total_files = 0
+        for timestamp in timestamps:
+            year = timestamp.year
+            month = timestamp.month
+            day = timestamp.day
+            hour = timestamp.hour
+            file = self.features_path / f"{year:04}_{month:02}_{day:02}_{hour:02}_features.npy"
+            if not Path(file).exists():
+                not_found.append(timestamp)
+                continue
+            total_files += 1
+        if len(not_found) > 0:
+            log.error(f"Missing timestamps: {not_found}")
+            exit(1)
+        assert total_files == total_timestamps, "Mismatch between timestamps and files"
+        log.success(
+            f"All timestamps found in target directory from {min_timestamp} to {max_timestamp}"
+        )
+        return total_timestamps
 
 
 websirenes_target = SpatioTemporalFeatures(websirenes_parser, websirenes_square)
