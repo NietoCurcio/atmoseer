@@ -2,6 +2,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 
+# from metpy.calc import wind_components see transform_wind
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -71,11 +72,136 @@ class WebSirenesSquare:
             exit(1)
         return median_ds_time
 
-    def _get_era5land_precipitation_in_square(
+    def get_relative_humidity_in_square(self, square: Square, ds_time: xr.Dataset):
+        # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
+        corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
+        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        corner_data = {
+            corner: ds_time.sel(latitude=lat, longitude=lon)
+            for corner, (lat, lon) in zip(corners, coords)
+        }
+        assert (
+            corner_data["top_left"]["r"].size == 3
+        ), f"top_left['r'].size: {corner_data['top_left']['r'].size}"
+
+        results = []
+        for corner in corner_data:
+            value = corner_data[corner]["r"].values
+            if np.isnan(value).any():
+                lat, lon = dict(square)[corner]
+                value = self._find_nearest_non_null(ds_time, lat, lon, "r")
+            results.append(value)
+        assert len(results) == 4, f"len(results)={len(results)} != 4"
+        assert len(results[0]) == 3, f"len(results[0])={len(results[0])} != 3"
+        corner_sums = [np.sum(values) for values in results]
+        best_corner = corners[np.argmax(corner_sums)]
+        # return corner_data[best_corner]["r"].values.astype(np.float64)
+        return corner_data[best_corner]["r"].values
+
+    def get_temperature_in_square(self, square: Square, ds_time: xr.Dataset):
+        # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
+        corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
+        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        corner_data = {
+            corner: ds_time.sel(latitude=lat, longitude=lon)
+            for corner, (lat, lon) in zip(corners, coords)
+        }
+        assert (
+            corner_data["top_left"]["t"].size == 3
+        ), f"top_left['t'].size: {corner_data['top_left']['t'].size}"
+
+        results = []
+        for corner in corner_data:
+            value = corner_data[corner]["t"].values
+            if np.isnan(value).any():
+                lat, lon = dict(square)[corner]
+                value = self._find_nearest_non_null(ds_time, lat, lon, "t")
+            results.append(value)
+        assert len(results) == 4, f"len(results)={len(results)} != 4"
+        assert len(results[0]) == 3, f"len(results[0])={len(results[0])} != 3"
+        corner_sums = [np.sum(values) for values in results]
+        best_corner = corners[np.argmax(corner_sums)]
+        return corner_data[best_corner]["t"].values
+
+    def get_u_component_in_square(self, square: Square, ds_time: xr.Dataset):
+        # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
+        corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
+        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        corner_data = {
+            corner: ds_time.sel(latitude=lat, longitude=lon)
+            for corner, (lat, lon) in zip(corners, coords)
+        }
+        assert (
+            corner_data["top_left"]["u"].size == 3
+        ), f"top_left['u'].size: {corner_data['top_left']['u'].size}"
+
+        results = []
+        for corner in corner_data:
+            value = corner_data[corner]["u"].values
+            if np.isnan(value).any():
+                lat, lon = dict(square)[corner]
+                value = self._find_nearest_non_null(ds_time, lat, lon, "u")
+            results.append(value)
+        assert len(results) == 4, f"len(results)={len(results)} != 4"
+        assert len(results[0]) == 3, f"len(results[0])={len(results[0])} != 3"
+        corner_sums = [np.sum(values) for values in results]
+        best_corner = corners[np.argmax(corner_sums)]
+        datazada = corner_data[best_corner]["u"].values
+        return datazada
+
+    def get_v_component_in_square(self, square: Square, ds_time: xr.Dataset):
+        # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
+        corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
+        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        corner_data = {
+            corner: ds_time.sel(latitude=lat, longitude=lon)
+            for corner, (lat, lon) in zip(corners, coords)
+        }
+        assert (
+            corner_data["top_left"]["v"].size == 3
+        ), f"top_left['v'].size: {corner_data['top_left']['v'].size}"
+
+        results = []
+        for corner in corner_data:
+            value = corner_data[corner]["v"].values
+            if np.isnan(value).any():
+                lat, lon = dict(square)[corner]
+                value = self._find_nearest_non_null(ds_time, lat, lon, "v")
+            results.append(value)
+        assert len(results) == 4, f"len(results)={len(results)} != 4"
+        assert len(results[0]) == 3, f"len(results[0])={len(results[0])} != 3"
+        corner_sums = [np.sum(values) for values in results]
+        best_corner = corners[np.argmax(corner_sums)]
+        return corner_data[best_corner]["v"].values
+
+    def get_w_component_in_square(self, square: Square, ds_time: xr.Dataset):
+        # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
+        corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
+        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        corner_data = {
+            corner: ds_time.sel(latitude=lat, longitude=lon)
+            for corner, (lat, lon) in zip(corners, coords)
+        }
+        assert (
+            corner_data["top_left"]["w"].size == 3
+        ), f"top_left['w'].size: {corner_data['top_left']['w'].size}"
+
+        results = []
+        for corner in corner_data:
+            value = corner_data[corner]["w"].values
+            if np.isnan(value).any():
+                lat, lon = dict(square)[corner]
+                value = self._find_nearest_non_null(ds_time, lat, lon, "w")
+            results.append(value)
+        assert len(results) == 4, f"len(results)={len(results)} != 4"
+        assert len(results[0]) == 3, f"len(results[0])={len(results[0])} != 3"
+        corner_sums = [np.sum(values) for values in results]
+        best_corner = corners[np.argmax(corner_sums)]
+        return corner_data[best_corner]["w"].values
+
+    def _get_era5_single_levels_precipitation_in_square(
         self, square: Square, era5land_at_time: xr.Dataset, data_var="tp"
     ) -> float:
-        # TODO REMOVE IT
-        data_var = "t2m"
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
         coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
 
@@ -94,8 +220,9 @@ class WebSirenesSquare:
 
         if np.isnan(max_tp):
             lat_mean, lon_mean = np.mean(coords, axis=0)
-            return self._find_nearest_non_null(era5land_at_time, lat_mean, lon_mean, data_var)
-        return max_tp
+            max_tp = self._find_nearest_non_null(era5land_at_time, lat_mean, lon_mean, data_var)
+        m_to_mm = 1000
+        return max_tp * m_to_mm
 
     def get_features_in_square(
         self,
@@ -135,12 +262,13 @@ class WebSirenesSquare:
         timestamp: pd.Timestamp,
         ds_time: xr.Dataset,
     ) -> float:
-        # TODO REMOVE IT
-        return self._get_era5land_precipitation_in_square(square, ds_time)
-
+        """
+        It would be worth searching for ways to decrease the error in the rainfall dataset. Directions may include applying preprocessing techniques to sparse data and adding data from other geographic regions. The former is relevant since rainfall data are unbalanced with many periods without rain. The latter would be helpful to avoid overfitting the models.
+        Rafaela Castro paper
+        """
         if len(websirenes_keys) == 0:
             # No stations in the square, use ERA5Land precipitation in square
-            return self._get_era5land_precipitation_in_square(square, ds_time)
+            return self._get_era5_single_levels_precipitation_in_square(square, ds_time)
 
         precipitations_15_min_aggregated: list[float] = []
         for key in websirenes_keys:
@@ -158,12 +286,14 @@ class WebSirenesSquare:
             if m15.isnull().all():
                 # All values are NaN in station "key" from "time_lower_bound" to "time_upper_bound",
                 # use ERA5Land max precipitation in square
-                m15 = np.array(self._get_era5land_precipitation_in_square(square, ds_time))
+                m15 = np.array(
+                    self._get_era5_single_levels_precipitation_in_square(square, ds_time)
+                )
             precipitations_15_min_aggregated.append(m15.sum().item())
         max_precipitation = max(precipitations_15_min_aggregated)
         # see "ge=0, but txt has -99.99 values" comment in WebSirenesParser.py
         if max_precipitation < 0:
-            return self._get_era5land_precipitation_in_square(square, ds_time)
+            return self._get_era5_single_levels_precipitation_in_square(square, ds_time)
         return max_precipitation
 
     def get_square(

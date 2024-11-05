@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import pandas as pd
 from tqdm import tqdm
@@ -70,12 +70,7 @@ class WebSirenesKeys:
         if df.index.max() > self.websirenes_parser.maximum_date:
             self.websirenes_parser.maximum_date = df.index.max()
 
-    def build_keys(
-        self,
-        start_date: Optional[pd.Timestamp],
-        end_date: Optional[pd.Timestamp],
-        use_cache: bool = True,
-    ):
+    def build_keys(self, use_cache: bool = True):
         """
         Builds datasets by key (latitude and longitude) for each station
 
@@ -95,10 +90,10 @@ class WebSirenesKeys:
         Returns:
             None
         """
-
-        if use_cache and len(list(self.websirenes_keys_path.glob("*.parquet"))) > 0:
+        total_files = len(list(self.websirenes_keys_path.glob("*.parquet")))
+        if use_cache and total_files > 0:
             log.warning(
-                f"Using cached keys. To clear cache delete the {self.websirenes_keys_path} folder"
+                f"Using cached keys, {total_files} files found. To clear cache delete the {self.websirenes_keys_path} folder"
             )
             return
 
