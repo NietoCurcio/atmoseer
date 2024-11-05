@@ -102,7 +102,7 @@ class WebsirenesDataset:
         log.info(f"Building dataset in {self.dataset_path}")
 
         validated_total_timestamps = self.websirenes_target.validate_timestamps(
-            min_timestamp, max_timestamp
+            min_timestamp, max_timestamp, ignored_months
         )
 
         has_last_timestamp_plus_one_hour = self._has_timesteps(
