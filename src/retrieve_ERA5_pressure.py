@@ -141,8 +141,11 @@ class CDSDatasetDownloader:
         for year, month in self._get_dates_generator():
             expected_files.append(f"RJ_{year}_{month}.nc")
 
-        if len(downloaded_files) != len(expected_files):
-            missing_files = set(expected_files) - set([file.name for file in downloaded_files])
+        print(f"len downloaded_files: {len(downloaded_files)}")
+        print(f"len expected_files: {len(expected_files)}")
+
+        missing_files = set(expected_files) - set([file.name for file in downloaded_files])
+        if len(missing_files) != 0:
             print(f"Missing files: {missing_files}")
             raise FileNotFoundError("Not all datasets were downloaded")
 
