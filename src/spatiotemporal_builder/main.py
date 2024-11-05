@@ -84,13 +84,12 @@ def check_data_requirements():
         exit(1)
 
 
-def build_target(
-    start_date: Optional[pd.Timestamp], end_date: Optional[pd.Timestamp], ignored_months: list[int]
-):
+def build_target(start_date: pd.Timestamp, end_date: pd.Timestamp, ignored_months: list[int]):
     try:
         websirenes_keys.build_keys()
+        # end_date = end_date.replace(hour=10, month=9, year=2017) # for testing purposes
         websirenes_target.build_timestamps_hourly(start_date, end_date, ignored_months)
-        websirenes_dataset.build_netcdf(ignored_months)
+        websirenes_dataset.build_netcdf(start_date, end_date, ignored_months)
     except Exception as e:
         log.error(f"Error while building target: {e}")
 
