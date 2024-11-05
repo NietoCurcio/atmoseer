@@ -295,38 +295,49 @@ class SpatioTemporalFeatures:
         end_time = time.time()
         log.info(f"Target built in {end_time - start_time:.2f} seconds")
 
-        validated_total_timestamps = self.validate_timestamps(minimum_date, maximum_date)
+        validated_total_timestamps = self.validate_timestamps(
+            minimum_date, maximum_date, ignored_months
+        )
 
         log.success(
             f"Websirenes features hourly built successfully in {self.features_path} - {validated_total_timestamps} files"
         )
 
-    def validate_timestamps(self, min_timestamp: pd.Timestamp, max_timestamp: pd.Timestamp) -> int:
-        if min_timestamp == pd.Timestamp.max or max_timestamp == pd.Timestamp.min:
-            log.error(
-                "No timestamps found in target directory, please execute WebsirenesTarget first"
-            )
-            exit(1)
+    def validate_timestamps(
+        self, min_timestamp: pd.Timestamp, max_timestamp: pd.Timestamp, ignored_months: list[int]
+    ) -> int:
         timestamps = pd.date_range(start=min_timestamp, end=max_timestamp, freq="h")
         not_found = []
-        total_timestamps = len(timestamps)
+        total_timestamps = 0
         total_files = 0
+
         for timestamp in timestamps:
+            if timestamp.month in ignored_months:
+                continue
+
+            total_timestamps += 1
             year = timestamp.year
             month = timestamp.month
             day = timestamp.day
             hour = timestamp.hour
             file = self.features_path / f"{year:04}_{month:02}_{day:02}_{hour:02}_features.npy"
+
             if not Path(file).exists():
                 not_found.append(timestamp)
                 continue
+
             total_files += 1
-        if len(not_found) > 0:
+
+        if not_found:
             log.error(f"Missing timestamps: {not_found}")
             exit(1)
-        assert total_files == total_timestamps, "Mismatch between timestamps and files"
+
+        assert (
+            total_files == total_timestamps
+        ), "Mismatch between timestamps and files (ignoring specific months)"
+
         log.success(
-            f"All timestamps found in target directory from {min_timestamp} to {max_timestamp}"
+            f"All timestamps found in target directory from {min_timestamp} to {max_timestamp}, ignoring months: {ignored_months}"
         )
         return total_timestamps
 
