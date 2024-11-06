@@ -118,13 +118,8 @@ class SpatioTemporalFeatures:
     ):
         top_down_lats = self.sorted_latitudes_ascending[::-1]
         left_right_lons = self.sorted_longitudes_ascending
-        #
-        for i, lat in tqdm(
-            enumerate(top_down_lats),
-            desc="Processing grid",
-            leave=False,
-            total=self.sorted_latitudes_ascending.size,
-        ):
+
+        for i, lat in enumerate(top_down_lats):
             for j, lon in enumerate(left_right_lons):
                 square = self.websirenes_square.get_square(
                     lat, lon, self.sorted_latitudes_ascending, self.sorted_longitudes_ascending
@@ -246,7 +241,7 @@ class SpatioTemporalFeatures:
 
         log.info(f"Building websirenes target from {timestamps[0]} to {timestamps[-1]}")
         start_time = time.time()
-        THREE_MINUTES = 60 * 3
+        ONE_MINUTE = 60 * 1
         with concurrent.futures.ProcessPoolExecutor() as executor:
             futures = []
 
@@ -263,17 +258,18 @@ class SpatioTemporalFeatures:
                     continue
 
                 futures.append(executor.submit(self._process_timestamp, timestamp))
+            log.info("Tasks submitted")
 
-        with tqdm(
-            total=len(timestamps),
-            desc="Processing timestamps",
-            file=TqdmLogger(log),
-            dynamic_ncols=True,
-            mininterval=THREE_MINUTES,
-        ) as pbar:
-            for future in concurrent.futures.as_completed(futures):
-                future.result()
-                pbar.update()
+            with tqdm(
+                total=len(timestamps),
+                desc="Processing timestamps",
+                file=TqdmLogger(log),
+                dynamic_ncols=True,
+                mininterval=ONE_MINUTE,
+            ) as pbar:
+                for future in concurrent.futures.as_completed(futures):
+                    future.result()
+                    pbar.update()
         # multiprocessing version took 22.98s 2011-04-12T21:00:00 2011-04-13T10:00:00
         # for i in tqdm(
         #     range(len(timestamps)),
