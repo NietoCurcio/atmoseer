@@ -6,29 +6,32 @@ from datetime import datetime, timedelta
 from netCDF4 import Dataset
 import sys
 import argparse
+import logging
 
-# Definir limites de coordenadas de interesse
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Define coordinate bounds of interest
 lon_min, lon_max = -45.05290312102409, -42.35676996062447
 lat_min, lat_max = -23.801876626302175, -21.699774257353113
 
-# Diretório de saída
+# Output directory
 output_directory = "data/goes16/glm_files/"
 
 def create_directory(directory):
-    """Cria o diretório se ele não existir."""
+    """Creates the directory if it doesn't exist."""
     os.makedirs(directory, exist_ok=True)
-    print(f"Diretório {directory} criado (ou já existia).")
-
+    logging.info(f"Directory {directory} created (or already existed).")
 
 def clear_directory(directory):
-    """Limpa o diretório de saída e cria novamente."""
+    """Clears the output directory and recreates it."""
     if os.path.exists(directory):
         shutil.rmtree(directory)
-        print(f"Diretório {directory} limpo.")
+        logging.info(f"Directory {directory} cleared.")
     create_directory(directory)
 
 def download_files(start_date, end_date):
-    """Baixa os arquivos GLM para um intervalo de datas especificado e faz o crop por coordenadas."""
+    """Downloads GLM files for a specified date range and crops by coordinates."""
     current_date = start_date
     fs = s3fs.S3FileSystem(anon=True)
 
@@ -37,13 +40,13 @@ def download_files(start_date, end_date):
         day_of_year = current_date.timetuple().tm_yday 
         bucket_path = f'noaa-goes16/GLM-L2-LCFA/{year}/{day_of_year:03d}/'
 
-        print(f"Buscando arquivos para {current_date.strftime('%Y-%m-%d')} (dia {day_of_year})")
+        logging.info(f"Searching for files for {current_date.strftime('%Y-%m-%d')} (day {day_of_year})")
         
-        # Diretório de saída específico para o dia atual
+        # Specific output directory for the current day
         day_output_directory = os.path.join(output_directory, current_date.strftime('%Y-%m-%d'))
         clear_directory(day_output_directory)
 
-        # Iterar pelas subpastas de cada hora (00 a 23)
+        # Iterate through the subfolders of each hour (00 to 23)
         files = []
         for hour in range(24):
             hour_path = bucket_path + f"{hour:02d}/"  
@@ -51,22 +54,22 @@ def download_files(start_date, end_date):
                 hourly_files = fs.ls(hour_path)
                 files.extend(hourly_files)  
             except FileNotFoundError:
-                print(f"Hora {hour:02d} não encontrada no bucket. Pulando...")
+                logging.warning(f"Hour {hour:02d} not found in bucket. Skipping...")
 
-        print(f"Total de arquivos encontrados para {current_date.strftime('%Y-%m-%d')}: {len(files)}")
+        logging.info(f"Total files found for {current_date.strftime('%Y-%m-%d')}: {len(files)}")
 
         for file in files:
             file_name = file.split('/')[-1]
             local_file_path = os.path.join(day_output_directory, file_name)
-            print(f"Baixando: {file} para {local_file_path}")
+            logging.info(f"Downloading: {file} to {local_file_path}")
             fs.get(file, local_file_path)
             filter_by_coordinates(local_file_path)
 
-        print(f"Download e filtro para {current_date.strftime('%Y-%m-%d')} concluídos.")
+        logging.info(f"Download and filter for {current_date.strftime('%Y-%m-%d')} completed.")
         current_date += timedelta(days=1)
 
 def filter_by_coordinates(file_path):
-    """Filtra os eventos GLM de um arquivo NetCDF com base nas coordenadas fornecidas."""
+    """Filters GLM events from a NetCDF file based on provided coordinates."""
     dataset = None
     try:
         dataset = Dataset(file_path, 'r')
@@ -74,8 +77,8 @@ def filter_by_coordinates(file_path):
         longitudes = dataset.variables['flash_lon'][:]
         latitudes = dataset.variables['flash_lat'][:]
 
-        print(f"Longitude mínima: {longitudes.min()}, máxima: {longitudes.max()}")
-        print(f"Latitude mínima: {latitudes.min()}, máxima: {latitudes.max()}")
+        logging.info(f"Minimum longitude: {longitudes.min()}, maximum: {longitudes.max()}")
+        logging.info(f"Minimum latitude: {latitudes.min()}, maximum: {latitudes.max()}")
 
         mask = (
             (longitudes >= lon_min) & (longitudes <= lon_max) &
@@ -83,30 +86,29 @@ def filter_by_coordinates(file_path):
         )
 
         if np.sum(mask) == 0:
-            print(f"Nenhum evento dentro do filtro encontrado em {file_path}. Removendo arquivo.")
+            logging.info(f"No events within filter found in {file_path}. Removing file.")
             dataset.close()
             os.remove(file_path)
         else:
-            print(f"Eventos dentro do filtro encontrados no arquivo {file_path}.")
+            logging.info(f"Events within filter found in file {file_path}.")
         
     except Exception as e:
-        print(f"Erro ao filtrar o arquivo {file_path}: {e}")
-
+        logging.error(f"Error filtering file {file_path}: {e}")
 
 def main(argv):
-    parser = argparse.ArgumentParser(description='Download e filtro de arquivos GLM por coordenadas.')
-    parser.add_argument('-b', '--start_date', required=True, help='Data de início no formato YYYY-MM-DD')
-    parser.add_argument('-e', '--end_date', required=True, help='Data de término no formato YYYY-MM-DD')
+    parser = argparse.ArgumentParser(description='Download and filter GLM files by coordinates.')
+    parser.add_argument('-b', '--start_date', required=True, help='Start date in the format YYYY-MM-DD')
+    parser.add_argument('-e', '--end_date', required=True, help='End date in the format YYYY-MM-DD')
     args = parser.parse_args(argv[1:])
 
-    # Converter as strings de data para objetos datetime
+    # Convert date strings to datetime objects
     start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
     end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
 
-    # Verificar se a data de início é menor ou igual à data de término
-    assert start_date <= end_date, "A data de início deve ser anterior ou igual à data de término."
+    # Check if the start date is less than or equal to the end date
+    assert start_date <= end_date, "The start date must be earlier or equal to the end date."
 
-    # Iniciar o processo de download e filtro
+    # Start the download and filter process
     download_files(start_date, end_date)
 
 if __name__ == "__main__":
