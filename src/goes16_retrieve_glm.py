@@ -8,6 +8,7 @@ import xarray as xr
 import sys
 import argparse
 import logging
+import time
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -33,7 +34,7 @@ def clear_directory(directory):
         logging.info(f"Directory {directory} cleared.")
     create_directory(directory)
 
-def download_files(start_date, end_date):
+def download_files(start_date, end_date, ignored_months):
     """Download and process GLM files for a specified date range."""
     current_date = start_date
     fs = s3fs.S3FileSystem(anon=True)
@@ -43,6 +44,11 @@ def download_files(start_date, end_date):
 
     temp_files = []
     while current_date <= end_date:
+        if (current_date.month in ignored_months):
+            day = current_date.strftime('%Y_%m_%d')
+            logging.info(f"Ignoring data for {day}")
+            current_date += timedelta(days=1)
+            continue
         year = current_date.year
         day_of_year = current_date.timetuple().tm_yday 
         bucket_path = f'noaa-goes16/GLM-L2-LCFA/{year}/{day_of_year:03d}/'
@@ -127,17 +133,28 @@ def aggregate_files(files, current_date, hour):
         logging.info("No data to aggregate in this round.")
 
 def main(argv):
+    '''
+    Example usage:
+    python src/goes16_retrieve_glm.py --start_date "2024-01-13" --end_date "2024-01-13"
+    '''
     parser = argparse.ArgumentParser(description='Download and filter GLM files by coordinates.')
-    parser.add_argument('-b', '--start_date', required=True, help='Start date in the format YYYY-MM-DD')
-    parser.add_argument('-e', '--end_date', required=True, help='End date in the format YYYY-MM-DD')
+    parser.add_argument('--start_date', type=str, required=True, help='Start date in the format YYYY-MM-DD')
+    parser.add_argument('--end_date', type=str, required=True, help='End date in the format YYYY-MM-DD')
+    parser.add_argument("--ignored_months", nargs='+', type=int, required=False, default=[6, 7, 8],
+                        help="Months to ignore (e.g., --ignored_months 6 7 8)")
     args = parser.parse_args(argv[1:])
+    ignored_months = args.ignored_months
 
     start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
     end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
 
     assert start_date <= end_date, "Start date must be before or equal to the end date."
 
-    download_files(start_date, end_date)
+    download_files(start_date, end_date, ignored_months)
 
 if __name__ == "__main__":
+    start_time = time.time()  # Record the start time
     main(sys.argv)
+    end_time = time.time()  # Record the end time
+    duration = (end_time - start_time) / 60  # Calculate duration in minutes
+    print(f"Script execution time: {duration:.2f} minutes.")
