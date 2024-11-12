@@ -7,30 +7,34 @@ from netCDF4 import Dataset
 import xarray as xr
 import sys
 import argparse
+import logging
 
-# Definir limites de coordenadas de interesse (Rio de Janeiro)
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Define coordinate boundaries of interest (Rio de Janeiro)
 lon_min, lon_max = -45.05290312102409, -42.35676996062447
 lat_min, lat_max = -23.801876626302175, -21.699774257353113
 
-# Diretórios de saída
+# Output directories
 output_directory = "data/goes16/glm_files/"
 temp_directory = "data/goes16/temp_glm_files/"
 final_directory = "data/goes16/aggregated_glm_files/"
 
 def create_directory(directory):
-    """Cria o diretório se ele não existir."""
+    """Create the directory if it does not exist."""
     os.makedirs(directory, exist_ok=True)
-    print(f"Diretório {directory} criado (ou já existia).")
+    logging.info(f"Directory {directory} created (or already existed).")
 
 def clear_directory(directory):
-    """Limpa o diretório e cria novamente."""
+    """Clear the directory and recreate it."""
     if os.path.exists(directory):
         shutil.rmtree(directory)
-        print(f"Diretório {directory} limpo.")
+        logging.info(f"Directory {directory} cleared.")
     create_directory(directory)
 
 def download_files(start_date, end_date):
-    """Baixa e processa os arquivos GLM para um intervalo de datas especificado."""
+    """Download and process GLM files for a specified date range."""
     current_date = start_date
     fs = s3fs.S3FileSystem(anon=True)
 
@@ -43,7 +47,7 @@ def download_files(start_date, end_date):
         day_of_year = current_date.timetuple().tm_yday 
         bucket_path = f'noaa-goes16/GLM-L2-LCFA/{year}/{day_of_year:03d}/'
 
-        print(f"Buscando arquivos para {current_date.strftime('%Y-%m-%d')} (dia {day_of_year})")
+        logging.info(f"Fetching files for {current_date.strftime('%Y-%m-%d')} (day {day_of_year})")
 
         for hour in range(24):
             hour_path = bucket_path + f"{hour:02d}/"
@@ -51,28 +55,28 @@ def download_files(start_date, end_date):
             try:
                 hourly_files = fs.ls(hour_path)
             except FileNotFoundError:
-                print(f"Hora {hour:02d} não encontrada no bucket. Pulando...")
+                logging.warning(f"Hour {hour:02d} not found in the bucket. Skipping...")
 
             for file in hourly_files:
                 file_name = file.split('/')[-1]
                 local_file_path = os.path.join(temp_directory, file_name)
-                print(f"Baixando: {file} para {local_file_path}")
+                logging.info(f"Downloading: {file} to {local_file_path}")
                 fs.get(file, local_file_path)
                 
                 if not filter_by_coordinates(local_file_path):
-                    open(local_file_path, 'w').close()  # Cria arquivo vazio se não há dados no Rio
+                    open(local_file_path, 'w').close()  # Create empty file if there is no data in Rio
 
                 temp_files.append(local_file_path)
 
                 if len(temp_files) == 20:
                     aggregate_files(temp_files, current_date, hour)
-                    clear_directory(temp_directory)  # Limpar a pasta temporária para o próximo ciclo
+                    clear_directory(temp_directory)  # Clear the temporary folder for the next cycle
                     temp_files.clear()
 
         current_date += timedelta(days=1)
 
 def filter_by_coordinates(file_path):
-    """Filtra os eventos GLM de um arquivo NetCDF com base nas coordenadas fornecidas."""
+    """Filter GLM events in a NetCDF file based on the provided coordinates."""
     try:
         dataset = Dataset(file_path, 'r')
         longitudes = dataset.variables['flash_lon'][:]
@@ -85,27 +89,27 @@ def filter_by_coordinates(file_path):
         )
 
         if np.sum(mask) == 0:
-            print(f"Nenhum evento dentro do filtro encontrado em {file_path}. Removendo arquivo.")
+            logging.info(f"No events within the filter found in {file_path}. Removing file.")
             return False
         else:
-            print(f"Eventos dentro do filtro encontrados no arquivo {file_path}.")
+            logging.info(f"Events within the filter found in file {file_path}.")
             return True
     except Exception as e:
-        print(f"Erro ao filtrar o arquivo {file_path}: {e}")
+        logging.error(f"Error filtering file {file_path}: {e}")
         return False
 
 def aggregate_files(files, current_date, hour):
-    """Agrupa 30 arquivos válidos e salva como um único arquivo NetCDF."""
+    """Aggregate 30 valid files and save them as a single NetCDF file."""
     datasets = []
     
     for file in files:
-        if os.path.getsize(file) > 0:  # Ignorar arquivos vazios
+        if os.path.getsize(file) > 0:  # Ignore empty files
             ds = xr.open_dataset(file)
             datasets.append(ds)
 
     if datasets:
         try:
-            # Remover 'number_of_events' e 'number_of_groups' no momento da concatenação
+            # Remove 'number_of_events' and 'number_of_groups' at the time of concatenation
             combined = xr.concat(
                 [ds.drop_dims(['number_of_events', 'number_of_groups', 'number_of_flashes'], errors="ignore") for ds in datasets],
                 dim='time',
@@ -116,23 +120,22 @@ def aggregate_files(files, current_date, hour):
             output_file_name = f"glm_agg_{current_date.strftime('%Y%m%d')}_{hour:02d}.nc"
             output_file_path = os.path.join(final_directory, output_file_name)
             combined.to_netcdf(output_file_path)
-            print(f"Agrupamento salvo em {output_file_path}")
+            logging.info(f"Aggregation saved in {output_file_path}")
         except ValueError as e:
-            print(f"Erro ao concatenar arquivos: {e}")
+            logging.error(f"Error concatenating files: {e}")
     else:
-        print("Nenhum dado para agrupar nesta rodada.")
-
+        logging.info("No data to aggregate in this round.")
 
 def main(argv):
-    parser = argparse.ArgumentParser(description='Download e filtro de arquivos GLM por coordenadas.')
-    parser.add_argument('-b', '--start_date', required=True, help='Data de início no formato YYYY-MM-DD')
-    parser.add_argument('-e', '--end_date', required=True, help='Data de término no formato YYYY-MM-DD')
+    parser = argparse.ArgumentParser(description='Download and filter GLM files by coordinates.')
+    parser.add_argument('-b', '--start_date', required=True, help='Start date in the format YYYY-MM-DD')
+    parser.add_argument('-e', '--end_date', required=True, help='End date in the format YYYY-MM-DD')
     args = parser.parse_args(argv[1:])
 
     start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
     end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
 
-    assert start_date <= end_date, "A data de início deve ser anterior ou igual à data de término."
+    assert start_date <= end_date, "Start date must be before or equal to the end date."
 
     download_files(start_date, end_date)
 
