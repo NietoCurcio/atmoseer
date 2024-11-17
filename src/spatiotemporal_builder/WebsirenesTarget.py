@@ -1,4 +1,3 @@
-import concurrent.futures
 import os
 import time
 from pathlib import Path
@@ -8,6 +7,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import xarray as xr
+from dask.distributed import Client, Variable, as_completed
 from tqdm import tqdm
 
 from .Logger import TqdmLogger, logger
@@ -23,6 +23,8 @@ class SpatioTemporalFeatures:
         websirenes_parser: WebSirenesParser,
         websirenes_square: WebSirenesSquare,
     ):
+        self.CELLS_WITH_STATION = set()
+
         self.features_path = Path(__file__).parent / "features"
         if not self.features_path.exists():
             self.features_path.mkdir()
@@ -119,6 +121,7 @@ class SpatioTemporalFeatures:
         top_down_lats = self.sorted_latitudes_ascending[::-1]
         left_right_lons = self.sorted_longitudes_ascending
 
+        processed = 0
         for i, lat in enumerate(top_down_lats):
             for j, lon in enumerate(left_right_lons):
                 square = self.websirenes_square.get_square(
@@ -129,6 +132,9 @@ class SpatioTemporalFeatures:
                     continue
 
                 websirene_keys = self.websirenes_square.get_keys_in_square(square)
+
+                if len(websirene_keys) > 0:
+                    self.CELLS_WITH_STATION.add((i, j))
 
                 tp = self.websirenes_square.get_precipitation_in_square(
                     square, websirene_keys, timestamp, ds_single_levels
@@ -176,6 +182,10 @@ class SpatioTemporalFeatures:
                     w700,
                     w1000,
                 ]
+                processed += 1
+
+        total_squares = (len(top_down_lats) - 1) * (len(left_right_lons) - 1)
+        assert processed == total_squares, "Not all cells processed"
 
     def _process_timestamp(self, timestamp: pd.Timestamp):
         year = timestamp.year
@@ -242,7 +252,9 @@ class SpatioTemporalFeatures:
         log.info(f"Building websirenes target from {timestamps[0]} to {timestamps[-1]}")
         start_time = time.time()
         ONE_MINUTE = 60 * 1
-        with concurrent.futures.ProcessPoolExecutor() as executor:
+        with Client() as client:
+            self.shared_stations_set = Variable("found_stations")
+            self.shared_stations_set.set(set())
             futures = []
 
             for timestamp in timestamps:
@@ -257,7 +269,7 @@ class SpatioTemporalFeatures:
                 if timestamp.month in ignored_months:
                     continue
 
-                futures.append(executor.submit(self._process_timestamp, timestamp))
+                futures.append(client.submit(self._process_timestamp, timestamp))
             log.info("Tasks submitted")
 
             with tqdm(
@@ -267,16 +279,27 @@ class SpatioTemporalFeatures:
                 dynamic_ncols=True,
                 mininterval=ONE_MINUTE,
             ) as pbar:
-                for future in concurrent.futures.as_completed(futures):
-                    future.result()
-                    pbar.update()
-        # multiprocessing version took 22.98s 2011-04-12T21:00:00 2011-04-13T10:00:00
+                for future in as_completed(futures):
+                    try:
+                        future.result()
+                        pbar.update()
+                    except Exception as e:
+                        log.error(f"Error processing timestamp: {e}")
+                        exit(1)
+
+            self.found_stations = self.shared_stations_set.get()
+
+        end_time = time.time()
+        log.info(f"Target built in {end_time - start_time:.2f} seconds - parallel")
+
+        # start_time = time.time()
+        # os.environ["IS_SEQUENTIAL"] = "True"
         # for i in tqdm(
         #     range(len(timestamps)),
         #     desc="Processing timestamps",
         #     file=TqdmLogger(log),
         #     dynamic_ncols=True,
-        #     mininterval=THREE_MINUTES,
+        #     mininterval=ONE_MINUTE,
         # ):
         #     if self.features_path.joinpath(
         #         f"{timestamps[i].strftime('%Y_%m_%d_%H')}_features.npy"
@@ -287,9 +310,8 @@ class SpatioTemporalFeatures:
         #         continue
 
         #     self._process_timestamp(timestamps[i])
-        # sequential/synchronous version took 62.7s 2011-04-12T21:00:00 2011-04-13T10:00:00
-        end_time = time.time()
-        log.info(f"Target built in {end_time - start_time:.2f} seconds")
+        # end_time = time.time()
+        # log.info(f"Target built in {end_time - start_time:.2f} seconds - sequential")
 
         validated_total_timestamps = self.validate_timestamps(
             minimum_date, maximum_date, ignored_months
@@ -298,6 +320,18 @@ class SpatioTemporalFeatures:
         log.success(
             f"Websirenes features hourly built successfully in {self.features_path} - {validated_total_timestamps} files"
         )
+
+        total_files_in_websirenes_keys = len(
+            list(self.websirenes_square.websirenes_keys.websirenes_keys_path.glob("*.parquet"))
+        )
+
+        assert (
+            len(self.found_stations) == total_files_in_websirenes_keys
+        ), "Expected all stations to be found and processed"
+
+        if len(self.CELLS_WITH_STATION) > 0:
+            np.save(self.features_path / "CELLS_WITH_STATION.npy", list(self.CELLS_WITH_STATION))
+            log.success(f"set {self.CELLS_WITH_STATION}  file created in {self.features_path}")
 
     def validate_timestamps(
         self, min_timestamp: pd.Timestamp, max_timestamp: pd.Timestamp, ignored_months: list[int]

@@ -2,11 +2,11 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 
-# from metpy.calc import wind_components see transform_wind
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import xarray as xr
+from dask.distributed import Lock, Variable
 from pydantic import BaseModel
 
 from .get_neighbors import get_bottom_neighbor, get_right_neighbor, get_upper_neighbor
@@ -27,7 +27,7 @@ class WebSirenesSquare:
     def __init__(self, websirenes_keys: WebSirenesKeys) -> None:
         self.websirenes_keys = websirenes_keys
 
-    def get_keys_in_square(self, square: Square) -> list[str]:
+    def get_keys_in_square(self, square: Square, verbose: bool = False) -> list[str]:
         """
         Get the keys of the websirenes datasets that are inside the square
         Args:
@@ -38,11 +38,33 @@ class WebSirenesSquare:
         for key in keys:
             key_lat, key_lon = map(float, key.split("_"))
 
+            if (
+                verbose
+                and not (key_lat < square.bottom_left[0] or key_lat > square.top_left[0])
+                and not (key_lon < square.top_left[1] or key_lon > square.top_right[1])
+            ):
+                log.success(f"""
+                    Lat and Lon Square:
+                    {square.top_left[0]}{square.top_left[1]} - {square.top_right[0]}{square.top_right[1]}
+                    |              {key_lat} {key_lon}                       |
+                    {square.bottom_left[0]}{square.bottom_left[1]} - {square.bottom_right[0]}{square.bottom_right[1]}
+                """)
+
             if key_lat < square.bottom_left[0] or key_lat > square.top_left[0]:
                 continue
             if key_lon < square.top_left[1] or key_lon > square.top_right[1]:
                 continue
+
             websirenes_keys.append(key)
+
+            # if os.getenv("IS_SEQUENTIAL", None) == "True":
+            #     continue
+
+            with Lock("found_stations"):
+                shared_stations_set: set = Variable("found_stations").get()
+                shared_stations_set.add(key)
+                Variable("found_stations").set(shared_stations_set)
+
         return websirenes_keys
 
     def _find_nearest_non_null(
