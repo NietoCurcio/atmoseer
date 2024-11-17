@@ -21,7 +21,6 @@ class WebsirenesDataset:
 
     def __init__(self, websirenes_target: SpatioTemporalFeatures) -> None:
         self.websirenes_target = websirenes_target
-        self.features_path = Path(__file__).parent / "features"
         self.TIMESTEPS = 5
 
     def _has_timesteps(self, year: int, month: int, day: int, hour: int) -> bool:
@@ -29,7 +28,7 @@ class WebsirenesDataset:
         for timestep in reversed(range(self.TIMESTEPS)):
             current_time = start_time - pd.Timedelta(hours=timestep)
             file = (
-                self.features_path
+                self.websirenes_target.features_path
                 / f"{current_time.year:04}_{current_time.month:02}_{current_time.day:02}_{current_time.hour:02}_features.npy"
             )
             if not Path(file).exists():
@@ -46,7 +45,7 @@ class WebsirenesDataset:
             current_time = start_time - pd.Timedelta(hours=timestep)
             file = f"{current_time.year:04}_{current_time.month:02}_{current_time.day:02}_{current_time.hour:02}_features.npy"
             try:
-                data = np.load(self.features_path / file)
+                data = np.load(self.websirenes_target.features_path / file)
             except Exception as e:
                 print(f"Error loading file {file}: {e}")
                 exit(1)
