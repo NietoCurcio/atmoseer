@@ -7,7 +7,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import xarray as xr
-from dask.distributed import Client, Variable, as_completed
+from dask.distributed import Client, Lock, Variable, as_completed
 from tqdm import tqdm
 
 from .Logger import TqdmLogger, logger
@@ -23,8 +23,6 @@ class SpatioTemporalFeatures:
         websirenes_parser: WebSirenesParser,
         websirenes_square: WebSirenesSquare,
     ):
-        self.CELLS_WITH_STATION = set()
-
         self.features_path = Path(__file__).parent / "features"
         if not self.features_path.exists():
             self.features_path.mkdir()
@@ -134,7 +132,10 @@ class SpatioTemporalFeatures:
                 websirene_keys = self.websirenes_square.get_keys_in_square(square)
 
                 if len(websirene_keys) > 0:
-                    self.CELLS_WITH_STATION.add((i, j))
+                    with Lock("CELLS_WITH_STATION"):
+                        CELLS_WITH_STATION: set = Variable("CELLS_WITH_STATION").get()
+                        CELLS_WITH_STATION.add((i, j))
+                        Variable("CELLS_WITH_STATION").set(CELLS_WITH_STATION)
 
                 tp = self.websirenes_square.get_precipitation_in_square(
                     square, websirene_keys, timestamp, ds_single_levels
@@ -252,9 +253,12 @@ class SpatioTemporalFeatures:
         log.info(f"Building websirenes target from {timestamps[0]} to {timestamps[-1]}")
         start_time = time.time()
         ONE_MINUTE = 60 * 1
+        all_cached = True
         with Client() as client:
             self.shared_stations_set = Variable("found_stations")
+            self.CELLS_WITH_STATION = Variable("CELLS_WITH_STATION")
             self.shared_stations_set.set(set())
+            self.CELLS_WITH_STATION.set(set())
             futures = []
 
             for timestamp in timestamps:
@@ -268,7 +272,7 @@ class SpatioTemporalFeatures:
 
                 if timestamp.month in ignored_months:
                     continue
-
+                all_cached = False
                 futures.append(client.submit(self._process_timestamp, timestamp))
             log.info("Tasks submitted")
 
@@ -288,6 +292,7 @@ class SpatioTemporalFeatures:
                         exit(1)
 
             self.found_stations = self.shared_stations_set.get()
+            self.CELLS_WITH_STATION = self.CELLS_WITH_STATION.get()
 
         end_time = time.time()
         log.info(f"Target built in {end_time - start_time:.2f} seconds - parallel")
@@ -326,8 +331,10 @@ class SpatioTemporalFeatures:
         )
 
         assert (
-            len(self.found_stations) == total_files_in_websirenes_keys
+            all_cached or len(self.found_stations) == total_files_in_websirenes_keys
         ), "Expected all stations to be found and processed"
+
+        log.info(f"Total cells with station: {len(self.CELLS_WITH_STATION)}")
 
         if len(self.CELLS_WITH_STATION) > 0:
             np.save(self.features_path / "CELLS_WITH_STATION.npy", list(self.CELLS_WITH_STATION))
