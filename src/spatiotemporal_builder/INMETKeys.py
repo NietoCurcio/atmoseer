@@ -28,7 +28,7 @@ class INMETKeys(Keys):
         not_founds_in_coords: list[StationNameId] = []
         existing_station_ids = set(self.inmet_coords["id_estacao"].values)
         for file in self.inmet_parser.list_files():
-            file_path = str(self.inmet_parser.websirenes_defesa_civil_path / file)
+            file_path = str(self.inmet_parser.inmet_path / file)
             station_id = self.inmet_parser.read_station_id(file_path)
             if station_id not in existing_station_ids:
                 not_founds_in_coords.append({"name": file, "station_id": station_id})
