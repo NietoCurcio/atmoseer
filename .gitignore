@@ -13,6 +13,8 @@ src/spatiotemporal_builder/target
 src/spatiotemporal_builder/websirenes_keys
 src/spatiotemporal_builder/output_dataset.nc
 
+src/spatiotemporal_builder/inmet_keys
+
 notebooks/alertario/alertario_rain_gauge
 notebooks/alertario/alertario_weather_station
 notebooks/alertario/*.parquet

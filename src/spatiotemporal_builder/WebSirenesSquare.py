@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from .get_neighbors import get_bottom_neighbor, get_right_neighbor, get_upper_neighbor
 from .Logger import logger
-from .WebSirenesKeys import WebSirenesKeys, websirenes_keys
+from .WebSirenesKeys import WebSirenesKeys
 
 log = logger.get_logger(__name__)
 
@@ -312,6 +312,7 @@ class WebSirenesSquare:
                     self._get_era5_single_levels_precipitation_in_square(square, ds_time)
                 )
             precipitations_15_min_aggregated.append(m15.sum().item())
+
         max_precipitation = max(precipitations_15_min_aggregated)
         # see "ge=0, but txt has -99.99 values" comment in WebSirenesParser.py
         if max_precipitation < 0:
@@ -363,6 +364,3 @@ class WebSirenesSquare:
             bottom_right=(lat_right, lon_right),
             top_right=(lat_upper, lon_upper),
         )
-
-
-websirenes_square = WebSirenesSquare(websirenes_keys)

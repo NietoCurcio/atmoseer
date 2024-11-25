@@ -5,8 +5,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from .Logger import logger
-from .WebSirenesCoords import websirenes_coords
-from .WebSirenesParser import WebSirenesParser, websirenes_parser
+from .WebSirenesParser import WebSirenesParser
 
 log = logger.get_logger(__name__)
 
@@ -99,6 +98,7 @@ class WebSirenesKeys:
 
         files = self.websirenes_parser.list_files()
         not_found_in_coords = self._not_founds_in_coords()
+        log.info(f"Found {len(not_found_in_coords)} stations not found in coordinates")
         log.info(f"Processing {len(files)} files to build keys")
         for file in tqdm(files):
             df = self.websirenes_parser.get_dataframe(
@@ -118,6 +118,3 @@ class WebSirenesKeys:
             Maximum date: {self.websirenes_parser.maximum_date}
         """)
         log.success(f"Websirenes keys built successfully in {self.websirenes_keys_path}")
-
-
-websirenes_keys = WebSirenesKeys(websirenes_parser, websirenes_coords)

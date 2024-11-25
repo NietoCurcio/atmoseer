@@ -3,12 +3,17 @@ from typing import Optional
 
 import pandas as pd
 
+from .INMETCoords import get_inmet_coords
+from .INMETKeys import INMETKeys
+from .INMETParser import INMETParser
+from .INMETSquare import INMETSquare
 from .Logger import logger
-from .WebSirenesCoords import websirenes_coords_path
-from .WebsirenesDataset import websirenes_dataset
-from .WebSirenesKeys import websirenes_keys
+from .WebSirenesCoords import get_websirenes_coords
+from .WebsirenesDataset import WebsirenesDataset
+from .WebSirenesKeys import WebSirenesKeys
 from .WebSirenesParser import WebSirenesParser
-from .WebsirenesTarget import websirenes_target
+from .WebSirenesSquare import WebSirenesSquare
+from .WebsirenesTarget import SpatioTemporalFeatures
 
 log = logger.get_logger(__name__)
 
@@ -36,68 +41,97 @@ def validate_dates(
 
 
 def check_data_requirements():
-    try:
-        websirenes_defesa_civil_path = WebSirenesParser.websirenes_defesa_civil_path
-        if not websirenes_defesa_civil_path.exists():
-            raise FileNotFoundError(
-                f"websirenes_defesa_civil folder not found in {websirenes_defesa_civil_path}. Please place the websirenes dataset in the expected folder"
-            )
-        if not any(websirenes_defesa_civil_path.glob("*.txt")):
-            raise FileNotFoundError(f"No txt files found in {websirenes_defesa_civil_path}")
+    pass
+    # try:
+    #     websirenes_defesa_civil_path = WebSirenesParser.websirenes_defesa_civil_path
+    #     if not websirenes_defesa_civil_path.exists():
+    #         raise FileNotFoundError(
+    #             f"websirenes_defesa_civil folder not found in {websirenes_defesa_civil_path}. Please place the websirenes dataset in the expected folder"
+    #         )
+    #     if not any(websirenes_defesa_civil_path.glob("*.txt")):
+    #         raise FileNotFoundError(f"No txt files found in {websirenes_defesa_civil_path}")
 
-        if not websirenes_coords_path.exists():
-            raise FileNotFoundError(
-                f"websirenes_coords.parquet not found in {websirenes_coords_path}. Please place the websirenes coordinates dataset in the expected folder"
-            )
+    #     if not websirenes_coords_path.exists():
+    #         raise FileNotFoundError(
+    #             f"websirenes_coords.parquet not found in {websirenes_coords_path}. Please place the websirenes coordinates dataset in the expected folder"
+    #         )
 
-        if not websirenes_target.era5_pressure_levels_path.exists():
-            raise FileNotFoundError(
-                f"ERA5 pressure levels folder not found in {websirenes_target.era5_pressure_levels_path}. Please place the ERA5 pressure levels dataset in the expected folder"
-            )
+    #     if not websirenes_target.era5_pressure_levels_path.exists():
+    #         raise FileNotFoundError(
+    #             f"ERA5 pressure levels folder not found in {websirenes_target.era5_pressure_levels_path}. Please place the ERA5 pressure levels dataset in the expected folder"
+    #         )
 
-        if not websirenes_target.era5_single_levels_path.exists():
-            raise FileNotFoundError(
-                f"ERA5 single levels folder not found in {websirenes_target.era5_single_levels_path}. Please place the ERA5 single levels dataset in the expected folder"
-            )
+    #     if not websirenes_target.era5_single_levels_path.exists():
+    #         raise FileNotFoundError(
+    #             f"ERA5 single levels folder not found in {websirenes_target.era5_single_levels_path}. Please place the ERA5 single levels dataset in the expected folder"
+    #         )
 
-        if not (websirenes_target.era5_single_levels_path / "monthly_data").exists():
-            raise FileNotFoundError(
-                f"ERA5 single levels monthly_data folder not found in {websirenes_target.era5_single_levels_path}. Please place the ERA5 single levels monthly data in the expected folder"
-            )
+    #     if not (websirenes_target.era5_single_levels_path / "monthly_data").exists():
+    #         raise FileNotFoundError(
+    #             f"ERA5 single levels monthly_data folder not found in {websirenes_target.era5_single_levels_path}. Please place the ERA5 single levels monthly data in the expected folder"
+    #         )
 
-        if not any((websirenes_target.era5_single_levels_path / "monthly_data").glob("*.nc")):
-            raise FileNotFoundError(
-                f"No nc files found in {websirenes_target.era5_single_levels_path / 'monthly_data'}. Please place the ERA5 single levels monthly data in the expected folder"
-            )
+    #     if not any((websirenes_target.era5_single_levels_path / "monthly_data").glob("*.nc")):
+    #         raise FileNotFoundError(
+    #             f"No nc files found in {websirenes_target.era5_single_levels_path / 'monthly_data'}. Please place the ERA5 single levels monthly data in the expected folder"
+    #         )
 
-        if not (websirenes_target.era5_pressure_levels_path / "monthly_data").exists():
-            raise FileNotFoundError(
-                f"ERA5 pressure levels monthly_data folder not found in {websirenes_target.era5_pressure_levels_path}. Please place the ERA5 pressure levels monthly data in the expected folder"
-            )
+    #     if not (websirenes_target.era5_pressure_levels_path / "monthly_data").exists():
+    #         raise FileNotFoundError(
+    #             f"ERA5 pressure levels monthly_data folder not found in {websirenes_target.era5_pressure_levels_path}. Please place the ERA5 pressure levels monthly data in the expected folder"
+    #         )
 
-        if not any((websirenes_target.era5_pressure_levels_path / "monthly_data").glob("*.nc")):
-            raise FileNotFoundError(
-                f"No nc files found in {websirenes_target.era5_pressure_levels_path / 'monthly_data'}. Please place the ERA5 pressure levels monthly data in the expected folder"
-            )
-    except Exception as e:
-        log.error(f"Error while checking data requirements: {e}")
-        exit(1)
+    #     if not any((websirenes_target.era5_pressure_levels_path / "monthly_data").glob("*.nc")):
+    #         raise FileNotFoundError(
+    #             f"No nc files found in {websirenes_target.era5_pressure_levels_path / 'monthly_data'}. Please place the ERA5 pressure levels monthly data in the expected folder"
+    #         )
+    # except Exception as e:
+    #     log.error(f"Error while checking data requirements: {e}")
+    #     exit(1)
+
+
+def get_instances():
+    websirenes_keys = WebSirenesKeys(WebSirenesParser(), get_websirenes_coords())
+    websirenes_square = WebSirenesSquare(websirenes_keys)
+
+    inmet_keys = INMETKeys(INMETParser(), get_inmet_coords())
+    inmet_square = INMETSquare(inmet_keys)
+
+    spatio_temporal_features = SpatioTemporalFeatures(websirenes_square, inmet_square)
+    dataset_builder = WebsirenesDataset(spatio_temporal_features)
+
+    return (
+        websirenes_keys,
+        inmet_keys,
+        spatio_temporal_features,
+        dataset_builder,
+    )
 
 
 def build_features(start_date: pd.Timestamp, end_date: pd.Timestamp, ignored_months: list[int]):
     try:
+        (
+            websirenes_keys,
+            inmet_keys,
+            spatio_temporal_features,
+            dataset_builder,
+        ) = get_instances()
+
         websirenes_keys.build_keys()
-        websirenes_target.build_timestamps_hourly(start_date, end_date, ignored_months)
-        websirenes_dataset.build_netcdf(start_date, end_date, ignored_months)
+        inmet_keys.build_keys()
+
+        spatio_temporal_features.build_timestamps_hourly(start_date, end_date, ignored_months)
+
+        dataset_builder.build_netcdf(start_date, end_date, ignored_months)
     except Exception as e:
-        log.error(f"Error while building target: {e}")
-        exit(1)
+        log.error(f"Error while building features: {e}")
 
 
 def build_test(start_date: pd.Timestamp, end_date: pd.Timestamp):
     try:
-        websirenes_target.build_timestamps_hourly(start_date, end_date, [])
-        websirenes_dataset.build_netcdf(start_date, end_date, [])
+        pass
+        # websirenes_target.build_timestamps_hourly(start_date, end_date, [])
+        # websirenes_dataset.build_netcdf(start_date, end_date, [])
     except Exception as e:
         log.error(f"Error while building test: {e}")
 
