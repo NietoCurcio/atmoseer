@@ -5,7 +5,6 @@ import pandas as pd
 from tqdm import tqdm
 
 from .INMETParser import INMETParser
-from .interfaces.Keys import Keys
 from .Logger import logger
 
 log = logger.get_logger(__name__)
@@ -16,7 +15,7 @@ class StationNameId(TypedDict):
     station_id: int
 
 
-class INMETKeys(Keys):
+class INMETKeys:
     def __init__(self, inmet_parser: INMETParser, inmet_coords: pd.DataFrame) -> None:
         self.inmet_keys_path = Path(__file__).parent / "inmet_keys"
         if not self.inmet_keys_path.exists():
