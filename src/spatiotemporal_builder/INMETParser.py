@@ -20,9 +20,9 @@ class INMETParser:
     def list_files(self) -> list[str]:
         return [x.name for x in self.inmet_path.glob("*.gzip")]
 
-    def read_station_id(file_path: str) -> int:
-        df = pd.read_parquet(file_path)
-        return df["id_estacao"].values[0]
+    def read_station_id(self, file_path: str) -> str:
+        station_id = file_path.split("/")[-1].split("_")[0]
+        return station_id
 
     def get_dataframe(self, file_path: str) -> pd.DataFrame:
         df = pd.read_parquet(file_path)
