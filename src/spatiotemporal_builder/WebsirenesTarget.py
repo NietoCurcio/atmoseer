@@ -10,9 +10,9 @@ import xarray as xr
 from dask.distributed import Client, Lock, Variable, as_completed
 from tqdm import tqdm
 
+from .INMETSquare import INMETSquare
 from .Logger import TqdmLogger, logger
-from .WebSirenesParser import WebSirenesParser, websirenes_parser
-from .WebSirenesSquare import WebSirenesSquare, websirenes_square
+from .WebSirenesSquare import WebSirenesSquare
 
 log = logger.get_logger(__name__)
 
@@ -20,8 +20,8 @@ log = logger.get_logger(__name__)
 class SpatioTemporalFeatures:
     def __init__(
         self,
-        websirenes_parser: WebSirenesParser,
         websirenes_square: WebSirenesSquare,
+        inmet_square: INMETSquare,
     ):
         self.features_path = Path(__file__).parent / "features"
         if not self.features_path.exists():
@@ -37,14 +37,18 @@ class SpatioTemporalFeatures:
         self.current_single_levels_ds = None
         self.current_pressure_levels_ds = None
         self.current_year_month = None
-        self.websirenes_parser = websirenes_parser
+
         self.websirenes_square = websirenes_square
+        self.inmet_square = inmet_square
 
         lats, lons = self._get_grid_lats_lons()
 
         self.sorted_latitudes_ascending = np.sort(lats)
         self.sorted_longitudes_ascending = np.sort(lons)
         log.debug("SpatioTemporalFeatures initialized")
+        log.debug(
+            f"Grid: {len(self.sorted_latitudes_ascending)}x{len(self.sorted_longitudes_ascending)}"
+        )
         log.debug(f"sorted_latitudes_ascending: {self.sorted_latitudes_ascending}")
         log.debug(f"sorted_longitudes_ascending: {self.sorted_longitudes_ascending}")
         log.info(
@@ -130,16 +134,23 @@ class SpatioTemporalFeatures:
                     continue
 
                 websirene_keys = self.websirenes_square.get_keys_in_square(square)
+                inmet_keys = self.inmet_square.get_keys_in_square(square)
 
-                if len(websirene_keys) > 0:
-                    with Lock("CELLS_WITH_STATION"):
-                        CELLS_WITH_STATION: set = Variable("CELLS_WITH_STATION").get()
-                        CELLS_WITH_STATION.add((i, j))
-                        Variable("CELLS_WITH_STATION").set(CELLS_WITH_STATION)
+                if inmet_keys or websirene_keys:
+                    with Lock("stations_cells"):
+                        stations_cells: set = Variable("stations_cells").get()
+                        stations_cells.add((i, j))
+                        Variable("stations_cells").set(stations_cells)
 
                 tp = self.websirenes_square.get_precipitation_in_square(
                     square, websirene_keys, timestamp, ds_single_levels
                 )
+
+                tp_inmet = self.inmet_square.get_precipitation_in_square(
+                    square, inmet_keys, timestamp, ds_single_levels
+                )
+
+                tp = max(tp, tp_inmet)
 
                 r1000, r700, r200 = self.websirenes_square.get_relative_humidity_in_square(
                     square, ds_pressure_levels
@@ -242,8 +253,8 @@ class SpatioTemporalFeatures:
         ignored_months: list[int],
         use_cache: bool = True,
     ):
-        minimum_date = self.websirenes_parser.minimum_date if start_date is None else start_date
-        maximum_date = self.websirenes_parser.maximum_date if end_date is None else end_date
+        minimum_date = start_date
+        maximum_date = end_date
 
         assert minimum_date != pd.Timestamp.max, "minimum_date should be set during keys building"
         assert maximum_date != pd.Timestamp.min, "maximum_date should be set during keys building"
@@ -256,9 +267,11 @@ class SpatioTemporalFeatures:
         all_cached = True
         with Client() as client:
             self.shared_stations_set = Variable("found_stations")
-            self.CELLS_WITH_STATION = Variable("CELLS_WITH_STATION")
+            self.shared_stations_inmet_set = Variable("found_stations_inmet")
+            self.stations_cells = Variable("stations_cells")
             self.shared_stations_set.set(set())
-            self.CELLS_WITH_STATION.set(set())
+            self.shared_stations_inmet_set.set(set())
+            self.stations_cells.set(set())
             futures = []
 
             for timestamp in timestamps:
@@ -274,7 +287,7 @@ class SpatioTemporalFeatures:
                     continue
                 all_cached = False
                 futures.append(client.submit(self._process_timestamp, timestamp))
-            log.info("Tasks submitted")
+            log.info(f"Tasks submitted - {len(futures)}")
 
             with tqdm(
                 total=len(timestamps),
@@ -289,10 +302,11 @@ class SpatioTemporalFeatures:
                         pbar.update()
                     except Exception as e:
                         log.error(f"Error processing timestamp: {e}")
-                        exit(1)
+                        raise e
 
             self.found_stations = self.shared_stations_set.get()
-            self.CELLS_WITH_STATION = self.CELLS_WITH_STATION.get()
+            self.found_stations_inmet = self.shared_stations_inmet_set.get()
+            self.stations_cells = self.stations_cells.get()
 
         end_time = time.time()
         log.info(f"Target built in {end_time - start_time:.2f} seconds - parallel")
@@ -332,13 +346,23 @@ class SpatioTemporalFeatures:
 
         assert (
             all_cached or len(self.found_stations) == total_files_in_websirenes_keys
-        ), "Expected all stations to be found and processed"
+        ), "Expected all websirenes stations to be found and processed"
+        log.success(f"All websirenes stations processed - {len(self.found_stations)} files")
 
-        log.info(f"Total cells with station: {len(self.CELLS_WITH_STATION)}")
+        total_files_in_inmet_keys = len(
+            list(self.inmet_square.inmet_keys.inmet_keys_path.glob("*.parquet"))
+        )
 
-        if len(self.CELLS_WITH_STATION) > 0:
-            np.save(self.features_path / "CELLS_WITH_STATION.npy", list(self.CELLS_WITH_STATION))
-            log.success(f"set {self.CELLS_WITH_STATION}  file created in {self.features_path}")
+        assert (
+            all_cached or len(self.found_stations_inmet) == total_files_in_inmet_keys
+        ), "Expected all inmet stations to be found and processed"
+        log.success(f"All inmet stations processed - {len(self.found_stations_inmet)} files")
+
+        log.info(f"Total cells with station: {len(self.stations_cells)}")
+
+        if len(self.stations_cells) > 0:
+            np.save(self.features_path / "stations_cells.npy", list(self.stations_cells))
+            log.success(f"set {self.stations_cells}  file created in {self.features_path}")
 
     def validate_timestamps(
         self, min_timestamp: pd.Timestamp, max_timestamp: pd.Timestamp, ignored_months: list[int]
@@ -377,6 +401,3 @@ class SpatioTemporalFeatures:
             f"All timestamps found in target directory from {min_timestamp} to {max_timestamp}, ignoring months: {ignored_months}"
         )
         return total_timestamps
-
-
-websirenes_target = SpatioTemporalFeatures(websirenes_parser, websirenes_square)

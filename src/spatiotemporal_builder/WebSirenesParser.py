@@ -169,6 +169,3 @@ class WebSirenesParser:
         WebSireneSchema.validate(df)
         df.set_index("horaLeitura", inplace=True)
         return df
-
-
-websirenes_parser = WebSirenesParser()
