@@ -1,4 +1,5 @@
 from datetime import timedelta
+from multiprocessing.managers import ListProxy
 from pathlib import Path
 from typing import Optional
 
@@ -6,7 +7,6 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import xarray as xr
-from dask.distributed import Lock, Variable
 from pydantic import BaseModel
 
 from .get_neighbors import get_bottom_neighbor, get_right_neighbor, get_upper_neighbor
@@ -27,7 +27,9 @@ class WebSirenesSquare:
     def __init__(self, websirenes_keys: WebSirenesKeys) -> None:
         self.websirenes_keys = websirenes_keys
 
-    def get_keys_in_square(self, square: Square, verbose: bool = False) -> list[str]:
+    def get_keys_in_square(
+        self, square: Square, stations_websirenes: ListProxy, verbose: bool = False
+    ) -> list[str]:
         """
         Get the keys of the websirenes datasets that are inside the square
         Args:
@@ -59,11 +61,8 @@ class WebSirenesSquare:
 
             # if os.getenv("IS_SEQUENTIAL", None) == "True":
             #     continue
-
-        with Lock("found_stations"):
-            shared_stations_set: set = Variable("found_stations").get()
-            shared_stations_set.update(websirenes_keys)
-            Variable("found_stations").set(shared_stations_set)
+        if len(websirenes_keys) > 0:
+            stations_websirenes.extend(websirenes_keys)
 
         return websirenes_keys
 

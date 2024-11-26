@@ -1,3 +1,4 @@
+from multiprocessing.managers import ListProxy
 from pathlib import Path
 from typing import Optional
 
@@ -5,7 +6,6 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import xarray as xr
-from dask.distributed import Lock, Variable
 from pydantic import BaseModel
 
 from .get_neighbors import get_bottom_neighbor, get_right_neighbor, get_upper_neighbor
@@ -26,7 +26,9 @@ class INMETSquare:
     def __init__(self, inmet_keys: INMETKeys) -> None:
         self.inmet_keys = inmet_keys
 
-    def get_keys_in_square(self, square: Square, verbose: bool = False) -> list[str]:
+    def get_keys_in_square(
+        self, square: Square, stations_inmet: ListProxy, verbose: bool = False
+    ) -> list[str]:
         keys = [x.stem for x in Path(self.inmet_keys.inmet_keys_path).glob("*.parquet")]
         inmet_keys = []
         for key in keys:
@@ -51,10 +53,8 @@ class INMETSquare:
 
             inmet_keys.append(key)
 
-        with Lock("found_stations_inmet"):
-            shared_stations_set: set = Variable("found_stations_inmet").get()
-            shared_stations_set.update(inmet_keys)
-            Variable("found_stations_inmet").set(shared_stations_set)
+        if len(inmet_keys) > 0:
+            stations_inmet.extend(inmet_keys)
 
         return inmet_keys
 
