@@ -27,7 +27,13 @@ class WebSirenesSquare:
     def __init__(self, websirenes_keys: WebSirenesKeys) -> None:
         self.websirenes_keys = websirenes_keys
 
-    def get_keys_in_square(self, square: Square, verbose: bool = False) -> list[str]:
+    def get_keys_in_square(
+        self,
+        square: Square,
+        shared_stations_set: Variable,
+        shared_stations_lock: Lock,
+        verbose: bool = False,
+    ) -> list[str]:
         """
         Get the keys of the websirenes datasets that are inside the square
         Args:
@@ -60,10 +66,10 @@ class WebSirenesSquare:
             # if os.getenv("IS_SEQUENTIAL", None) == "True":
             #     continue
 
-        with Lock("found_stations"):
-            shared_stations_set: set = Variable("found_stations").get()
-            shared_stations_set.update(websirenes_keys)
-            Variable("found_stations").set(shared_stations_set)
+        with shared_stations_lock:
+            _shared_stations_set: set = shared_stations_set.get()
+            _shared_stations_set.update(websirenes_keys)
+            shared_stations_set.set(_shared_stations_set)
 
         return websirenes_keys
 
