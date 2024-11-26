@@ -26,7 +26,13 @@ class INMETSquare:
     def __init__(self, inmet_keys: INMETKeys) -> None:
         self.inmet_keys = inmet_keys
 
-    def get_keys_in_square(self, square: Square, verbose: bool = False) -> list[str]:
+    def get_keys_in_square(
+        self,
+        square: Square,
+        shared_stations_inmet_set: Variable,
+        shared_stations_inmet_lock: Lock,
+        verbose: bool = False,
+    ) -> list[str]:
         keys = [x.stem for x in Path(self.inmet_keys.inmet_keys_path).glob("*.parquet")]
         inmet_keys = []
         for key in keys:
@@ -51,10 +57,10 @@ class INMETSquare:
 
             inmet_keys.append(key)
 
-        with Lock("found_stations_inmet"):
-            shared_stations_set: set = Variable("found_stations_inmet").get()
-            shared_stations_set.update(inmet_keys)
-            Variable("found_stations_inmet").set(shared_stations_set)
+        with shared_stations_inmet_lock:
+            _shared_stations_set: set = shared_stations_inmet_set.get()
+            _shared_stations_set.update(inmet_keys)
+            shared_stations_inmet_set.set(_shared_stations_set)
 
         return inmet_keys
 
