@@ -4,9 +4,12 @@ import numpy as np
 import os
 import netCDF4 as nc
 from datetime import datetime, timedelta
+import time
 
-
-def glaciacao_topo_nuvem(pasta_entrada_canal11, pasta_entrada_canal14, pasta_entrada_canal15, pasta_saida):
+def glaciacao_topo_nuvem(pasta_entrada_canal11, 
+                         pasta_entrada_canal14, 
+                         pasta_entrada_canal15, 
+                         pasta_saida):
     
     # Obter os anos disponíveis nas pastas dos canais
     anos_disponiveis = sorted(os.listdir(pasta_entrada_canal11))
@@ -247,23 +250,34 @@ def fluxo_ascendente(pasta_entrada_canal, pasta_saida, intervalo_temporal=30):
             else:
                 print(f"Arquivo {caminho_arquivo_saida} já foi computado.")
 
-'''
-1- caminho da pasta do canal 9
-2- caminho da pasta do canal 13
-3- caminho da pasta de saída da feature
-'''
-profundidade_nuvens('../data/goes16/CMI/09', '../data/goes16/CMI/13', 'profundidade_nuvens') 
+########################################################################
+### MAIN
+########################################################################
 
-'''
-1- caminho da pasta do canal 11
-2- caminho da pasta do canal 14
-3- caminho da pasta do canal 15
-4- caminho da pasta de saída da feature
-'''
-glaciacao_topo_nuvem('../data/goes16/CMI/11', '../data/goes16/CMI/14', '../data/goes16/CMI/15', 'glaciacao_topo_nuvem')
+if __name__ == "__main__":
+    start_time = time.time()  # Record the start time
 
-'''
-1- caminho da pasta do canal 13
-2- caminho da pasta de saída da feature
-'''
-fluxo_ascendente('../data/goes16/CMI/13', 'fluxo_ascendente')
+    '''
+    1- caminho da pasta do canal 9
+    2- caminho da pasta do canal 13
+    3- caminho da pasta de saída da feature
+    '''
+    profundidade_nuvens('../data/goes16/CMI/09', '../data/goes16/CMI/13', 'profundidade_nuvens') 
+
+    '''
+    1- caminho da pasta do canal 11
+    2- caminho da pasta do canal 14
+    3- caminho da pasta do canal 15
+    4- caminho da pasta de saída da feature
+    '''
+    glaciacao_topo_nuvem('../data/goes16/CMI/11', '../data/goes16/CMI/14', '../data/goes16/CMI/15', 'glaciacao_topo_nuvem')
+
+    '''
+    1- caminho da pasta do canal 13
+    2- caminho da pasta de saída da feature
+    '''
+    fluxo_ascendente('../data/goes16/CMI/13', 'fluxo_ascendente')
+
+    end_time = time.time()  # Record the end time
+    duration = (end_time - start_time) / 60  # Calculate duration in minutes
+    print(f"Script execution time: {duration:.2f} minutes.")
