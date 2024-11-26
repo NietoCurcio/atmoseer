@@ -23,6 +23,10 @@ class SpatioTemporalFeatures:
         websirenes_square: WebSirenesSquare,
         inmet_square: INMETSquare,
     ):
+        self.shared_stations_set = Variable("found_stations")
+        self.shared_stations_inmet_set = Variable("found_stations_inmet")
+        self.stations_cells = Variable("stations_cells")
+
         self.features_path = Path(__file__).parent / "features"
         if not self.features_path.exists():
             self.features_path.mkdir()
@@ -266,9 +270,6 @@ class SpatioTemporalFeatures:
         ONE_MINUTE = 60 * 1
         all_cached = True
         with Client() as client:
-            self.shared_stations_set = Variable("found_stations")
-            self.shared_stations_inmet_set = Variable("found_stations_inmet")
-            self.stations_cells = Variable("stations_cells")
             self.shared_stations_set.set(set())
             self.shared_stations_inmet_set.set(set())
             self.stations_cells.set(set())

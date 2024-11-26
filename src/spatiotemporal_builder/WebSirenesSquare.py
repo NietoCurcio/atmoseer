@@ -60,10 +60,10 @@ class WebSirenesSquare:
             # if os.getenv("IS_SEQUENTIAL", None) == "True":
             #     continue
 
-            with Lock("found_stations"):
-                shared_stations_set: set = Variable("found_stations").get()
-                shared_stations_set.add(key)
-                Variable("found_stations").set(shared_stations_set)
+        with Lock("found_stations"):
+            shared_stations_set: set = Variable("found_stations").get()
+            shared_stations_set.update(websirenes_keys)
+            Variable("found_stations").set(shared_stations_set)
 
         return websirenes_keys
 
