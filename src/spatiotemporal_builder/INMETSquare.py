@@ -51,10 +51,10 @@ class INMETSquare:
 
             inmet_keys.append(key)
 
-            with Lock("found_stations_inmet"):
-                shared_stations_set: set = Variable("found_stations_inmet").get()
-                shared_stations_set.add(key)
-                Variable("found_stations_inmet").set(shared_stations_set)
+        with Lock("found_stations_inmet"):
+            shared_stations_set: set = Variable("found_stations_inmet").get()
+            shared_stations_set.update(inmet_keys)
+            Variable("found_stations_inmet").set(shared_stations_set)
 
         return inmet_keys
 
