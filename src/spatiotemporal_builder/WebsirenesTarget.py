@@ -1,5 +1,7 @@
 import os
 import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import Manager
 from pathlib import Path
 from typing import Optional
 
@@ -7,7 +9,6 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import xarray as xr
-from dask.distributed import Client, Lock, Variable, as_completed
 from tqdm import tqdm
 
 from .INMETSquare import INMETSquare
@@ -18,15 +19,16 @@ log = logger.get_logger(__name__)
 
 
 class SpatioTemporalFeatures:
+    manager = Manager()
+    stations_cells = manager.list()
+    stations_inmet = manager.list()
+    stations_websirenes = manager.list()
+
     def __init__(
         self,
         websirenes_square: WebSirenesSquare,
         inmet_square: INMETSquare,
     ):
-        self.shared_stations_set = Variable("found_stations")
-        self.shared_stations_inmet_set = Variable("found_stations_inmet")
-        self.stations_cells = Variable("stations_cells")
-
         self.features_path = Path(__file__).parent / "features"
         if not self.features_path.exists():
             self.features_path.mkdir()
@@ -137,14 +139,13 @@ class SpatioTemporalFeatures:
                 if square is None:
                     continue
 
-                websirene_keys = self.websirenes_square.get_keys_in_square(square)
-                inmet_keys = self.inmet_square.get_keys_in_square(square)
+                websirene_keys = self.websirenes_square.get_keys_in_square(
+                    square, self.stations_websirenes
+                )
+                inmet_keys = self.inmet_square.get_keys_in_square(square, self.stations_inmet)
 
                 if inmet_keys or websirene_keys:
-                    with Lock("stations_cells"):
-                        stations_cells: set = Variable("stations_cells").get()
-                        stations_cells.add((i, j))
-                        Variable("stations_cells").set(stations_cells)
+                    self.stations_cells.append((i, j))
 
                 tp = self.websirenes_square.get_precipitation_in_square(
                     square, websirene_keys, timestamp, ds_single_levels
@@ -269,10 +270,7 @@ class SpatioTemporalFeatures:
         start_time = time.time()
         ONE_MINUTE = 60 * 1
         all_cached = True
-        with Client() as client:
-            self.shared_stations_set.set(set())
-            self.shared_stations_inmet_set.set(set())
-            self.stations_cells.set(set())
+        with ProcessPoolExecutor() as executor:
             futures = []
 
             for timestamp in timestamps:
@@ -287,7 +285,7 @@ class SpatioTemporalFeatures:
                 if timestamp.month in ignored_months:
                     continue
                 all_cached = False
-                futures.append(client.submit(self._process_timestamp, timestamp))
+                futures.append(executor.submit(self._process_timestamp, timestamp))
             log.info(f"Tasks submitted - {len(futures)}")
 
             with tqdm(
@@ -305,9 +303,9 @@ class SpatioTemporalFeatures:
                         log.error(f"Error processing timestamp: {e}")
                         raise e
 
-            self.found_stations = self.shared_stations_set.get()
-            self.found_stations_inmet = self.shared_stations_inmet_set.get()
-            self.stations_cells = self.stations_cells.get()
+            self.found_stations = set(self.stations_websirenes)
+            self.found_stations_inmet = set(self.stations_inmet)
+            self.stations_cells = set(self.stations_cells)
 
         end_time = time.time()
         log.info(f"Target built in {end_time - start_time:.2f} seconds - parallel")
