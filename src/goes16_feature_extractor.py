@@ -252,7 +252,7 @@ def fluxo_ascendente(pasta_entrada_canal, pasta_saida, intervalo_temporal=30):
 2- caminho da pasta do canal 13
 3- caminho da pasta de saída da feature
 '''
-profundidade_nuvens('../data/9', '../data/13', 'profundidade_nuvens') 
+profundidade_nuvens('../data/goes16/CMI/09', '../data/goes16/CMI/13', 'profundidade_nuvens') 
 
 '''
 1- caminho da pasta do canal 11
@@ -260,10 +260,10 @@ profundidade_nuvens('../data/9', '../data/13', 'profundidade_nuvens')
 3- caminho da pasta do canal 15
 4- caminho da pasta de saída da feature
 '''
-glaciacao_topo_nuvem('../data/11', '../data/14', '../data/15', 'glaciacao_topo_nuvem')
+glaciacao_topo_nuvem('../data/goes16/CMI/11', '../data/goes16/CMI/14', '../data/goes16/CMI/15', 'glaciacao_topo_nuvem')
 
 '''
 1- caminho da pasta do canal 13
 2- caminho da pasta de saída da feature
 '''
-fluxo_ascendente('../data/13', 'fluxo_ascendente')
+fluxo_ascendente('../data/goes16/CMI/13', 'fluxo_ascendente')
