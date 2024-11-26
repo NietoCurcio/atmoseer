@@ -23,12 +23,9 @@ class SpatioTemporalFeatures:
         websirenes_square: WebSirenesSquare,
         inmet_square: INMETSquare,
     ):
-        self.shared_stations_set = Variable()
-        self.shared_stations_inmet_set = Variable()
-        self.stations_cells = Variable()
-        self.shared_stations_lock = Lock()
-        self.shared_stations_inmet_lock = Lock()
-        self.stations_cells_lock = Lock()
+        self.shared_stations_set = Variable("found_stations")
+        self.shared_stations_inmet_set = Variable("found_stations_inmet")
+        self.stations_cells = Variable("stations_cells")
 
         self.features_path = Path(__file__).parent / "features"
         if not self.features_path.exists():
@@ -131,7 +128,6 @@ class SpatioTemporalFeatures:
         left_right_lons = self.sorted_longitudes_ascending
 
         processed = 0
-        _stations_cells = set()
         for i, lat in enumerate(top_down_lats):
             for j, lon in enumerate(left_right_lons):
                 square = self.websirenes_square.get_square(
@@ -141,15 +137,14 @@ class SpatioTemporalFeatures:
                 if square is None:
                     continue
 
-                websirene_keys = self.websirenes_square.get_keys_in_square(
-                    square, self.shared_stations_set, self.shared_stations_lock
-                )
-                inmet_keys = self.inmet_square.get_keys_in_square(
-                    square, self.shared_stations_inmet_set, self.shared_stations_inmet_lock
-                )
+                websirene_keys = self.websirenes_square.get_keys_in_square(square)
+                inmet_keys = self.inmet_square.get_keys_in_square(square)
 
                 if inmet_keys or websirene_keys:
-                    _stations_cells.add((i, j))
+                    with Lock("stations_cells"):
+                        stations_cells: set = Variable("stations_cells").get()
+                        stations_cells.add((i, j))
+                        Variable("stations_cells").set(stations_cells)
 
                 tp = self.websirenes_square.get_precipitation_in_square(
                     square, websirene_keys, timestamp, ds_single_levels
@@ -207,11 +202,6 @@ class SpatioTemporalFeatures:
 
         total_squares = (len(top_down_lats) - 1) * (len(left_right_lons) - 1)
         assert processed == total_squares, "Not all cells processed"
-
-        with self.stations_cells_lock:
-            stations_cells: set = self.stations_cells.get()
-            stations_cells.update(_stations_cells)
-            self.stations_cells.set(stations_cells)
 
     def _process_timestamp(self, timestamp: pd.Timestamp):
         year = timestamp.year
