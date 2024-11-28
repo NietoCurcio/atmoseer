@@ -1,7 +1,5 @@
 import os
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed
-from multiprocessing import Manager
 from pathlib import Path
 from typing import Optional
 
@@ -9,6 +7,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import xarray as xr
+from dask.distributed import Client, as_completed
 from tqdm import tqdm
 
 from .INMETSquare import INMETSquare
@@ -18,12 +17,40 @@ from .WebSirenesSquare import WebSirenesSquare
 log = logger.get_logger(__name__)
 
 
-class SpatioTemporalFeatures:
-    manager = Manager()
-    stations_cells = manager.list()
-    stations_inmet = manager.list()
-    stations_websirenes = manager.list()
+class StationsCells:
+    def __init__(self):
+        self.stations = set()
 
+    def update(self, stations: list[tuple[int, int]]):
+        self.stations.update(stations)
+
+    def get(self):
+        return self.stations
+
+
+class WebsirenesStations:
+    def __init__(self):
+        self.stations = set()
+
+    def update(self, stations: list[str]):
+        self.stations.update(stations)
+
+    def get(self):
+        return self.stations
+
+
+class InmetStations:
+    def __init__(self):
+        self.stations = set()
+
+    def update(self, stations: list[str]):
+        self.stations.update(stations)
+
+    def get(self):
+        return self.stations
+
+
+class SpatioTemporalFeatures:
     def __init__(
         self,
         websirenes_square: WebSirenesSquare,
@@ -130,6 +157,7 @@ class SpatioTemporalFeatures:
         left_right_lons = self.sorted_longitudes_ascending
 
         processed = 0
+        keys = []
         for i, lat in enumerate(top_down_lats):
             for j, lon in enumerate(left_right_lons):
                 square = self.websirenes_square.get_square(
@@ -140,12 +168,12 @@ class SpatioTemporalFeatures:
                     continue
 
                 websirene_keys = self.websirenes_square.get_keys_in_square(
-                    square, self.stations_websirenes
+                    square, self.websirenes_stations
                 )
-                inmet_keys = self.inmet_square.get_keys_in_square(square, self.stations_inmet)
+                inmet_keys = self.inmet_square.get_keys_in_square(square, self.inmet_stations)
 
                 if inmet_keys or websirene_keys:
-                    self.stations_cells.append((i, j))
+                    keys.append((i, j))
 
                 tp = self.websirenes_square.get_precipitation_in_square(
                     square, websirene_keys, timestamp, ds_single_levels
@@ -200,6 +228,8 @@ class SpatioTemporalFeatures:
                     w1000,
                 ]
                 processed += 1
+
+        self.stations_cells.update(keys)
 
         total_squares = (len(top_down_lats) - 1) * (len(left_right_lons) - 1)
         assert processed == total_squares, "Not all cells processed"
@@ -270,7 +300,11 @@ class SpatioTemporalFeatures:
         start_time = time.time()
         ONE_MINUTE = 60 * 1
         all_cached = True
-        with ProcessPoolExecutor() as executor:
+        with Client() as client:
+            self.stations_cells = client.submit(StationsCells, actor=True).result()
+            self.websirenes_stations = client.submit(WebsirenesStations, actor=True).result()
+            self.inmet_stations = client.submit(InmetStations, actor=True).result()
+
             futures = []
 
             for timestamp in timestamps:
@@ -285,7 +319,7 @@ class SpatioTemporalFeatures:
                 if timestamp.month in ignored_months:
                     continue
                 all_cached = False
-                futures.append(executor.submit(self._process_timestamp, timestamp))
+                futures.append(client.submit(self._process_timestamp, timestamp))
             log.info(f"Tasks submitted - {len(futures)}")
 
             with tqdm(
@@ -303,9 +337,9 @@ class SpatioTemporalFeatures:
                         log.error(f"Error processing timestamp: {e}")
                         raise e
 
-            self.found_stations = set(self.stations_websirenes)
-            self.found_stations_inmet = set(self.stations_inmet)
-            self.stations_cells = set(self.stations_cells)
+            self.found_stations = self.websirenes_stations.get().result()
+            self.found_stations_inmet = self.inmet_stations.get().result()
+            self.stations_cells = self.stations_cells.get().result()
 
         end_time = time.time()
         log.info(f"Target built in {end_time - start_time:.2f} seconds - parallel")
