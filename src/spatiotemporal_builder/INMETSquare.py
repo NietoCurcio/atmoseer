@@ -1,4 +1,3 @@
-from multiprocessing.managers import ListProxy
 from pathlib import Path
 from typing import Optional
 
@@ -6,6 +5,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import xarray as xr
+from dask.distributed import Actor
 from pydantic import BaseModel
 
 from .get_neighbors import get_bottom_neighbor, get_right_neighbor, get_upper_neighbor
@@ -27,7 +27,7 @@ class INMETSquare:
         self.inmet_keys = inmet_keys
 
     def get_keys_in_square(
-        self, square: Square, stations_inmet: ListProxy, verbose: bool = False
+        self, square: Square, stations_inmet: Actor, verbose: bool = False
     ) -> list[str]:
         keys = [x.stem for x in Path(self.inmet_keys.inmet_keys_path).glob("*.parquet")]
         inmet_keys = []
@@ -54,7 +54,7 @@ class INMETSquare:
             inmet_keys.append(key)
 
         if len(inmet_keys) > 0:
-            stations_inmet.extend(inmet_keys)
+            stations_inmet.update(inmet_keys)
 
         return inmet_keys
 
