@@ -1,7 +1,7 @@
 import os
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from multiprocessing import Manager
+from multiprocessing.managers import BaseManager
 from pathlib import Path
 from typing import Optional
 
@@ -18,11 +18,19 @@ from .WebSirenesSquare import WebSirenesSquare
 log = logger.get_logger(__name__)
 
 
+class StationsManager(BaseManager):
+    pass
+
+
+StationsManager.register("Set", set)
+
+
 class SpatioTemporalFeatures:
-    manager = Manager()
-    stations_cells = manager.list()
-    stations_inmet = manager.list()
-    stations_websirenes = manager.list()
+    manager = StationsManager()
+    manager.start()
+    stations_cells = manager.Set()
+    stations_inmet = manager.Set()
+    stations_websirenes = manager.Set()
 
     def __init__(
         self,
@@ -130,6 +138,7 @@ class SpatioTemporalFeatures:
         left_right_lons = self.sorted_longitudes_ascending
 
         processed = 0
+        keys = []
         for i, lat in enumerate(top_down_lats):
             for j, lon in enumerate(left_right_lons):
                 square = self.websirenes_square.get_square(
@@ -145,7 +154,7 @@ class SpatioTemporalFeatures:
                 inmet_keys = self.inmet_square.get_keys_in_square(square, self.stations_inmet)
 
                 if inmet_keys or websirene_keys:
-                    self.stations_cells.append((i, j))
+                    keys.append((i, j))
 
                 tp = self.websirenes_square.get_precipitation_in_square(
                     square, websirene_keys, timestamp, ds_single_levels
@@ -200,6 +209,8 @@ class SpatioTemporalFeatures:
                     w1000,
                 ]
                 processed += 1
+
+        self.stations_cells.update(keys)
 
         total_squares = (len(top_down_lats) - 1) * (len(left_right_lons) - 1)
         assert processed == total_squares, "Not all cells processed"
@@ -303,9 +314,10 @@ class SpatioTemporalFeatures:
                         log.error(f"Error processing timestamp: {e}")
                         raise e
 
-            self.found_stations = set(self.stations_websirenes)
-            self.found_stations_inmet = set(self.stations_inmet)
-            self.stations_cells = set(self.stations_cells)
+            self.found_stations = self.stations_websirenes._getvalue()
+            self.found_stations_inmet = self.stations_inmet._getvalue()
+            self.stations_cells = self.stations_cells._getvalue()
+            self.manager.shutdown()
 
         end_time = time.time()
         log.info(f"Target built in {end_time - start_time:.2f} seconds - parallel")

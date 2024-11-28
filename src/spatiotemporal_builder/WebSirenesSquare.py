@@ -1,7 +1,6 @@
 from datetime import timedelta
-from multiprocessing.managers import ListProxy
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -28,7 +27,7 @@ class WebSirenesSquare:
         self.websirenes_keys = websirenes_keys
 
     def get_keys_in_square(
-        self, square: Square, stations_websirenes: ListProxy, verbose: bool = False
+        self, square: Square, stations_websirenes: Any, verbose: bool = False
     ) -> list[str]:
         """
         Get the keys of the websirenes datasets that are inside the square
@@ -62,7 +61,7 @@ class WebSirenesSquare:
             # if os.getenv("IS_SEQUENTIAL", None) == "True":
             #     continue
         if len(websirenes_keys) > 0:
-            stations_websirenes.extend(websirenes_keys)
+            stations_websirenes.update(websirenes_keys)
 
         return websirenes_keys
 
