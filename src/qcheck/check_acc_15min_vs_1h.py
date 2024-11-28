@@ -88,8 +88,10 @@ class Websirene1h15mQualityCheck:
 
         fig, ax = plt.subplots(figsize=(12, 6))
 
-        ax.boxplot(diff_series, labels=["MAE"])
-        plt.title(f"MAE between h01 and m15 {len(diff_series)}/{total_processed} are different")
+        ax.boxplot(diff_series, labels=["Absolute Difference"])
+        plt.title(
+            f"Absolute Difference between h01 and m15 {len(diff_series)}/{total_processed} are different"
+        )
         plt.ylabel("Diff Value")
         output_file = Path.cwd() / f"{filename}_boxplot_1h_15minAggregated.png"
         green = "\033[92m"
