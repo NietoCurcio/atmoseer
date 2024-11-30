@@ -539,7 +539,7 @@ class SpatioTemporalFeatures:
             ), f"shape[2] should be {len(self.features_tuple)} but is {features.shape[2]}"
 
             assert np.all(
-                np.any(features != 0, axis=tuple(range(1, features.ndim)))
+                np.any(features != 0, axis=(1, 2))
             ), f"Should not have one row with all values as zero for {file}"
 
             total_files += 1
@@ -560,7 +560,7 @@ class SpatioTemporalFeatures:
             Total timestamps={total_timestamps}
             Shape: {features.shape}
             All rows have at least one non-zero value: {np.all(
-                np.any(features != 0, axis=tuple(range(1, features.ndim)))
+                np.any(features != 0, axis=(1, 2))
             )}
             """
         )
