@@ -108,22 +108,11 @@ class SpatioTemporalFeatures:
         return lats, lons
 
     def _get_era5_single_levels_dataset(self, year: int, month: int) -> xr.Dataset:
-        # start_Time = time.time()
         if (
             self.current_year_month_single == (year, month)
             and self.current_single_levels_ds is not None
         ):
-            log.info(f"Using cached dataset for {year} and {month} - single levels")
             return self.current_single_levels_ds
-        else:
-            pass
-            # log.error(f"Process: {current_process().name}")
-            # log.error(
-            #     f"single self.current_year_month_single == (year, month): {self.current_year_month_single == (year, month)}"
-            # )
-            # log.error(
-            #     f"single self.current_single_levels_ds is not None: {self.current_single_levels_ds is not None}"
-            # )
 
         era5_year_month_path = (
             self.era5_single_levels_path / "monthly_data" / f"RJ_{year}_{month}.nc"
@@ -144,27 +133,14 @@ class SpatioTemporalFeatures:
         ds = ds[["tp"]]
         self.current_single_levels_ds = ds
         self.current_year_month_single = (year, month)
-        # end_Time = time.time()
-        # print(f"Time to load single levels dataset: {end_Time - start_Time}")
         return self.current_single_levels_ds
 
     def _get_era5_pressure_levels_dataset(self, year: int, month: int) -> xr.Dataset:
-        # start_time = time.time()
         if (
             self.current_year_month_pressure == (year, month)
             and self.current_pressure_levels_ds is not None
         ):
-            log.info(f"Using cached dataset for {year} and {month} - pressure levels")
             return self.current_pressure_levels_ds
-        else:
-            pass
-            # log.error(f"Process: {current_process().name}")
-            # log.error(
-            #     f"pressure self.current_year_month_pressure == (year, month): {self.current_year_month_pressure == (year, month)}"
-            # )
-            # log.error(
-            #     f"pressure self.current_pressure_levels_ds is not None: {self.current_pressure_levels_ds is not None}"
-            # )
 
         era5_year_month_path = (
             self.era5_pressure_levels_path / "monthly_data" / f"RJ_{year}_{month}.nc"
@@ -183,9 +159,14 @@ class SpatioTemporalFeatures:
         ds = ds[["r", "t", "u", "v", "w"]]
         self.current_pressure_levels_ds = ds
         self.current_year_month_pressure = (year, month)
-        # end_time = time.time()
-        # print(f"Time to load pressure levels dataset: {end_time - start_time}")
         return self.current_pressure_levels_ds
+
+    def _get_ds_month(self, timestamp: pd.Timestamp) -> tuple[xr.Dataset, xr.Dataset]:
+        year = timestamp.year
+        month = timestamp.month
+        ds_single_levels = self._get_era5_single_levels_dataset(year, month)
+        ds_pressure_levels = self._get_era5_pressure_levels_dataset(year, month)
+        return ds_single_levels, ds_pressure_levels
 
     def _process_grid(
         self,
@@ -219,11 +200,11 @@ class SpatioTemporalFeatures:
                 inmet_keys = self.inmet_square.get_keys_in_square(square, self.stations_inmet)
 
                 # O(33) ~ O(1)
-                alerta_keys = self.alertario_square.get_keys_in_square(
+                alertario_keys = self.alertario_square.get_keys_in_square(
                     square, self.stations_alertario
                 )
 
-                if inmet_keys or websirene_keys or alerta_keys:
+                if inmet_keys or websirene_keys or alertario_keys:
                     keys.append((i, j))
 
                 # O(websirene_keys) ~ O(83) ~ O(1)
@@ -237,7 +218,12 @@ class SpatioTemporalFeatures:
                     square, inmet_keys, timestamp, ds_single_levels
                 )
 
-                tp = max(tp, tp_inmet)
+                # O(alertario_keys) ~ O(33) ~ O(1)
+                tp_alertario = self.alertario_square.get_precipitation_in_square(
+                    square, alertario_keys, timestamp, ds_single_levels
+                )
+
+                tp = max(tp, tp_inmet, tp_alertario)
 
                 # O(4) ~ O(1)
                 r1000, r700, r200 = self.websirenes_square.get_relative_humidity_in_square(
@@ -369,19 +355,21 @@ class SpatioTemporalFeatures:
             processed == total_squares
         ), "Not all cells processed failed to include last row and last column"
 
-    def _process_timestamp(self, timestamp: pd.Timestamp):
+    def _process_timestamp(
+        self,
+        timestamp: pd.Timestamp,
+        ds_single_levels_month: xr.Dataset,
+        ds_pressure_levels_month: xr.Dataset,
+    ):
         year = timestamp.year
         month = timestamp.month
         day = timestamp.day
         hour = timestamp.hour
 
-        ds_single_levels = self._get_era5_single_levels_dataset(year, month)
-        ds_pressure_levels = self._get_era5_pressure_levels_dataset(year, month)
-
         time = f"{year}-{month}-{day}T{hour}:00:00.000000000"
 
-        ds_single_levels_time = ds_single_levels.sel(valid_time=time, method="nearest")
-        ds_pressure_levels_time = ds_pressure_levels.sel(valid_time=time, method="nearest")
+        ds_single_levels_time = ds_single_levels_month.sel(valid_time=time, method="nearest")
+        ds_pressure_levels_time = ds_pressure_levels_month.sel(valid_time=time, method="nearest")
 
         features = np.zeros(
             (
@@ -405,9 +393,6 @@ class SpatioTemporalFeatures:
         minimum_date = start_date
         maximum_date = end_date
 
-        assert minimum_date != pd.Timestamp.max, "minimum_date should be set during keys building"
-        assert maximum_date != pd.Timestamp.min, "maximum_date should be set during keys building"
-
         timestamps = pd.date_range(start=minimum_date, end=maximum_date, freq="h")
 
         log.info(f"Building websirenes target from {timestamps[0]} to {timestamps[-1]}")
@@ -428,30 +413,40 @@ class SpatioTemporalFeatures:
 
                 if timestamp.month in ignored_months:
                     continue
+
+                ds_single_levels_month, ds_pressure_levels_month = self._get_ds_month(timestamp)
+
                 all_cached = False
-                futures.append(executor.submit(self._process_timestamp, timestamp))
+                futures.append(
+                    executor.submit(
+                        self._process_timestamp,
+                        timestamp,
+                        ds_single_levels_month,
+                        ds_pressure_levels_month,
+                    )
+                )
             log.info(f"Tasks submitted - {len(futures)}")
 
-        with tqdm(
-            total=len(timestamps),
-            desc="Processing timestamps",
-            file=TqdmLogger(log),
-            dynamic_ncols=True,
-            mininterval=ONE_MINUTE,
-        ) as pbar:
-            for future in as_completed(futures):
-                try:
-                    future.result()
-                    pbar.update()
-                except Exception as e:
-                    log.error(f"Error processing timestamp: {e}")
-                    raise SystemExit(e)
+            with tqdm(
+                total=len(timestamps),
+                desc="Processing timestamps",
+                file=TqdmLogger(log),
+                dynamic_ncols=True,
+                mininterval=ONE_MINUTE,
+            ) as pbar:
+                for future in as_completed(futures):
+                    try:
+                        future.result()
+                        pbar.update()
+                    except Exception as e:
+                        log.error(f"Error processing timestamp: {e}")
+                        raise SystemExit(e)
 
-        self.found_stations = self.stations_websirenes._getvalue()
-        self.found_stations_inmet = self.stations_inmet._getvalue()
-        self.found_stations_alertario = self.stations_alertario._getvalue()
-        self.stations_cells = self.stations_cells._getvalue()
-        self.manager.shutdown()
+            self.found_stations = self.stations_websirenes._getvalue()
+            self.found_stations_inmet = self.stations_inmet._getvalue()
+            self.found_stations_alertario = self.stations_alertario._getvalue()
+            self.stations_cells = self.stations_cells._getvalue()
+            self.manager.shutdown()
 
         end_time = time.time()
         log.info(f"Target built in {end_time - start_time:.2f} seconds - parallel")
@@ -490,37 +485,32 @@ class SpatioTemporalFeatures:
             f"Websirenes features hourly built successfully in {self.features_path} - {validated_total_timestamps} files"
         )
 
-        total_files_in_websirenes_keys = len(
+        assert all_cached or len(self.found_stations) == len(
             list(self.websirenes_square.websirenes_keys.websirenes_keys_path.glob("*.parquet"))
-        )
-        assert (
-            all_cached or len(self.found_stations) == total_files_in_websirenes_keys
         ), "Expected all websirenes stations to be found and processed"
-        log.success(f"All websirenes stations processed - {len(self.found_stations)} files")
 
-        total_files_in_inmet_keys = len(
+        assert all_cached or len(
             list(self.inmet_square.inmet_keys.inmet_keys_path.glob("*.parquet"))
-        )
-        assert (
-            all_cached or len(self.found_stations_inmet) == total_files_in_inmet_keys
         ), "Expected all inmet stations to be found and processed"
-        log.success(f"All inmet stations processed - {len(self.found_stations_inmet)} files")
 
-        total_files_in_alertario_keys = len(
+        assert all_cached or len(
             list(self.alertario_square.alertario_keys.alertario_keys_path.glob("*.parquet"))
-        )
-        assert (
-            all_cached or len(self.found_stations_alertario) == total_files_in_alertario_keys
         ), "Expected all alertario stations to be found and processed"
-        log.success(
-            f"All alertario stations processed - {len(self.found_stations_alertario)} files"
-        )
 
-        log.info(f"Total cells with station: {len(self.stations_cells)}")
+        if not all_cached:
+            log.success(f"""
+                All stations processed:
+                Websirenes: {len(self.found_stations)} files
+                INMET: {len(self.found_stations_inmet)} files
+                Alertario: {len(self.found_stations_alertario)} files
+                Total cells with station: {len(self.stations_cells)}
+            """)
 
         if len(self.stations_cells) > 0:
             np.save(self.features_path / "stations_cells.npy", list(self.stations_cells))
-            log.success(f"set {self.stations_cells}  file created in {self.features_path}")
+            log.success(
+                f"set {self.stations_cells} file created in {self.features_path / 'stations_cells.npy'}"
+            )
 
     def validate_timestamps(
         self, min_timestamp: pd.Timestamp, max_timestamp: pd.Timestamp, ignored_months: list[int]
@@ -583,3 +573,7 @@ class SpatioTemporalFeatures:
             """
         )
         return total_timestamps
+
+
+if __name__ == "__main__":
+    ""
