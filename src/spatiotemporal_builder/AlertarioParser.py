@@ -24,9 +24,6 @@ class AlertarioParser:
     inmet_path = Path(__file__).parent.parent.parent / "data/ws/inmet"
     rain_gauge_path = Path(__file__).parent.parent.parent / "data/ws/rain_gauge"
 
-    minimum_date = pd.Timestamp.max
-    maximum_date = pd.Timestamp.min
-
     def _get_region_of_interest(self) -> dict:
         ds = xr.open_dataset("./data/reanalysis/ERA5-single-levels/monthly_data/RJ_2018_1.nc")
         lats = ds.latitude.values
@@ -44,7 +41,7 @@ class AlertarioParser:
         return region_of_interest
 
     def _impute_missing_values(self, df: pd.DataFrame) -> pd.DataFrame:
-        chunk_size = 50_000
+        chunk_size = 500_000
         chunks = [df[i : i + chunk_size] for i in range(0, len(df), chunk_size)]
         imputed_chunks = []
         log.info(f"Imputing missing values for precipitation in chunks of {chunk_size} rows")

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -26,14 +27,6 @@ class AlertarioKeys:
     def load_key(self, key: str) -> pd.DataFrame:
         return pd.read_parquet(f"{self.alertario_keys_path}/{key}.parquet")
 
-    def _set_minimum_date(self, df: pd.DataFrame):
-        if df["datetime"].min() < self.alertario_parser.minimum_date:
-            self.alertario_parser.minimum_date = df["datetime"].min()
-
-    def _set_maximum_date(self, df: pd.DataFrame):
-        if df["datetime"].max() > self.alertario_parser.maximum_date:
-            self.alertario_parser.maximum_date = df["datetime"].max()
-
     def build_keys(self, use_cache: bool = True) -> None:
         total_files = len(list(self.alertario_keys_path.glob("*.parquet")))
         if use_cache and total_files > 0:
@@ -46,18 +39,36 @@ class AlertarioKeys:
         unique_names = stations["station"].unique()
 
         log.info(f"Processing {len(unique_names)} files to build keys")
-
+        minimum_date = pd.Timestamp.max
+        maximum_date = pd.Timestamp.min
         for name in tqdm(unique_names):
             station = stations[stations["station"] == name]
-            self._set_minimum_date(station)
-            self._set_maximum_date(station)
+            if station["datetime"].min() < minimum_date:
+                minimum_date = station["datetime"].min()
+            if station["datetime"].max() > maximum_date:
+                maximum_date = station["datetime"].max()
             self._write_key(station)
 
         log.info(f"""
-            Minimum date: {self.alertario_parser.minimum_date}
-            Maximum date: {self.alertario_parser.maximum_date}
+            Minimum date: {minimum_date}
+            Maximum date: {maximum_date}
         """)
         log.success(f"Alertario keys built successfully in {self.alertario_keys_path}")
+
+        minimum_maximum_dates_path = (
+            self.alertario_keys_path / "minimum_maximum_dates_alertario.json"
+        )
+        with open(minimum_maximum_dates_path, "w") as f:
+            json.dump(
+                {
+                    "minimum_date": minimum_date.isoformat(),
+                    "maximum_date": maximum_date.isoformat(),
+                },
+                f,
+                indent=4,
+            )
+
+        log.success(f"Minimum and maximum dates written to {minimum_maximum_dates_path}")
 
 
 if __name__ == "__main__":
