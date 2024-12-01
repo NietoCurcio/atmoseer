@@ -218,13 +218,13 @@ class WebSirenesSquare:
         return corner_data[best_corner]["w"].values
 
     def _get_era5_single_levels_precipitation_in_square(
-        self, square: Square, era5land_at_time: xr.Dataset, data_var="tp"
+        self, square: Square, era5_at_time: xr.Dataset, data_var="tp"
     ) -> float:
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
         coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
 
         corner_data = {
-            corner: era5land_at_time.sel(latitude=lat, longitude=lon)
+            corner: era5_at_time.sel(latitude=lat, longitude=lon)
             for corner, (lat, lon) in zip(corners, coords)
         }
 
@@ -238,7 +238,7 @@ class WebSirenesSquare:
 
         if np.isnan(max_tp):
             lat_mean, lon_mean = np.mean(coords, axis=0)
-            max_tp = self._find_nearest_non_null(era5land_at_time, lat_mean, lon_mean, data_var)
+            max_tp = self._find_nearest_non_null(era5_at_time, lat_mean, lon_mean, data_var)
         m_to_mm = 1000
         return max_tp * m_to_mm
 
@@ -285,7 +285,6 @@ class WebSirenesSquare:
         Rafaela Castro paper
         """
         if len(websirenes_keys) == 0:
-            # No stations in the square, use ERA5Land precipitation in square
             return self._get_era5_single_levels_precipitation_in_square(square, ds_time)
 
         precipitations_15_min_aggregated: list[float] = []
@@ -301,12 +300,25 @@ class WebSirenesSquare:
 
             m15 = df_web_filtered["m15"]
 
-            if m15.isnull().all():
-                # All values are NaN in station "key" from "time_lower_bound" to "time_upper_bound",
-                # use ERA5Land max precipitation in square
-                m15 = np.array(
-                    self._get_era5_single_levels_precipitation_in_square(square, ds_time)
-                )
+            if m15.size < 4 or m15.isnull().any():
+                # Websirenes (and also Alertario) have a time resolution of 15 minutes
+                # for 16h for example, we'll get four m15 values: 16h, 15h45, 15h30, 15h15
+                # to get this data we have two situations:
+                # situation 1, the timestamp or the DF index doesn't have all the values:
+                # 16h00 = 0.15 mm precipitation
+                # 15h45 = 0.05 mm precipitation
+                # 15h15 = 0.00 mm precipitation
+                # Notice the 15h30 is missing
+                # situation 2, the timestamp has all the values, but one of them is NaN:
+                # 16h00 = 0.15 mm precipitation
+                # 15h45 = 0.05 mm precipitation
+                # 15h30 = NaN
+                # 15h15 = 0.00 mm precipitation
+                # If either of these situations happen:
+                # Compare the aggregated sum with the ERA5 data, we use the most significant value
+                m15_era5 = self._get_era5_single_levels_precipitation_in_square(square, ds_time)
+                m15 = np.array([m15.sum(), m15_era5]).max()
+
             precipitations_15_min_aggregated.append(m15.sum().item())
 
         max_precipitation = max(precipitations_15_min_aggregated)

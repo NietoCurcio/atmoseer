@@ -1,5 +1,6 @@
+from datetime import timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -7,8 +8,8 @@ import pandas as pd
 import xarray as xr
 from pydantic import BaseModel
 
+from .AlertarioKeys import AlertarioKeys
 from .get_neighbors import get_bottom_neighbor, get_right_neighbor, get_upper_neighbor
-from .INMETKeys import INMETKeys
 from .Logger import logger
 
 log = logger.get_logger(__name__)
@@ -21,15 +22,15 @@ class Square(BaseModel):
     top_right: tuple[float, float]
 
 
-class INMETSquare:
-    def __init__(self, inmet_keys: INMETKeys) -> None:
-        self.inmet_keys = inmet_keys
+class AlertarioSquare:
+    def __init__(self, alertario_keys: AlertarioKeys) -> None:
+        self.alertario_keys = alertario_keys
 
     def get_keys_in_square(
-        self, square: Square, stations_inmet: Any, verbose: bool = False
+        self, square: Square, stations_alertario: set, verbose: bool = False
     ) -> list[str]:
-        keys = [x.stem for x in Path(self.inmet_keys.inmet_keys_path).glob("*.parquet")]
-        inmet_keys = []
+        keys = [x.stem for x in Path(self.alertario_keys.alertario_keys_path).glob("*.parquet")]
+        alertario_keys = []
         for key in keys:
             key_lat, key_lon = map(float, key.split("_"))
 
@@ -50,12 +51,12 @@ class INMETSquare:
             if key_lon < square.top_left[1] or key_lon > square.top_right[1]:
                 continue
 
-            inmet_keys.append(key)
+            alertario_keys.append(key)
 
-        if len(inmet_keys) > 0:
-            stations_inmet.update(inmet_keys)
+        if len(alertario_keys) > 0:
+            stations_alertario.update(alertario_keys)
 
-        return inmet_keys
+        return alertario_keys
 
     def _find_nearest_non_null(
         self, ds_time: xr.Dataset, lat: float, lon: float, data_var: str, max_radius=1.0, step=0.1
@@ -85,13 +86,13 @@ class INMETSquare:
         return median_ds_time
 
     def _get_era5_single_levels_precipitation_in_square(
-        self, square: Square, era5_at_time: xr.Dataset, data_var="tp"
+        self, square: Square, era5land_at_time: xr.Dataset, data_var="tp"
     ) -> float:
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
         coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
 
         corner_data = {
-            corner: era5_at_time.sel(latitude=lat, longitude=lon)
+            corner: era5land_at_time.sel(latitude=lat, longitude=lon)
             for corner, (lat, lon) in zip(corners, coords)
         }
 
@@ -105,28 +106,47 @@ class INMETSquare:
 
         if np.isnan(max_tp):
             lat_mean, lon_mean = np.mean(coords, axis=0)
-            max_tp = self._find_nearest_non_null(era5_at_time, lat_mean, lon_mean, data_var)
+            max_tp = self._find_nearest_non_null(era5land_at_time, lat_mean, lon_mean, data_var)
         m_to_mm = 1000
         return max_tp * m_to_mm
 
     def get_precipitation_in_square(
         self,
         square: Square,
-        inmet_keys: list[str],
+        alertario_keys: list[str],
         timestamp: pd.Timestamp,
         ds_time: xr.Dataset,
     ) -> float:
-        if len(inmet_keys) == 0:
+        if len(alertario_keys) == 0:
             return self._get_era5_single_levels_precipitation_in_square(square, ds_time)
-        precipitations: list[float] = []
-        for key in inmet_keys:
-            df_web = self.inmet_keys.load_key(key)
-            df_web_filtered = df_web[df_web.index == timestamp]
-            h1 = df_web_filtered["precipitation"]
-            if h1.isnull().all():
-                h1 = np.array(self._get_era5_single_levels_precipitation_in_square(square, ds_time))
-            precipitations.append(h1.item())
-        return max(precipitations)
+
+        precipitations_15_min_aggregated: list[float] = []
+        for key in alertario_keys:
+            df_alertario = self.alertario_keys.load_key(key)
+
+            time_upper_bound = timestamp
+            time_lower_bound = timestamp - timedelta(minutes=45)
+
+            df_alertario_filtered = df_alertario[
+                (df_alertario.datetime >= time_lower_bound)
+                & (df_alertario.datetime <= time_upper_bound)
+            ]
+
+            m15 = df_alertario_filtered["m15"]
+
+            red_color = "\033[91m"
+            reset_color = "\033[0m"
+
+            print(f"{red_color}m15: {m15}{reset_color}")
+
+            if m15.size < 4 or m15.isnull().any():
+                # Please see WebSirenesSquare:get_precipitation_in_square for more information
+                m15_era5 = self._get_era5_single_levels_precipitation_in_square(square, ds_time)
+                m15 = np.array([m15.sum(), m15_era5]).max()
+
+            precipitations_15_min_aggregated.append(m15.sum().item())
+
+        return max(precipitations_15_min_aggregated)
 
     def get_square(
         self,
@@ -173,3 +193,49 @@ class INMETSquare:
             bottom_right=(lat_right, lon_right),
             top_right=(lat_upper, lon_upper),
         )
+
+
+if __name__ == "__main__":
+    # python -m src.spatiotemporal_builder.AlertarioSquare
+    from .AlertarioParser import AlertarioParser
+
+    alertario_square = AlertarioSquare(AlertarioKeys(AlertarioParser()))
+
+    ds = xr.open_dataset("./data/reanalysis/ERA5-single-levels/monthly_data/RJ_2018_1.nc")
+    print("xr.Dataset:")
+    print(ds)
+
+    hour = ds.valid_time[0].values
+    ds = ds.sel(valid_time=hour)
+    lats = ds.latitude.values
+    lons = ds.longitude.values
+    lat = lats[0]
+    lon = lons[0]
+
+    square = alertario_square.get_square(lat, lon, sorted(lats), sorted(lons))
+    print(f"""
+        square:
+        top_left={square.top_left}
+        bottom_left={square.bottom_left}
+        bottom_right={square.bottom_right}
+        top_right={square.top_right}
+        {square.top_left} --- {square.top_right}
+        | {" " * 48} |
+        {square.bottom_left} --- {square.bottom_right}
+    """)
+
+    keys = alertario_square.get_keys_in_square(square, set())
+    print(f"keys: {keys}")
+
+    precipitation = alertario_square.get_precipitation_in_square(
+        square, keys, pd.Timestamp("2018-01-01"), ds
+    )
+    print(f"precipitation: {precipitation}")
+
+    print(f"""
+        Precipitation in square:
+        {square.top_left} --- {square.top_right}
+        | {" " * 20} {precipitation:.2f} mm  {" " * 20} |
+        {square.bottom_left} --- {square.bottom_right}
+
+    """)

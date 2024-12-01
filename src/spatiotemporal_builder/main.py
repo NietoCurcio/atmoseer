@@ -3,6 +3,9 @@ from typing import Optional
 
 import pandas as pd
 
+from .AlertarioKeys import AlertarioKeys
+from .AlertarioParser import AlertarioParser
+from .AlertarioSquare import AlertarioSquare
 from .INMETCoords import get_inmet_coords
 from .INMETKeys import INMETKeys
 from .INMETParser import INMETParser
@@ -97,12 +100,18 @@ def get_instances():
     inmet_keys = INMETKeys(INMETParser(), get_inmet_coords())
     inmet_square = INMETSquare(inmet_keys)
 
-    spatio_temporal_features = SpatioTemporalFeatures(websirenes_square, inmet_square)
+    alertario_keys = AlertarioKeys(AlertarioParser())
+    alertario_square = AlertarioSquare(alertario_keys)
+
+    spatio_temporal_features = SpatioTemporalFeatures(
+        websirenes_square, inmet_square, alertario_square
+    )
     dataset_builder = WebsirenesDataset(spatio_temporal_features)
 
     return (
         websirenes_keys,
         inmet_keys,
+        alertario_keys,
         spatio_temporal_features,
         dataset_builder,
     )
@@ -113,12 +122,14 @@ def build_features(start_date: pd.Timestamp, end_date: pd.Timestamp, ignored_mon
         (
             websirenes_keys,
             inmet_keys,
+            alertario_keys,
             spatio_temporal_features,
             dataset_builder,
         ) = get_instances()
 
         websirenes_keys.build_keys()
         inmet_keys.build_keys()
+        alertario_keys.build_keys()
 
         spatio_temporal_features.build_timestamps_hourly(start_date, end_date, ignored_months)
 

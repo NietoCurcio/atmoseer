@@ -11,6 +11,7 @@ import pandas as pd
 import xarray as xr
 from tqdm import tqdm
 
+from .AlertarioSquare import AlertarioSquare
 from .INMETSquare import INMETSquare
 from .Logger import TqdmLogger, logger
 from .WebSirenesSquare import WebSirenesSquare
@@ -31,11 +32,13 @@ class SpatioTemporalFeatures:
     stations_cells = manager.Set()
     stations_inmet = manager.Set()
     stations_websirenes = manager.Set()
+    stations_alertario = manager.Set()
 
     def __init__(
         self,
         websirenes_square: WebSirenesSquare,
         inmet_square: INMETSquare,
+        alertario_square: AlertarioSquare,
     ):
         self.features_path = Path(__file__).parent / "features"
         if not self.features_path.exists():
@@ -55,6 +58,7 @@ class SpatioTemporalFeatures:
 
         self.websirenes_square = websirenes_square
         self.inmet_square = inmet_square
+        self.alertario_square = alertario_square
 
         lats, lons = self._get_grid_lats_lons()
 
@@ -196,7 +200,7 @@ class SpatioTemporalFeatures:
         processed = 0
         keys = []
         # O(len(top_down_lats) * len(left_right_lons))
-        # O(n^2 * logn)
+        # O(top_down_lats * left_right_lons * logn)
         for i, lat in enumerate(top_down_lats):
             for j, lon in enumerate(left_right_lons):
                 # O(logn), uses bisect
@@ -214,7 +218,12 @@ class SpatioTemporalFeatures:
                 # O(19) ~ O(1)
                 inmet_keys = self.inmet_square.get_keys_in_square(square, self.stations_inmet)
 
-                if inmet_keys or websirene_keys:
+                # O(33) ~ O(1)
+                alerta_keys = self.alertario_square.get_keys_in_square(
+                    square, self.stations_alertario
+                )
+
+                if inmet_keys or websirene_keys or alerta_keys:
                     keys.append((i, j))
 
                 # O(websirene_keys) ~ O(83) ~ O(1)
@@ -374,7 +383,6 @@ class SpatioTemporalFeatures:
         ds_single_levels_time = ds_single_levels.sel(valid_time=time, method="nearest")
         ds_pressure_levels_time = ds_pressure_levels.sel(valid_time=time, method="nearest")
 
-        # np.empty is faster but zeros is more explicity, easier to check if something went wrong, see validate_timestamps
         features = np.zeros(
             (
                 self.sorted_latitudes_ascending.size,
@@ -424,25 +432,26 @@ class SpatioTemporalFeatures:
                 futures.append(executor.submit(self._process_timestamp, timestamp))
             log.info(f"Tasks submitted - {len(futures)}")
 
-            with tqdm(
-                total=len(timestamps),
-                desc="Processing timestamps",
-                file=TqdmLogger(log),
-                dynamic_ncols=True,
-                mininterval=ONE_MINUTE,
-            ) as pbar:
-                for future in as_completed(futures):
-                    try:
-                        future.result()
-                        pbar.update()
-                    except Exception as e:
-                        log.error(f"Error processing timestamp: {e}")
-                        raise e
+        with tqdm(
+            total=len(timestamps),
+            desc="Processing timestamps",
+            file=TqdmLogger(log),
+            dynamic_ncols=True,
+            mininterval=ONE_MINUTE,
+        ) as pbar:
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                    pbar.update()
+                except Exception as e:
+                    log.error(f"Error processing timestamp: {e}")
+                    raise SystemExit(e)
 
-            self.found_stations = self.stations_websirenes._getvalue()
-            self.found_stations_inmet = self.stations_inmet._getvalue()
-            self.stations_cells = self.stations_cells._getvalue()
-            self.manager.shutdown()
+        self.found_stations = self.stations_websirenes._getvalue()
+        self.found_stations_inmet = self.stations_inmet._getvalue()
+        self.found_stations_alertario = self.stations_alertario._getvalue()
+        self.stations_cells = self.stations_cells._getvalue()
+        self.manager.shutdown()
 
         end_time = time.time()
         log.info(f"Target built in {end_time - start_time:.2f} seconds - parallel")
@@ -467,6 +476,7 @@ class SpatioTemporalFeatures:
         #     self._process_timestamp(timestamps[i])
         # self.found_stations = self.stations_websirenes._getvalue()
         # self.found_stations_inmet = self.stations_inmet._getvalue()
+        # self.found_stations_alertario = self.stations_alertario._getvalue()
         # self.stations_cells = self.stations_cells._getvalue()
         # self.manager.shutdown()
         # end_time = time.time()
@@ -483,7 +493,6 @@ class SpatioTemporalFeatures:
         total_files_in_websirenes_keys = len(
             list(self.websirenes_square.websirenes_keys.websirenes_keys_path.glob("*.parquet"))
         )
-
         assert (
             all_cached or len(self.found_stations) == total_files_in_websirenes_keys
         ), "Expected all websirenes stations to be found and processed"
@@ -492,11 +501,20 @@ class SpatioTemporalFeatures:
         total_files_in_inmet_keys = len(
             list(self.inmet_square.inmet_keys.inmet_keys_path.glob("*.parquet"))
         )
-
         assert (
             all_cached or len(self.found_stations_inmet) == total_files_in_inmet_keys
         ), "Expected all inmet stations to be found and processed"
         log.success(f"All inmet stations processed - {len(self.found_stations_inmet)} files")
+
+        total_files_in_alertario_keys = len(
+            list(self.alertario_square.alertario_keys.alertario_keys_path.glob("*.parquet"))
+        )
+        assert (
+            all_cached or len(self.found_stations_alertario) == total_files_in_alertario_keys
+        ), "Expected all alertario stations to be found and processed"
+        log.success(
+            f"All alertario stations processed - {len(self.found_stations_alertario)} files"
+        )
 
         log.info(f"Total cells with station: {len(self.stations_cells)}")
 
