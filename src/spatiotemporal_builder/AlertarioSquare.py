@@ -132,12 +132,7 @@ class AlertarioSquare:
                 & (df_alertario.datetime <= time_upper_bound)
             ]
 
-            m15 = df_alertario_filtered["m15"]
-
-            red_color = "\033[91m"
-            reset_color = "\033[0m"
-
-            print(f"{red_color}m15: {m15}{reset_color}")
+            m15 = df_alertario_filtered["precipitation"]
 
             if m15.size < 4 or m15.isnull().any():
                 # Please see WebSirenesSquare:get_precipitation_in_square for more information
@@ -201,16 +196,17 @@ if __name__ == "__main__":
 
     alertario_square = AlertarioSquare(AlertarioKeys(AlertarioParser()))
 
-    ds = xr.open_dataset("./data/reanalysis/ERA5-single-levels/monthly_data/RJ_2018_1.nc")
+    ds = xr.open_dataset("./data/reanalysis/ERA5-single-levels/monthly_data/RJ_2024_1.nc")
     print("xr.Dataset:")
     print(ds)
+    timestamp = pd.Timestamp("2024-01-13T20:00:00")
 
-    hour = ds.valid_time[0].values
-    ds = ds.sel(valid_time=hour)
+    ds = ds.sel(valid_time=timestamp)
     lats = ds.latitude.values
     lons = ds.longitude.values
-    lat = lats[0]
-    lon = lons[0]
+    print(f"Grid: {lats.shape[0]}x{lons.shape[0]}")
+    lat = lats[4]
+    lon = lons[7]
 
     square = alertario_square.get_square(lat, lon, sorted(lats), sorted(lons))
     print(f"""
@@ -227,9 +223,7 @@ if __name__ == "__main__":
     keys = alertario_square.get_keys_in_square(square, set())
     print(f"keys: {keys}")
 
-    precipitation = alertario_square.get_precipitation_in_square(
-        square, keys, pd.Timestamp("2018-01-01"), ds
-    )
+    precipitation = alertario_square.get_precipitation_in_square(square, keys, timestamp, ds)
     print(f"precipitation: {precipitation}")
 
     print(f"""

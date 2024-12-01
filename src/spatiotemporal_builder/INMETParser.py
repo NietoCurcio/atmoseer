@@ -14,8 +14,6 @@ class INMETSchema(pa.DataFrameModel):
 
 class INMETParser:
     inmet_path = Path(__file__).parent.parent.parent / "data/ws/inmet"
-    minimum_date = pd.Timestamp.max
-    maximum_date = pd.Timestamp.min
 
     def list_files(self) -> list[str]:
         return [x.name for x in self.inmet_path.glob("*.gzip")]

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import TypedDict
 
@@ -55,14 +56,6 @@ class INMETKeys:
     def load_key(self, key: str) -> pd.DataFrame:
         return pd.read_parquet(f"{self.inmet_keys_path}/{key}.parquet")
 
-    def _set_minimum_date(self, df: pd.DataFrame):
-        if df.index.min() < self.inmet_parser.minimum_date:
-            self.inmet_parser.minimum_date = df.index.min()
-
-    def _set_maximum_date(self, df: pd.DataFrame):
-        if df.index.max() > self.inmet_parser.maximum_date:
-            self.inmet_parser.maximum_date = df.index.max()
-
     def build_keys(self, use_cache: bool = True):
         total_files = len(list(self.inmet_keys_path.glob("*.parquet")))
         if use_cache and total_files > 0:
@@ -75,18 +68,35 @@ class INMETKeys:
         not_found_in_coords = self._not_founds_in_coords()
         log.info(f"Found {len(not_found_in_coords)} stations not found in coordinates")
         log.info(f"Processing {len(files)} files to build keys")
+        minimum_date = pd.Timestamp.max
+        maximum_date = pd.Timestamp.min
         for file in tqdm(files):
             station_id = file.split("_")[0]
 
             df = self.inmet_parser.get_dataframe(str(self.inmet_parser.inmet_path / file))
 
-            self._set_minimum_date(df)
-            self._set_maximum_date(df)
+            if df.index.min() < minimum_date:
+                minimum_date = df.index.min()
+            if df.index.max() > maximum_date:
+                maximum_date = df.index.max()
 
             df = self._merge_by_id(self.inmet_coords, df, station_id)
             self._write_key(df)
         log.info(f"""
-            Minimum date: {self.inmet_parser.minimum_date}
-            Maximum date: {self.inmet_parser.maximum_date}
+            Minimum date: {minimum_date}
+            Maximum date: {maximum_date}
         """)
         log.success(f"INMET keys built successfully in {self.inmet_keys_path}")
+
+        minimum_maximum_dates_path = self.inmet_keys_path / "minimum_maximum_dates_inmet.json"
+        with open(minimum_maximum_dates_path, "w") as f:
+            json.dump(
+                {
+                    "minimum_date": minimum_date.isoformat(),
+                    "maximum_date": maximum_date.isoformat(),
+                },
+                f,
+                indent=4,
+            )
+
+        log.success(f"Minimum and maximum dates written to {minimum_maximum_dates_path}")
