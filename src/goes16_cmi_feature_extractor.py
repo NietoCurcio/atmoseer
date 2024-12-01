@@ -174,7 +174,7 @@ def profundidade_nuvens(pasta_entrada_canal9, pasta_entrada_canal13, pasta_saida
             else:
                 print(f"Arquivo {caminho_arquivo_saida} já foi computado")
 
-def fluxo_ascendente(pasta_entrada_canal, pasta_saida, intervalo_temporal=30):
+def derivada_temporal_fluxo_ascendente(pasta_entrada_canal, pasta_saida, intervalo_temporal=10):
     """
     Função para calcular a derivada temporal do fluxo ascendente (30 minutos),
     considerando dados com resolução temporal de 10 minutos (144 variáveis por arquivo).
@@ -233,14 +233,16 @@ def fluxo_ascendente(pasta_entrada_canal, pasta_saida, intervalo_temporal=30):
                         # Verificando se arquivo com avanço no timestamp existe
                         if variavel_adiante in canal.variables.keys():
                             # Calcular derivada temporal
-                            derivada_temporal = canal.variables[variavel_adiante][:] - canal.variables[nome_variavel][:]
+                            delta_t = timedelta(minutes = intervalo_temporal).total_seconds() / 60
+                            print(f'delta_t: {delta_t}')
+                            derivada_temporal = (canal.variables[variavel_adiante][:] - canal.variables[nome_variavel][:]) / delta_t
 
                             # Salvar no arquivo de saída
                             variavel_saida = saida.createVariable(nome_variavel, 'f4', canal.variables[nome_variavel].dimensions)
                             variavel_saida[:] = derivada_temporal
                             variavel_saida.description = f'Derivada temporal (fluxo ascendente) para {nome_variavel}'
                         else:
-                            print(f'Não há instante de tempo 30 minutos a frente para {nome_variavel}')
+                            print(f'Não há instante de tempo {intervalo_temporal} minutos a frente para {nome_variavel}')
                     
                     # Adicionar atributos globais ao arquivo de saída, se necessário
                     saida.description = "Arquivo com a feature baseada na derivada temporal do fluxo ascendente"
@@ -264,7 +266,7 @@ if __name__ == "__main__":
     '''
     profundidade_nuvens('./data/goes16/CMI/C09', 
                         './data/goes16/CMI/C13', 
-                        'profundidade_nuvens') 
+                        './CMI_features/profundidade_nuvens') 
 
     '''
     1- caminho da pasta do canal 11
@@ -275,13 +277,13 @@ if __name__ == "__main__":
     glaciacao_topo_nuvem('./data/goes16/CMI/C11', 
                          './data/goes16/CMI/C14', 
                          './data/goes16/CMI/C15', 
-                         'glaciacao_topo_nuvem')
+                         './CMI_features/glaciacao_topo_nuvem')
 
     '''
     1- caminho da pasta do canal 13
     2- caminho da pasta de saída da feature
     '''
-    fluxo_ascendente('./data/goes16/CMI/C13', 'fluxo_ascendente')
+    derivada_temporal_fluxo_ascendente('./data/goes16/CMI/C13', './CMI_features/fluxo_ascendente')
 
     end_time = time.time()  # Record the end time
     duration = (end_time - start_time) / 60  # Calculate duration in minutes
