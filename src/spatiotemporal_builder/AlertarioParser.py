@@ -1,11 +1,10 @@
-from collections.abc import Generator
+import re
 from pathlib import Path
 
 import pandas as pd
 import pandera as pa
 import xarray as xr
 from sklearn.impute import KNNImputer
-from tqdm import tqdm
 
 from .Logger import logger
 
@@ -13,112 +12,104 @@ log = logger.get_logger(__name__)
 
 
 class AlertarioSchema(pa.DataFrameModel):
-    station: str
     datetime: pd.Timestamp
-    precipitation: float = pa.Field(nullable=True, ge=0)
-    latitude: str
-    longitude: str
+    m15: float = pa.Field(nullable=False, ge=0)
+    h01: float = pa.Field(nullable=False, ge=0)
 
 
 class AlertarioParser:
-    inmet_path = Path(__file__).parent.parent.parent / "data/ws/inmet"
-    rain_gauge_path = Path(__file__).parent.parent.parent / "data/ws/rain_gauge"
+    rain_gauge_path = Path(__file__).parent / "alertario-from-source"
 
-    def _get_region_of_interest(self) -> dict:
+    def get_region_of_interest(self) -> dict:
         ds = xr.open_dataset("./data/reanalysis/ERA5-single-levels/monthly_data/RJ_2018_1.nc")
         lats = ds.latitude.values
         lons = ds.longitude.values
-        fartest_north = lats.max()
-        fartest_south = lats.min()
-        fartest_east = lons.max()
-        fartest_west = lons.min()
         region_of_interest = {
-            "north": fartest_north,
-            "south": fartest_south,
-            "east": fartest_east,
-            "west": fartest_west,
+            "north": lats.max(),
+            "south": lats.min(),
+            "east": lons.max(),
+            "west": lons.min(),
         }
         return region_of_interest
 
-    def _impute_missing_values(self, df: pd.DataFrame) -> pd.DataFrame:
-        chunk_size = 500_000
-        chunks = [df[i : i + chunk_size] for i in range(0, len(df), chunk_size)]
-        imputed_chunks = []
-        log.info(f"Imputing missing values for precipitation in chunks of {chunk_size} rows")
-        for chunk in tqdm(chunks):
-            chunk_numeric = chunk[["precipitation"]]
-            imputer = KNNImputer(n_neighbors=2)
-            imputed_chunk = imputer.fit_transform(chunk_numeric)
-            chunk.loc[:, "precipitation"] = imputed_chunk
-            imputed_chunks.append(chunk)
-        df = pd.concat(imputed_chunks)
-        del imputed_chunks
-        return df
-
-    def _get_rain_gauge_stations_in_region(self) -> pd.DataFrame:
-        region_of_interest = self._get_region_of_interest()
-
-        df_region = pd.read_parquet("./src/spatiotemporal_builder/alertario")
-        df_region = df_region[
-            (df_region["latitude"] <= region_of_interest["north"])
-            & (df_region["latitude"] >= region_of_interest["south"])
-            & (df_region["longitude"] <= region_of_interest["east"])
-            & (df_region["longitude"] >= region_of_interest["west"])
-        ]
-        df_region[AlertarioSchema.datetime] = pd.to_datetime(
-            df_region[AlertarioSchema.datetime]
-        ).dt.tz_localize(None)
-        # selcting only the columns that are needed
-        df_region = df_region[
-            [
-                AlertarioSchema.station,
-                AlertarioSchema.datetime,
-                AlertarioSchema.precipitation,
-                AlertarioSchema.latitude,
-                AlertarioSchema.longitude,
-            ]
-        ]
-
-        total_values = df_region.shape[0]
-        missing_values = df_region[AlertarioSchema.precipitation].isna().sum()
+    def _impute_missing_values(self, df: pd.DataFrame, column: str) -> pd.DataFrame:
+        total_values = df.shape[0]
+        missing_values = df[column].isna().sum()
         percentage_missing = (missing_values / total_values) * 100
+
+        if percentage_missing == 0:
+            return df
 
         if percentage_missing > 10:
             log.error(
-                f"Percentage of missing values for precipitation in the region of interest: {percentage_missing:.2f}% ({missing_values}/{total_values}) greater than 10% - exiting"
+                f"Percentage of missing values for {column} in the region of interest: {percentage_missing:.2f}% ({missing_values}/{total_values}) greater than 10% - exiting"
             )
             exit(1)
-
-        if percentage_missing > 0:
+        elif percentage_missing > 5:
             log.warning(
-                f"Percentage of missing values for precipitation in the region of interest: {percentage_missing:.2f}% ({missing_values}/{total_values})"
+                f"Missing values for {column}: {percentage_missing:.2f}% ({missing_values}/{total_values})"
             )
-            df_region = self._impute_missing_values(df_region)
 
-        missing_values = df_region[AlertarioSchema.precipitation].isna().sum()
-        assert missing_values == 0, "Missing values after imputation should be zero"
+        imputer = KNNImputer(n_neighbors=2)
+        df[column] = imputer.fit_transform(df[[column]])
+        assert df[column].isna().sum() == 0, "Missing values after imputation should be zero"
+        return df
 
-        df_region["latitude"] = df_region["latitude"].apply(lambda x: str(x))
-        df_region["longitude"] = df_region["longitude"].apply(lambda x: str(x))
-        df_region["station"] = df_region["station"].str.strip()
+    def _get_df(self, file_path: Path) -> pd.DataFrame:
+        df = pd.read_csv(
+            file_path,
+            sep=r"\s{2,}",
+            engine="python",
+            skiprows=5,
+            names=["Dia", "Hora", "HBV", "m15", "h01", "h04", "h24", "h96"],
+        )
+        df["datetime"] = pd.to_datetime(df["Dia"] + " " + df["Hora"], format="%d/%m/%Y %H:%M:%S")
 
-        AlertarioSchema.validate(df_region)
-        log.info(f"Dataframe region describe:\n{df_region.describe()}")
+        df["m15"] = pd.to_numeric(df["m15"], errors="coerce")
+        df["h01"] = pd.to_numeric(df["h01"], errors="coerce")
+        df = df.drop(columns=["Dia", "Hora", "HBV", "h04", "h24", "h96"])
+        return df
 
-        return df_region
+    def process_station(self, station: str):
+        station_dfs = []
+        months = pd.date_range(pd.Timestamp("2013-01-01"), pd.Timestamp("2024-10-01"), freq="MS")
+        for month in months:
+            current_year = month.year
+            current_month = month.month
+            try:
+                file_name = f"{station}_{current_year:04d}{current_month:02d}_Plv.txt"
+                file_path = self.rain_gauge_path / file_name
+                if not file_path.exists():
+                    raise FileNotFoundError(f"File {file_path} not found")
+                df = self._get_df(file_path)
+                station_dfs.append(df)
+            except Exception as e:
+                print(f"Error processing station {station} at {current_year}-{current_month}: {e}")
+                raise e
+        assert len(station_dfs) == len(months)
+        df = pd.concat(station_dfs).sort_values(by="datetime").reset_index(drop=True)
+        df = self._impute_missing_values(df, AlertarioSchema.m15)
+        df = self._impute_missing_values(df, AlertarioSchema.h01)
+        AlertarioSchema.validate(df)
+        return df
 
-    def list_rain_gauge_stations(self) -> Generator[pd.DataFrame, None, None]:
-        df_region = self._get_rain_gauge_stations_in_region()
-        return df_region
-        # self.unique_names = df_region[AlertarioSchema.station].unique()
-        # for name in self.unique_names:
-        #     df_station = df_region[df_region[AlertarioSchema.station] == name]
-        #     yield df_station
+    def list_rain_gauge_stations(self) -> list[str]:
+        unique_names = set()
+        pattern = re.compile(r"^(.*?)_\d{6}_Plv\.txt$")
+        for file in self.rain_gauge_path.iterdir():
+            filename = file.name
+            match = pattern.match(filename)
+            if not match:
+                raise ValueError(f"Filename {filename} does not match the pattern")
+            unique_names.add(match.group(1))
+        return sorted(unique_names)
 
 
 if __name__ == "__main__":
     # python -m src.spatiotemporal_builder.AlertarioParser
     alertario_parser = AlertarioParser()
-    for df in alertario_parser.list_rain_gauge_stations():
-        print(df)
+    for station in alertario_parser.list_rain_gauge_stations():
+        print(f"station: {station}")
+        data = alertario_parser.process_station(station)
+        print(data)
         break

@@ -132,14 +132,16 @@ class AlertarioSquare:
                 & (df_alertario.datetime <= time_upper_bound)
             ]
 
-            m15 = df_alertario_filtered["precipitation"]
+            m15 = df_alertario_filtered["m15"]
+            h01 = df_alertario[df_alertario.datetime == time_upper_bound]["h01"]
 
             if m15.size < 4 or m15.isnull().any():
                 # Please see WebSirenesSquare:get_precipitation_in_square for more information
                 m15_era5 = self._get_era5_single_levels_precipitation_in_square(square, ds_time)
                 m15 = np.array([m15.sum(), m15_era5]).max()
 
-            precipitations_15_min_aggregated.append(m15.sum().item())
+            max_between_m15_and_h01 = np.array([m15.sum().item(), h01.item()]).max()
+            precipitations_15_min_aggregated.append(max_between_m15_and_h01.item())
 
         return max(precipitations_15_min_aggregated)
 
@@ -192,14 +194,17 @@ class AlertarioSquare:
 
 if __name__ == "__main__":
     # python -m src.spatiotemporal_builder.AlertarioSquare
+    # https://g1.globo.com/rj/rio-de-janeiro/noticia/2022/10/31/rio-entra-em-estagio-de-mobilizacao-por-previsao-de-chuva.ghtml
+    from .AlertarioCoords import get_alertario_coords
     from .AlertarioParser import AlertarioParser
 
-    alertario_square = AlertarioSquare(AlertarioKeys(AlertarioParser()))
-
-    ds = xr.open_dataset("./data/reanalysis/ERA5-single-levels/monthly_data/RJ_2024_1.nc")
+    alertario_square = AlertarioSquare(AlertarioKeys(AlertarioParser(), get_alertario_coords()))
+    timestamp = pd.Timestamp("2022-10-31T18:00:00")
+    year = timestamp.year
+    month = timestamp.month
+    ds = xr.open_dataset(f"./data/reanalysis/ERA5-single-levels/monthly_data/RJ_{year}_{month}.nc")
     print("xr.Dataset:")
     print(ds)
-    timestamp = pd.Timestamp("2024-01-13T20:00:00")
 
     ds = ds.sel(valid_time=timestamp)
     lats = ds.latitude.values

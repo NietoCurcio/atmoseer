@@ -299,6 +299,7 @@ class WebSirenesSquare:
             ]
 
             m15 = df_web_filtered["m15"]
+            h01 = df_web[df_web.index == time_upper_bound]["h01"]
 
             if m15.size < 4 or m15.isnull().any():
                 # Websirenes (and also Alertario) have a time resolution of 15 minutes
@@ -319,7 +320,8 @@ class WebSirenesSquare:
                 m15_era5 = self._get_era5_single_levels_precipitation_in_square(square, ds_time)
                 m15 = np.array([m15.sum(), m15_era5]).max()
 
-            precipitations_15_min_aggregated.append(m15.sum().item())
+            max_between_m15_and_h01 = np.array([m15.sum().item(), h01.item()]).max()
+            precipitations_15_min_aggregated.append(max_between_m15_and_h01.item())
 
         max_precipitation = max(precipitations_15_min_aggregated)
         # see "ge=0, but txt has -99.99 values" comment in WebSirenesParser.py
