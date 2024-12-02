@@ -14,6 +14,7 @@ from tqdm import tqdm
 from .AlertarioSquare import AlertarioSquare
 from .INMETSquare import INMETSquare
 from .Logger import TqdmLogger, logger
+from .square import get_square
 from .WebSirenesSquare import WebSirenesSquare
 
 log = logger.get_logger(__name__)
@@ -174,7 +175,7 @@ class SpatioTemporalFeatures:
         for i, lat in enumerate(top_down_lats):
             for j, lon in enumerate(left_right_lons):
                 # O(logn), uses bisect
-                square = self.websirenes_square.get_square(
+                square = get_square(
                     lat, lon, self.sorted_latitudes_ascending, self.sorted_longitudes_ascending
                 )
 

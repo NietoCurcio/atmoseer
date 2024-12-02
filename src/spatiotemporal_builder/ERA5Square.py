@@ -76,7 +76,7 @@ class ERA5Square:
         best_corner = corners[np.argmax(corner_sums)]
         return corner_data[best_corner]["r"].values
 
-    def get_temperature_in_square(self, square: Square, ds_time: xr.Dataset):
+    def get_temperature_in_square(self, square: Square, ds_time: xr.Dataset, verbose=False):
         # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
         coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
@@ -103,27 +103,28 @@ class ERA5Square:
         corner_sums = [np.sum(values) for values in results]
         best_corner = corners[np.argmax(corner_sums)]
 
-        log.debug(f"""
-            corner_data:
-            Top left lat lon: ({corner_data["top_left"].latitude.values}, {corner_data["top_left"].longitude.values})
-            Top left temperature: {corner_data["top_left"]["t"].values}
-            Top left pressure levels: {corner_data["top_left"]["pressure_level"].values}
+        if verbose:
+            log.debug(f"""
+                corner_data:
+                Top left lat lon: ({corner_data["top_left"].latitude.values}, {corner_data["top_left"].longitude.values})
+                Top left temperature: {corner_data["top_left"]["t"].values}
+                Top left pressure levels: {corner_data["top_left"]["pressure_level"].values}
 
-            Bottom left lat lon: ({corner_data["bottom_left"].latitude.values}, {corner_data["bottom_left"].longitude.values})
-            Bottom left temperature: {corner_data["bottom_left"]["t"].values}
-            Bottom left pressure levels: {corner_data["bottom_left"]["pressure_level"].values}
+                Bottom left lat lon: ({corner_data["bottom_left"].latitude.values}, {corner_data["bottom_left"].longitude.values})
+                Bottom left temperature: {corner_data["bottom_left"]["t"].values}
+                Bottom left pressure levels: {corner_data["bottom_left"]["pressure_level"].values}
 
-            Bottom right lat lon: ({corner_data["bottom_right"].latitude.values}, {corner_data["bottom_right"].longitude.values})
-            Bottom right temperature: {corner_data["bottom_right"]["t"].values}
-            Bottom right pressure levels: {corner_data["bottom_right"]["pressure_level"].values}
+                Bottom right lat lon: ({corner_data["bottom_right"].latitude.values}, {corner_data["bottom_right"].longitude.values})
+                Bottom right temperature: {corner_data["bottom_right"]["t"].values}
+                Bottom right pressure levels: {corner_data["bottom_right"]["pressure_level"].values}
 
-            Top right lat lon: ({corner_data["top_right"].latitude.values}, {corner_data["top_right"].longitude.values})
-            Top right temperature: {corner_data["top_right"]["t"].values}
-            Top right pressure levels: {corner_data["top_right"]["pressure_level"].values}
+                Top right lat lon: ({corner_data["top_right"].latitude.values}, {corner_data["top_right"].longitude.values})
+                Top right temperature: {corner_data["top_right"]["t"].values}
+                Top right pressure levels: {corner_data["top_right"]["pressure_level"].values}
 
-            best_corner (most significant): {best_corner}
-            return: {corner_data[best_corner]["t"].values}
-        """)
+                best_corner (most significant): {best_corner}
+                return: {corner_data[best_corner]["t"].values}
+            """)
 
         return corner_data[best_corner]["t"].values
 
@@ -204,7 +205,7 @@ class ERA5Square:
         return corner_data[best_corner]["w"].values
 
     def get_era5_single_levels_precipitation_in_square(
-        self, square: Square, era5_at_time: xr.Dataset, data_var="tp"
+        self, square: Square, era5_at_time: xr.Dataset, data_var="tp", verbose=False
     ) -> float:
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
         coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
@@ -223,22 +224,23 @@ class ERA5Square:
         tp_values = [corner_data[corner][data_var].item() for corner in corners]
         max_tp = max(tp_values)
 
-        log.debug(f"""
-            corner_data:
-            Top left lat lon: ({corner_data["top_left"].latitude.values}, {corner_data["top_left"].longitude.values})
-            Top left precipitation: {corner_data["top_left"][data_var].values}
+        if verbose:
+            log.debug(f"""
+                corner_data:
+                Top left lat lon: ({corner_data["top_left"].latitude.values}, {corner_data["top_left"].longitude.values})
+                Top left precipitation: {corner_data["top_left"][data_var].values}
 
-            Bottom left lat lon: ({corner_data["bottom_left"].latitude.values}, {corner_data["bottom_left"].longitude.values})
-            Bottom left precipitation: {corner_data["bottom_left"][data_var].values}
+                Bottom left lat lon: ({corner_data["bottom_left"].latitude.values}, {corner_data["bottom_left"].longitude.values})
+                Bottom left precipitation: {corner_data["bottom_left"][data_var].values}
 
-            Bottom right lat lon: ({corner_data["bottom_right"].latitude.values}, {corner_data["bottom_right"].longitude.values})
-            Bottom right precipitation: {corner_data["bottom_right"][data_var].values}
+                Bottom right lat lon: ({corner_data["bottom_right"].latitude.values}, {corner_data["bottom_right"].longitude.values})
+                Bottom right precipitation: {corner_data["bottom_right"][data_var].values}
 
-            Top right lat lon: ({corner_data["top_right"].latitude.values}, {corner_data["top_right"].longitude.values})
-            Top right precipitation: {corner_data["top_right"][data_var].values}
+                Top right lat lon: ({corner_data["top_right"].latitude.values}, {corner_data["top_right"].longitude.values})
+                Top right precipitation: {corner_data["top_right"][data_var].values}
 
-            max_tp: {max_tp}
-        """)
+                max_tp: {max_tp}
+            """)
 
         if np.isnan(max_tp):
             lat_mean, lon_mean = np.mean(coords, axis=0)
@@ -251,7 +253,7 @@ class ERA5Square:
         square: Square,
         ds_time: xr.Dataset,
     ) -> float:
-        return self.get_era5_single_levels_precipitation_in_square(square, ds_time)
+        return self.get_era5_single_levels_precipitation_in_square(square, ds_time, verbose=True)
 
     def get_square(
         self,
@@ -351,7 +353,7 @@ if __name__ == "__main__":
     log.debug("pressure levels dataset:")
     log.debug(ds)
 
-    temperature = era5_square.get_temperature_in_square(square, ds)
+    temperature = era5_square.get_temperature_in_square(square, ds, verbose=True)
     log.success(f"""
         Temperature in square:
         top_left={square.top_left}
