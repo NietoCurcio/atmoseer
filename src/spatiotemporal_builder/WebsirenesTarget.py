@@ -24,6 +24,7 @@ class StationsManager(BaseManager):
 
 
 StationsManager.register("Set", set)
+StationsManager.register("Dict", dict)
 
 
 class SpatioTemporalFeatures:
@@ -33,6 +34,7 @@ class SpatioTemporalFeatures:
     stations_inmet = manager.Set()
     stations_websirenes = manager.Set()
     stations_alertario = manager.Set()
+    dataset_era5_year_month = manager.Dict()
 
     def __init__(
         self,
@@ -50,11 +52,6 @@ class SpatioTemporalFeatures:
         self.era5_pressure_levels_path = (
             Path(__file__).parent.parent.parent / "data/reanalysis/ERA5-pressure-levels"
         )
-
-        self.current_single_levels_ds = None
-        self.current_pressure_levels_ds = None
-        self.current_year_month_pressure = None
-        self.current_year_month_single = None
 
         self.websirenes_square = websirenes_square
         self.inmet_square = inmet_square
@@ -102,17 +99,17 @@ class SpatioTemporalFeatures:
         np.save(features_filename, features)
 
     def _get_grid_lats_lons(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
-        ds = self._get_era5_pressure_levels_dataset(2009, 6)
+        ds = self._get_era5_single_levels_dataset(2009, 6)
         lats = ds.coords["latitude"].values
         lons = ds.coords["longitude"].values
         return lats, lons
 
     def _get_era5_single_levels_dataset(self, year: int, month: int) -> xr.Dataset:
         if (
-            self.current_year_month_single == (year, month)
-            and self.current_single_levels_ds is not None
+            self.dataset_era5_year_month.get((year, month)) == (year, month)
+            and self.dataset_era5_year_month.get("single_levels") is not None
         ):
-            return self.current_single_levels_ds
+            return self.dataset_era5_year_month.get("single_levels")
 
         era5_year_month_path = (
             self.era5_single_levels_path / "monthly_data" / f"RJ_{year}_{month}.nc"
@@ -121,45 +118,37 @@ class SpatioTemporalFeatures:
         if not os.path.exists(era5_year_month_path):
             raise FileNotFoundError(f"File {era5_year_month_path} not found")
 
+        if self.dataset_era5_year_month.get("single_levels") is not None:
+            self.dataset_era5_year_month.get("single_levels").close()
+
         ds = xr.open_dataset(era5_year_month_path)
-        # new version of ERA5 causes error in the code below
-        # if "expver" in list(ds.coords.keys()):
-        #     log.warning(">>>Oops! expver dimension found. Going to remove it.<<<")
-        #     ds.sel(expver="0001", method="nearest")
-        #     ds_combine = ds.sel(expver=1).combine_first(ds.sel(expver=5))
-        #     exit(0)
-        #     ds_combine.load()
-        #     ds = ds_combine
         ds = ds[["tp"]]
-        self.current_single_levels_ds = ds
-        self.current_year_month_single = (year, month)
-        return self.current_single_levels_ds
+        self.dataset_era5_year_month.update({(year, month): (year, month)})
+        self.dataset_era5_year_month.update({"single_levels": ds})
+        return ds
 
     def _get_era5_pressure_levels_dataset(self, year: int, month: int) -> xr.Dataset:
         if (
-            self.current_year_month_pressure == (year, month)
-            and self.current_pressure_levels_ds is not None
+            self.dataset_era5_year_month.get((year, month)) == (year, month)
+            and self.dataset_era5_year_month.get("pressure_levels") is not None
         ):
-            return self.current_pressure_levels_ds
+            return self.dataset_era5_year_month.get("pressure_levels")
 
         era5_year_month_path = (
             self.era5_pressure_levels_path / "monthly_data" / f"RJ_{year}_{month}.nc"
         )
 
-        if not os.path.exists(era5_year_month_path):
+        if not era5_year_month_path.exists():
             raise FileNotFoundError(f"File {era5_year_month_path} not found")
 
+        if self.dataset_era5_year_month.get("pressure_levels") is not None:
+            self.dataset_era5_year_month.get("pressure_levels").close()
+
         ds = xr.open_dataset(era5_year_month_path)
-        # new version of ERA5 causes error in the code below
-        # if "expver" in list(ds.coords.keys()):
-        #     log.warning(">>>Oops! expver dimension found. Going to remove it.<<<")
-        #     ds_combine = ds.sel(expver=1).combine_first(ds.sel(expver=5))
-        #     ds_combine.load()
-        #     ds = ds_combine
         ds = ds[["r", "t", "u", "v", "w"]]
-        self.current_pressure_levels_ds = ds
-        self.current_year_month_pressure = (year, month)
-        return self.current_pressure_levels_ds
+        self.dataset_era5_year_month.update({(year, month): (year, month)})
+        self.dataset_era5_year_month.update({"pressure_levels": ds})
+        return ds
 
     def _get_ds_month(self, timestamp: pd.Timestamp) -> tuple[xr.Dataset, xr.Dataset]:
         year = timestamp.year
@@ -355,18 +344,16 @@ class SpatioTemporalFeatures:
             processed == total_squares
         ), "Not all cells processed failed to include last row and last column"
 
-    def _process_timestamp(
-        self,
-        timestamp: pd.Timestamp,
-        ds_single_levels_month: xr.Dataset,
-        ds_pressure_levels_month: xr.Dataset,
-    ):
+    def _process_timestamp(self, timestamp: pd.Timestamp):
         year = timestamp.year
         month = timestamp.month
         day = timestamp.day
         hour = timestamp.hour
 
         time = f"{year}-{month}-{day}T{hour}:00:00.000000000"
+
+        ds_single_levels_month = self._get_era5_single_levels_dataset(year, month)
+        ds_pressure_levels_month = self._get_era5_pressure_levels_dataset(year, month)
 
         ds_single_levels_time = ds_single_levels_month.sel(valid_time=time, method="nearest")
         ds_pressure_levels_time = ds_pressure_levels_month.sel(valid_time=time, method="nearest")
@@ -382,6 +369,8 @@ class SpatioTemporalFeatures:
 
         self._process_grid(features, ds_single_levels_time, ds_pressure_levels_time, timestamp)
         self._write_features(features, timestamp)
+        ds_single_levels_time.close()
+        ds_pressure_levels_time.close()
 
     def build_timestamps_hourly(
         self,
@@ -414,17 +403,8 @@ class SpatioTemporalFeatures:
                 if timestamp.month in ignored_months:
                     continue
 
-                ds_single_levels_month, ds_pressure_levels_month = self._get_ds_month(timestamp)
-
                 all_cached = False
-                futures.append(
-                    executor.submit(
-                        self._process_timestamp,
-                        timestamp,
-                        ds_single_levels_month,
-                        ds_pressure_levels_month,
-                    )
-                )
+                futures.append(executor.submit(self._process_timestamp, timestamp))
             log.info(f"Tasks submitted - {len(futures)}")
 
             with tqdm(
