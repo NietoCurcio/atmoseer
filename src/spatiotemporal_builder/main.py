@@ -3,6 +3,7 @@ from typing import Optional
 
 import pandas as pd
 
+from .AlertarioCoords import get_alertario_coords
 from .AlertarioKeys import AlertarioKeys
 from .AlertarioParser import AlertarioParser
 from .AlertarioSquare import AlertarioSquare
@@ -100,7 +101,7 @@ def get_instances():
     inmet_keys = INMETKeys(INMETParser(), get_inmet_coords())
     inmet_square = INMETSquare(inmet_keys)
 
-    alertario_keys = AlertarioKeys(AlertarioParser())
+    alertario_keys = AlertarioKeys(AlertarioParser(), get_alertario_coords())
     alertario_square = AlertarioSquare(alertario_keys)
 
     spatio_temporal_features = SpatioTemporalFeatures(

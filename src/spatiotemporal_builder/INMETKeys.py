@@ -5,10 +5,15 @@ from typing import TypedDict
 import pandas as pd
 from tqdm import tqdm
 
-from .INMETParser import INMETParser
+from .INMETParser import INMETParser, INMETSchema
 from .Logger import logger
 
 log = logger.get_logger(__name__)
+
+
+class INMETKeySchema(INMETSchema):
+    latitude: str
+    longitude: str
 
 
 class StationNameId(TypedDict):
@@ -44,6 +49,7 @@ class INMETKeys:
         lon = station["longitude"].values[0]
         inmet_df["latitude"] = lat
         inmet_df["longitude"] = lon
+        INMETKeySchema.validate(inmet_df)
         return inmet_df
 
     def _write_key(self, df: pd.DataFrame):

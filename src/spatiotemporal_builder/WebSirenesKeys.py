@@ -3,17 +3,24 @@ from pathlib import Path
 from typing import TypedDict
 
 import pandas as pd
+from pandera.typing import Index
 from tqdm import tqdm
 
 from .Logger import logger
-from .WebSirenesParser import WebSirenesParser
+from .WebSirenesParser import WebSireneSchema, WebSirenesParser
 
 log = logger.get_logger(__name__)
 
 
 class StationNameId(TypedDict):
     name: str
-    station_id: int
+    station_id: str
+
+
+class WebsirenesKeySchema(WebSireneSchema):
+    horaLeitura: Index[pd.Timestamp]
+    latitude: str
+    longitude: str
 
 
 class WebSirenesKeys:
@@ -92,7 +99,7 @@ class WebSirenesKeys:
         files = self.websirenes_parser.list_files()
         not_found_in_coords = self._not_founds_in_coords()
         log.info(f"Found {len(not_found_in_coords)} stations not found in coordinates")
-        log.info(f"Processing {len(files)} files to build keys")
+        log.info(f"Processing {len(files) - len(not_found_in_coords)} files to build keys")
         minimum_date = pd.Timestamp.max
         maximum_date = pd.Timestamp.min
         for file in tqdm(files):
