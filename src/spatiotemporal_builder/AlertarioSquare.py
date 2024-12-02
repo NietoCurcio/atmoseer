@@ -236,5 +236,4 @@ if __name__ == "__main__":
         {square.top_left} --- {square.top_right}
         | {" " * 20} {precipitation:.2f} mm  {" " * 20} |
         {square.bottom_left} --- {square.bottom_right}
-
     """)
