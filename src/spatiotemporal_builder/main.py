@@ -96,13 +96,16 @@ def check_data_requirements():
 
 
 def get_instances():
-    websirenes_keys = WebSirenesKeys(WebSirenesParser(), get_websirenes_coords())
+    sirenes_coords = get_websirenes_coords() if not settings.only_ERA5 else None
+    websirenes_keys = WebSirenesKeys(WebSirenesParser(), sirenes_coords)
     websirenes_square = WebSirenesSquare(websirenes_keys)
 
-    inmet_keys = INMETKeys(INMETParser(), get_inmet_coords())
+    inmet_coords = get_inmet_coords() if not settings.only_ERA5 else None
+    inmet_keys = INMETKeys(INMETParser(), inmet_coords)
     inmet_square = INMETSquare(inmet_keys)
 
-    alertario_keys = AlertarioKeys(AlertarioParser(), get_alertario_coords())
+    alertario_coords = get_alertario_coords() if not settings.only_ERA5 else None
+    alertario_keys = AlertarioKeys(AlertarioParser(), alertario_coords)
     alertario_square = AlertarioSquare(alertario_keys)
 
     spatio_temporal_features = SpatioTemporalFeatures(
@@ -129,9 +132,10 @@ def build_features(start_date: pd.Timestamp, end_date: pd.Timestamp, ignored_mon
             dataset_builder,
         ) = get_instances()
 
-        websirenes_keys.build_keys()
-        inmet_keys.build_keys()
-        alertario_keys.build_keys()
+        if not settings.only_ERA5:
+            websirenes_keys.build_keys()
+            inmet_keys.build_keys()
+            alertario_keys.build_keys()
 
         spatio_temporal_features.build_timestamps_hourly(start_date, end_date, ignored_months)
 

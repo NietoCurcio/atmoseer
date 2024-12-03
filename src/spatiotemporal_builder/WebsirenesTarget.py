@@ -152,13 +152,6 @@ class SpatioTemporalFeatures:
         self.dataset_era5_year_month.update({"pressure_levels": ds})
         return ds
 
-    def _get_ds_month(self, timestamp: pd.Timestamp) -> tuple[xr.Dataset, xr.Dataset]:
-        year = timestamp.year
-        month = timestamp.month
-        ds_single_levels = self._get_era5_single_levels_dataset(year, month)
-        ds_pressure_levels = self._get_era5_pressure_levels_dataset(year, month)
-        return ds_single_levels, ds_pressure_levels
-
     def _get_precipitation_in_square(
         self,
         square: Square,
