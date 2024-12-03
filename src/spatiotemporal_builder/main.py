@@ -12,6 +12,7 @@ from .INMETKeys import INMETKeys
 from .INMETParser import INMETParser
 from .INMETSquare import INMETSquare
 from .Logger import logger
+from .settings import settings
 from .WebSirenesCoords import get_websirenes_coords
 from .WebsirenesDataset import WebsirenesDataset
 from .WebSirenesKeys import WebSirenesKeys
@@ -170,10 +171,17 @@ if __name__ == "__main__":
         default=[6, 7, 8],
         help="Months to ignore (e.g., --ignored_months 6 7 8)",
     )
+    parser.add_argument(
+        "--only-ERA5",
+        action="store_true",
+        help="Build features only using ERA5 data",
+    )
 
     # check_data_requirements()
 
     args = parser.parse_args()
+
+    settings.set_settings(args)
 
     start_date, end_date = validate_dates(args.start_date, args.end_date)
 
