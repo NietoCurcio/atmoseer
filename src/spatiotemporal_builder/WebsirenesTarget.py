@@ -14,7 +14,8 @@ from tqdm import tqdm
 from .AlertarioSquare import AlertarioSquare
 from .INMETSquare import INMETSquare
 from .Logger import TqdmLogger, logger
-from .square import get_square
+from .settings import settings
+from .square import Square, get_square
 from .WebSirenesSquare import WebSirenesSquare
 
 log = logger.get_logger(__name__)
@@ -158,6 +159,39 @@ class SpatioTemporalFeatures:
         ds_pressure_levels = self._get_era5_pressure_levels_dataset(year, month)
         return ds_single_levels, ds_pressure_levels
 
+    def _get_precipitation_in_square(
+        self,
+        square: Square,
+        timestamp: pd.Timestamp,
+        ds: xr.Dataset,
+        keys: list[tuple],
+        lat_index: int,
+        lon_index: int,
+    ):
+        if settings.only_ERA5:
+            return self.websirenes_square.get_era5_single_levels_precipitation_in_square(square, ds)
+
+        websirenes_keys = self.websirenes_square.get_keys_in_square(square, keys)
+
+        inmet_keys = self.inmet_square.get_keys_in_square(square, keys)
+
+        alertario_keys = self.alertario_square.get_keys_in_square(square, keys)
+
+        if inmet_keys or websirenes_keys or alertario_keys:
+            keys.append((lat_index, lon_index))
+
+        tp_sirenes = self.websirenes_square.get_precipitation_in_square(
+            square, websirenes_keys, timestamp, ds
+        )
+
+        tp_inmet = self.inmet_square.get_precipitation_in_square(square, inmet_keys, timestamp, ds)
+
+        tp_alertario = self.alertario_square.get_precipitation_in_square(
+            square, alertario_keys, timestamp, ds
+        )
+
+        return max(tp_sirenes, tp_inmet, tp_alertario)
+
     def _process_grid(
         self,
         features: npt.NDArray[np.float64],
@@ -182,38 +216,9 @@ class SpatioTemporalFeatures:
                 if square is None:
                     continue
 
-                # O(83) ~ O(1)
-                websirene_keys = self.websirenes_square.get_keys_in_square(
-                    square, self.stations_websirenes
+                tp = self._get_precipitation_in_square(
+                    square, timestamp, ds_single_levels, keys, i, j
                 )
-                # O(19) ~ O(1)
-                inmet_keys = self.inmet_square.get_keys_in_square(square, self.stations_inmet)
-
-                # O(33) ~ O(1)
-                alertario_keys = self.alertario_square.get_keys_in_square(
-                    square, self.stations_alertario
-                )
-
-                if inmet_keys or websirene_keys or alertario_keys:
-                    keys.append((i, j))
-
-                # O(websirene_keys) ~ O(83) ~ O(1)
-                tp = self.websirenes_square.get_precipitation_in_square(
-                    square, websirene_keys, timestamp, ds_single_levels
-                )
-
-                # O(inmet_keys) ~ O(19) ~ O(1)
-                # Maybe call these two in a ThreadPoolExecutor?
-                tp_inmet = self.inmet_square.get_precipitation_in_square(
-                    square, inmet_keys, timestamp, ds_single_levels
-                )
-
-                # O(alertario_keys) ~ O(33) ~ O(1)
-                tp_alertario = self.alertario_square.get_precipitation_in_square(
-                    square, alertario_keys, timestamp, ds_single_levels
-                )
-
-                tp = max(tp, tp_inmet, tp_alertario)
 
                 # O(4) ~ O(1)
                 r1000, r700, r200 = self.websirenes_square.get_relative_humidity_in_square(
@@ -389,6 +394,7 @@ class SpatioTemporalFeatures:
         start_time = time.time()
         ONE_MINUTE = 60 * 1
         all_cached = True
+
         with ProcessPoolExecutor() as executor:
             futures = []
 
@@ -466,19 +472,28 @@ class SpatioTemporalFeatures:
             f"Websirenes features hourly built successfully in {self.features_path} - {validated_total_timestamps} files"
         )
 
-        assert all_cached or len(self.found_stations) == len(
-            list(self.websirenes_square.websirenes_keys.websirenes_keys_path.glob("*.parquet"))
+        assert (
+            settings.only_ERA5
+            or all_cached
+            or len(self.found_stations)
+            == len(
+                list(self.websirenes_square.websirenes_keys.websirenes_keys_path.glob("*.parquet"))
+            )
         ), "Expected all websirenes stations to be found and processed"
 
-        assert all_cached or len(
-            list(self.inmet_square.inmet_keys.inmet_keys_path.glob("*.parquet"))
+        assert (
+            settings.only_ERA5
+            or all_cached
+            or len(list(self.inmet_square.inmet_keys.inmet_keys_path.glob("*.parquet")))
         ), "Expected all inmet stations to be found and processed"
 
-        assert all_cached or len(
-            list(self.alertario_square.alertario_keys.alertario_keys_path.glob("*.parquet"))
+        assert (
+            settings.only_ERA5
+            or all_cached
+            or len(list(self.alertario_square.alertario_keys.alertario_keys_path.glob("*.parquet")))
         ), "Expected all alertario stations to be found and processed"
 
-        if not all_cached:
+        if not all_cached and not settings.only_ERA5:
             log.success(f"""
                 All stations processed:
                 Websirenes: {len(self.found_stations)} files
