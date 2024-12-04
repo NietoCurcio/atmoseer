@@ -108,7 +108,7 @@ class SpatioTemporalFeatures:
 
     def _get_era5_single_levels_dataset(self, year: int, month: int) -> xr.Dataset:
         if (
-            self.dataset_era5_year_month.get((year, month)) == (year, month)
+            self.dataset_era5_year_month.get((year, month, "single_levels")) == (year, month)
             and self.dataset_era5_year_month.get("single_levels") is not None
         ):
             return self.dataset_era5_year_month.get("single_levels")
@@ -125,13 +125,13 @@ class SpatioTemporalFeatures:
 
         ds = xr.open_dataset(era5_year_month_path)
         ds = ds[["tp"]]
-        self.dataset_era5_year_month.update({(year, month): (year, month)})
+        self.dataset_era5_year_month.update({(year, month, "single_levels"): (year, month)})
         self.dataset_era5_year_month.update({"single_levels": ds})
         return ds
 
     def _get_era5_pressure_levels_dataset(self, year: int, month: int) -> xr.Dataset:
         if (
-            self.dataset_era5_year_month.get((year, month)) == (year, month)
+            self.dataset_era5_year_month.get((year, month, "pressure_levels")) == (year, month)
             and self.dataset_era5_year_month.get("pressure_levels") is not None
         ):
             return self.dataset_era5_year_month.get("pressure_levels")
@@ -148,7 +148,7 @@ class SpatioTemporalFeatures:
 
         ds = xr.open_dataset(era5_year_month_path)
         ds = ds[["r", "t", "u", "v", "w"]]
-        self.dataset_era5_year_month.update({(year, month): (year, month)})
+        self.dataset_era5_year_month.update({(year, month, "pressure_levels"): (year, month)})
         self.dataset_era5_year_month.update({"pressure_levels": ds})
         return ds
 
