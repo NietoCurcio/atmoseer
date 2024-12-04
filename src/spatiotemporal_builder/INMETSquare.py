@@ -19,6 +19,10 @@ class INMETSquare(ERA5Square):
     def get_keys_in_square(
         self, square: Square, stations_inmet: set, verbose: bool = False
     ) -> list[str]:
+        keys_cache_path = Path(__file__).parent / "keys_cache" / f"{tuple(square)}-inmet.npy"
+        if keys_cache_path.exists():
+            return list(np.load(keys_cache_path))
+
         keys = [x.stem for x in Path(self.inmet_keys.inmet_keys_path).glob("*.parquet")]
         inmet_keys = []
         for key in keys:
@@ -45,6 +49,8 @@ class INMETSquare(ERA5Square):
 
         if len(inmet_keys) > 0:
             stations_inmet.update(inmet_keys)
+
+        np.save(keys_cache_path, inmet_keys)
 
         return inmet_keys
 

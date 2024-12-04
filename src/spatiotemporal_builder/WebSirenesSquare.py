@@ -25,6 +25,10 @@ class WebSirenesSquare(ERA5Square):
         Args:
             square (Square): The square to check for keys
         """
+        keys_cache_path = Path(__file__).parent / "keys_cache" / f"{tuple(square)}-sirenes.npy"
+        if keys_cache_path.exists():
+            return list(np.load(keys_cache_path))
+
         keys = [x.stem for x in Path(self.websirenes_keys.websirenes_keys_path).glob("*.parquet")]
         websirenes_keys = []
         for key in keys:
@@ -51,6 +55,8 @@ class WebSirenesSquare(ERA5Square):
 
         if len(websirenes_keys) > 0:
             stations_websirenes.update(websirenes_keys)
+
+        np.save(keys_cache_path, websirenes_keys)
 
         return websirenes_keys
 

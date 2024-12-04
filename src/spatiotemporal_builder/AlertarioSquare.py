@@ -20,6 +20,11 @@ class AlertarioSquare(ERA5Square):
     def get_keys_in_square(
         self, square: Square, stations_alertario: set, verbose: bool = False
     ) -> list[str]:
+        # check if the file exists
+        keys_cache_path = Path(__file__).parent / "keys_cache" / f"{tuple(square)}-alertario.npy"
+        if keys_cache_path.exists():
+            return list(np.load(keys_cache_path))
+
         keys = [x.stem for x in Path(self.alertario_keys.alertario_keys_path).glob("*.parquet")]
         alertario_keys = []
         for key in keys:
@@ -46,6 +51,8 @@ class AlertarioSquare(ERA5Square):
 
         if len(alertario_keys) > 0:
             stations_alertario.update(alertario_keys)
+
+        np.save(keys_cache_path, alertario_keys)
 
         return alertario_keys
 
