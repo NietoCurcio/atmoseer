@@ -1,3 +1,4 @@
+from multiprocessing.managers import BaseManager
 from pathlib import Path
 
 import numpy as np
@@ -17,8 +18,12 @@ class INMETSquare(ERA5Square):
         self.inmet_keys = inmet_keys
 
     def get_keys_in_square(
-        self, square: Square, stations_inmet: set, verbose: bool = False
+        self, square: Square, stations_inmet: dict, manager: BaseManager, verbose: bool = False
     ) -> list[str]:
+        if stations_inmet.get(tuple(square)):
+            # log.info(f"Using cached keys for square {square} - inmet")
+            return stations_inmet.get(tuple(square))._getvalue()
+
         keys = [x.stem for x in Path(self.inmet_keys.inmet_keys_path).glob("*.parquet")]
         inmet_keys = []
         for key in keys:
@@ -44,7 +49,7 @@ class INMETSquare(ERA5Square):
             inmet_keys.append(key)
 
         if len(inmet_keys) > 0:
-            stations_inmet.update(inmet_keys)
+            stations_inmet.update({tuple(square): manager.List(inmet_keys)})
 
         return inmet_keys
 

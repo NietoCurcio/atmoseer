@@ -1,4 +1,5 @@
 from datetime import timedelta
+from multiprocessing.managers import BaseManager
 from pathlib import Path
 
 import numpy as np
@@ -18,13 +19,17 @@ class WebSirenesSquare(ERA5Square):
         self.websirenes_keys = websirenes_keys
 
     def get_keys_in_square(
-        self, square: Square, stations_websirenes: set, verbose: bool = False
+        self, square: Square, keys_sirenes: dict, manager: BaseManager, verbose: bool = False
     ) -> list[str]:
         """
         Get the keys of the websirenes datasets that are inside the square
         Args:
             square (Square): The square to check for keys
         """
+        if keys_sirenes.get(tuple(square)):
+            # log.info(f"Using cached keys for square {square} - sirenes")
+            return keys_sirenes.get(tuple(square))._getvalue()
+
         keys = [x.stem for x in Path(self.websirenes_keys.websirenes_keys_path).glob("*.parquet")]
         websirenes_keys = []
         for key in keys:
@@ -50,7 +55,7 @@ class WebSirenesSquare(ERA5Square):
             websirenes_keys.append(key)
 
         if len(websirenes_keys) > 0:
-            stations_websirenes.update(websirenes_keys)
+            keys_sirenes.update({tuple(square): manager.List(websirenes_keys)})
 
         return websirenes_keys
 

@@ -1,4 +1,5 @@
 from datetime import timedelta
+from multiprocessing.managers import BaseManager
 from pathlib import Path
 
 import numpy as np
@@ -18,8 +19,12 @@ class AlertarioSquare(ERA5Square):
         self.alertario_keys = alertario_keys
 
     def get_keys_in_square(
-        self, square: Square, stations_alertario: set, verbose: bool = False
+        self, square: Square, stations_alertario: dict, manager: BaseManager, verbose: bool = False
     ) -> list[str]:
+        if stations_alertario.get(tuple(square)):
+            # log.info(f"Using cached keys for square {square} - alertario")
+            return stations_alertario.get(tuple(square))._getvalue()
+
         keys = [x.stem for x in Path(self.alertario_keys.alertario_keys_path).glob("*.parquet")]
         alertario_keys = []
         for key in keys:
@@ -45,7 +50,7 @@ class AlertarioSquare(ERA5Square):
             alertario_keys.append(key)
 
         if len(alertario_keys) > 0:
-            stations_alertario.update(alertario_keys)
+            stations_alertario.update({tuple(square): manager.List(alertario_keys)})
 
         return alertario_keys
 

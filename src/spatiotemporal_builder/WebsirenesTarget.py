@@ -3,7 +3,7 @@ import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing.managers import BaseManager
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -27,16 +27,17 @@ class StationsManager(BaseManager):
 
 StationsManager.register("Set", set)
 StationsManager.register("Dict", dict)
+StationsManager.register("List", list)
 
 
 class SpatioTemporalFeatures:
     manager = StationsManager()
     manager.start()
     stations_cells = manager.Set()
-    stations_inmet = manager.Set()
-    stations_websirenes = manager.Set()
-    stations_alertario = manager.Set()
-    dataset_era5_year_month = manager.Dict()
+    keys_inmet: dict[tuple, list[str]] = manager.Dict()
+    keys_sirenes: dict[tuple, list[str]] = manager.Dict()
+    keys_alertario: dict[tuple, list[str]] = manager.Dict()
+    dataset_era5_year_month: dict[Union[tuple, str], Union[tuple, xr.Dataset]] = manager.Dict()
 
     def __init__(
         self,
@@ -111,6 +112,7 @@ class SpatioTemporalFeatures:
             self.dataset_era5_year_month.get((year, month)) == (year, month)
             and self.dataset_era5_year_month.get("single_levels") is not None
         ):
+            # log.debug(f"Returning cached dataset for {year}-{month} - single levels")
             return self.dataset_era5_year_month.get("single_levels")
 
         era5_year_month_path = (
@@ -134,6 +136,7 @@ class SpatioTemporalFeatures:
             self.dataset_era5_year_month.get((year, month)) == (year, month)
             and self.dataset_era5_year_month.get("pressure_levels") is not None
         ):
+            # log.debug(f"Returning cached dataset for {year}-{month} - pressure levels")
             return self.dataset_era5_year_month.get("pressure_levels")
 
         era5_year_month_path = (
@@ -164,11 +167,13 @@ class SpatioTemporalFeatures:
         if settings.only_ERA5:
             return self.websirenes_square.get_era5_single_levels_precipitation_in_square(square, ds)
 
-        websirenes_keys = self.websirenes_square.get_keys_in_square(square, keys)
-
-        inmet_keys = self.inmet_square.get_keys_in_square(square, keys)
-
-        alertario_keys = self.alertario_square.get_keys_in_square(square, keys)
+        websirenes_keys = self.websirenes_square.get_keys_in_square(
+            square, self.keys_sirenes, self.manager
+        )
+        inmet_keys = self.inmet_square.get_keys_in_square(square, self.keys_inmet, self.manager)
+        alertario_keys = self.alertario_square.get_keys_in_square(
+            square, self.keys_alertario, self.manager
+        )
 
         if inmet_keys or websirenes_keys or alertario_keys:
             keys.append((lat_index, lon_index))
@@ -422,9 +427,29 @@ class SpatioTemporalFeatures:
                         log.error(f"Error processing timestamp: {e}")
                         raise SystemExit(e)
 
-            self.found_stations = self.stations_websirenes._getvalue()
-            self.found_stations_inmet = self.stations_inmet._getvalue()
-            self.found_stations_alertario = self.stations_alertario._getvalue()
+            log.warning("All futures completed-cheguei aqui")
+            from itertools import chain
+
+            # self.found_sirenes = set(self.keys_sirenes._getvalue().values()) # values are proxy list
+            # self.found_sirenes = set(
+            #     [chain(*sublist._getvalue()) for sublist in self.keys_sirenes._getvalue().values()]
+            # )
+
+            chain_data = [sublist._getvalue() for sublist in self.keys_sirenes._getvalue().values()]
+            self.found_sirenes = set(chain(*chain_data))
+
+            log.warning("All futures completed-cheguei aqui2")
+            log.warning(type(self.found_sirenes))
+            log.warning(self.found_sirenes)
+            log.warning(type(self.keys_sirenes) is not dict)
+            # self.found_inmet = set(self.keys_inmet._getvalue().values())
+            chain_data = [sublist._getvalue() for sublist in self.keys_inmet._getvalue().values()]
+            self.found_inmet = set(chain(*chain_data))
+            # self.found_alertario = set(self.keys_alertario._getvalue().values())
+            chain_data = [
+                sublist._getvalue() for sublist in self.keys_alertario._getvalue().values()
+            ]
+            self.found_alertario = set(chain(*chain_data))
             self.stations_cells = self.stations_cells._getvalue()
             self.manager.shutdown()
 
@@ -449,9 +474,9 @@ class SpatioTemporalFeatures:
         #         continue
 
         #     self._process_timestamp(timestamps[i])
-        # self.found_stations = self.stations_websirenes._getvalue()
-        # self.found_stations_inmet = self.stations_inmet._getvalue()
-        # self.found_stations_alertario = self.stations_alertario._getvalue()
+        # self.found_sirenes = self.stations_sirenes._getvalue()
+        # self.found_inmet = self.stations_inmet._getvalue()
+        # self.found_alertario = self.stations_alertario._getvalue()
         # self.stations_cells = self.stations_cells._getvalue()
         # self.manager.shutdown()
         # end_time = time.time()
@@ -468,7 +493,7 @@ class SpatioTemporalFeatures:
         assert (
             settings.only_ERA5
             or all_cached
-            or len(self.found_stations)
+            or len(self.found_sirenes)
             == len(
                 list(self.websirenes_square.websirenes_keys.websirenes_keys_path.glob("*.parquet"))
             )
@@ -489,9 +514,9 @@ class SpatioTemporalFeatures:
         if not all_cached and not settings.only_ERA5:
             log.success(f"""
                 All stations processed:
-                Websirenes: {len(self.found_stations)} files
-                INMET: {len(self.found_stations_inmet)} files
-                Alertario: {len(self.found_stations_alertario)} files
+                Websirenes: {len(self.found_sirenes)} files
+                INMET: {len(self.found_inmet)} files
+                Alertario: {len(self.found_alertario)} files
                 Total cells with station: {len(self.stations_cells)}
             """)
 
