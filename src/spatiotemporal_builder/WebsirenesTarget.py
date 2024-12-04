@@ -34,6 +34,7 @@ class SpatioTemporalFeatures:
     manager = StationsManager()
     manager.start()
     stations_cells = manager.Set()
+    # this is an overkill, but I'll store that idea of caching keys. I compared the performance of this branch with NietoCurcio-NWP branch, for 1 month of execution, the performance was pretty much the same in average (3 executions for each approach) (actually this one was few seconds slower...). The complexity does not compensate. Another approach could be serializing the keys once and use it as cache
     keys_inmet: dict[tuple, list[str]] = manager.Dict()
     keys_sirenes: dict[tuple, list[str]] = manager.Dict()
     keys_alertario: dict[tuple, list[str]] = manager.Dict()
