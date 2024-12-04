@@ -164,11 +164,13 @@ class SpatioTemporalFeatures:
         if settings.only_ERA5:
             return self.websirenes_square.get_era5_single_levels_precipitation_in_square(square, ds)
 
-        websirenes_keys = self.websirenes_square.get_keys_in_square(square, keys)
+        websirenes_keys = self.websirenes_square.get_keys_in_square(
+            square, self.stations_websirenes
+        )
 
-        inmet_keys = self.inmet_square.get_keys_in_square(square, keys)
+        inmet_keys = self.inmet_square.get_keys_in_square(square, self.stations_inmet)
 
-        alertario_keys = self.alertario_square.get_keys_in_square(square, keys)
+        alertario_keys = self.alertario_square.get_keys_in_square(square, self.stations_alertario)
 
         if inmet_keys or websirenes_keys or alertario_keys:
             keys.append((lat_index, lon_index))
