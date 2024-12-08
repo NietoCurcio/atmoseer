@@ -567,4 +567,124 @@ class SpatioTemporalFeatures:
 
 
 if __name__ == "__main__":
-    ""
+    # python -m src.spatiotemporal_builder.WebsirenesTarget
+    # https://g1.globo.com/rj/rio-de-janeiro/noticia/2022/10/31/rio-entra-em-estagio-de-mobilizacao-por-previsao-de-chuva.ghtml
+    import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
+    import matplotlib.animation as animation
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
+    from .AlertarioCoords import get_alertario_coords
+    from .AlertarioKeys import AlertarioKeys
+    from .AlertarioParser import AlertarioParser
+    from .INMETCoords import get_inmet_coords
+    from .INMETKeys import INMETKeys
+    from .INMETParser import INMETParser
+    from .WebSirenesCoords import get_websirenes_coords
+    from .WebSirenesKeys import WebSirenesKeys
+    from .WebSirenesParser import WebSirenesParser
+
+    websirenes_square = WebSirenesSquare(
+        WebSirenesKeys(WebSirenesParser(), get_websirenes_coords())
+    )
+    inmet_square = INMETSquare(INMETKeys(INMETParser(), get_inmet_coords()))
+    alertario_square = AlertarioSquare(AlertarioKeys(AlertarioParser(), get_alertario_coords()))
+
+    spatio_temporal_features = SpatioTemporalFeatures(
+        websirenes_square, inmet_square, alertario_square
+    )
+
+    timestamp = pd.Timestamp("2022-10-31T18:00:00")
+    features_path = (
+        Path(__file__).parent / "features" / f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
+    )
+
+    if not features_path.exists():
+        spatio_temporal_features._process_timestamp(timestamp, verbose=True)
+
+    features = np.load(features_path)
+    print(features.shape)
+
+    precipitation = features[:, :, 0]
+    print(precipitation.shape)
+
+    sns.heatmap(precipitation, annot=True, cmap="coolwarm", cbar=True, fmt=".2f")
+    plt.title(f"Heatmap of tp values by Latitude and Longitude at {timestamp}")
+    plt.show()
+
+    timestamps = pd.date_range(start="2022-10-31 00:00:00", end="2022-10-31 23:00:00", freq="H")
+    features_list = []
+    for timestamp in timestamps:
+        features_path = (
+            Path(__file__).parent / "features" / f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
+        )
+        if not features_path.exists():
+            spatio_temporal_features._process_timestamp(timestamp, verbose=True)
+        features_list.append(np.load(features_path))
+
+    fig, ax = plt.subplots(figsize=(12, 6), subplot_kw={"projection": ccrs.PlateCarree()})
+    ax.add_feature(cfeature.LAND)
+    ax.add_feature(cfeature.OCEAN)
+    ax.add_feature(cfeature.COASTLINE)
+    ax.add_feature(cfeature.BORDERS, linestyle=":")
+    ax.add_feature(cfeature.LAKES, alpha=0.5)
+    ax.add_feature(cfeature.RIVERS)
+
+    lats = spatio_temporal_features.sorted_latitudes_ascending[::-1]
+    lons = spatio_temporal_features.sorted_longitudes_ascending
+    lon, lat = np.meshgrid(lons, lats)
+
+    features = np.stack(features_list, axis=0)
+    u = features[:, :, :, 9]
+    v = features[:, :, :, 12]
+    w = "HOW CAN VERTICAL VELOCITY HELP US? Maybe a 3D plot?"
+    spd = np.sqrt(u**2 + v**2)
+
+    spd = np.sqrt(u**2 + v**2)
+
+    print(u.shape)
+    print(v.shape)
+    print(spd.shape)
+    print(lon.shape)
+    print(lat.shape)
+
+    assert u.shape[1:] == lon.shape, "Mismatch between u/v and lon/lat shapes"
+    assert v.shape[1:] == lat.shape, "Mismatch between v and lat shapes"
+
+    quiver = ax.quiver(
+        lon,
+        lat,
+        u[0],
+        v[0],
+        spd[0],
+        scale=60,
+        cmap="cool",
+        transform=ccrs.PlateCarree(),
+    )
+
+    def _update_fn(frame):
+        quiver.set_UVC(u[frame], v[frame], spd[frame])
+        return (quiver,)
+
+    anim = animation.FuncAnimation(
+        fig,
+        _update_fn,
+        frames=len(timestamps),
+        blit=True,
+    )
+    plt.colorbar(quiver, ax=ax, label="Wind Speed (m/s)", orientation="vertical")
+    ax.set(xlabel="Longitude", ylabel="Latitude")
+
+    gif_file = "MYSUPERGIFDALE.gif"
+    anim.save(gif_file, writer="pillow", fps=5)
+
+    output_dir = Path("frames")
+    output_dir.mkdir(exist_ok=True)
+
+    for frame in range(len(timestamps)):
+        quiver.set_UVC(u[frame], v[frame], spd[frame])
+        ax.set_title(f"Wind on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
+        frame_file = output_dir / f"frame_{frame:02d}.png"
+        plt.savefig(frame_file, dpi=300, bbox_inches="tight")
+        print(f"Saved frame {frame} as {frame_file}")
