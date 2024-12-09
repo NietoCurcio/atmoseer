@@ -566,6 +566,89 @@ class SpatioTemporalFeatures:
         return total_timestamps
 
 
+def plot_u_v_200_700_1000_levels(
+    lon: npt.NDArray[np.float32],
+    lat: npt.NDArray[np.float32],
+    u_200: npt.NDArray[np.float32],
+    v_200: npt.NDArray[np.float32],
+    u_700: npt.NDArray[np.float32],
+    v_700: npt.NDArray[np.float32],
+    u_1000: npt.NDArray[np.float32],
+    v_1000: npt.NDArray[np.float32],
+):
+    fig_3d = plt.figure(figsize=(16, 10))
+    ax_3d = fig_3d.add_subplot(111, projection="3d")
+
+    lon_flat = lon.flatten()
+    lat_flat = lat.flatten()
+    frame = 19
+
+    u_200_flat = u_200[frame].flatten()
+    v_200_flat = v_200[frame].flatten()
+    u_700_flat = u_700[frame].flatten()
+    v_700_flat = v_700[frame].flatten()
+    u_1000_flat = u_1000[frame].flatten()
+    v_1000_flat = v_1000[frame].flatten()
+
+    level_200 = np.full_like(u_200_flat, 200)
+    level_700 = np.full_like(u_700_flat, 700)
+    level_1000 = np.full_like(u_1000_flat, 1000)
+
+    ax_3d.invert_zaxis()
+
+    quiver_200 = ax_3d.quiver(
+        lon_flat,
+        lat_flat,
+        level_200,
+        u_200_flat,
+        v_200_flat,
+        np.zeros_like(u_200_flat),
+        length=0.3,
+        normalize=True,
+        color="red",
+        label="200 hPa",
+    )
+
+    quiver_700 = ax_3d.quiver(
+        lon_flat,
+        lat_flat,
+        level_700,
+        u_700_flat,
+        v_700_flat,
+        np.zeros_like(u_700_flat),
+        length=0.3,
+        normalize=True,
+        color="blue",
+        label="700 hPa",
+    )
+
+    # Plot arrows for 1000 hPa
+    quiver_1000 = ax_3d.quiver(
+        lon_flat,
+        lat_flat,
+        level_1000,
+        u_1000_flat,
+        v_1000_flat,
+        np.zeros_like(u_1000_flat),
+        length=0.3,
+        normalize=True,
+        color="green",
+        label="1000 hPa",
+    )
+
+    ax_3d.set_xlabel("Longitude")
+    ax_3d.set_ylabel("Latitude")
+    ax_3d.set_zlabel("Pressure Level (hPa)")
+
+    ax_3d.legend(loc="upper left")
+
+    ax_3d.set_title("3D Visualization of Wind at 200, 700, and 1000 hPa")
+
+    ax_3d.view_init(elev=10, azim=120)
+
+    plt.show()
+
+
 if __name__ == "__main__":
     # python -m src.spatiotemporal_builder.WebsirenesTarget
     # https://g1.globo.com/rj/rio-de-janeiro/noticia/2022/10/31/rio-entra-em-estagio-de-mobilizacao-por-previsao-de-chuva.ghtml
@@ -613,7 +696,7 @@ if __name__ == "__main__":
     plt.title(f"Heatmap of tp values by Latitude and Longitude at {timestamp}")
     plt.show()
 
-    timestamps = pd.date_range(start="2022-10-31 00:00:00", end="2022-10-31 23:00:00", freq="H")
+    timestamps = pd.date_range(start="2022-10-31 00:00:00", end="2022-10-31 23:00:00", freq="h")
     features_list = []
     for timestamp in timestamps:
         features_path = (
@@ -638,9 +721,6 @@ if __name__ == "__main__":
     features = np.stack(features_list, axis=0)
     u = features[:, :, :, 9]
     v = features[:, :, :, 12]
-    w = "HOW CAN VERTICAL VELOCITY HELP US? Maybe a 3D plot?"
-    spd = np.sqrt(u**2 + v**2)
-
     spd = np.sqrt(u**2 + v**2)
 
     print(u.shape)
@@ -678,13 +758,24 @@ if __name__ == "__main__":
 
     gif_file = "MYSUPERGIFDALE.gif"
     anim.save(gif_file, writer="pillow", fps=5)
+    print(f"Saved animation as {gif_file}")
 
     output_dir = Path("frames")
     output_dir.mkdir(exist_ok=True)
 
-    for frame in range(len(timestamps)):
-        quiver.set_UVC(u[frame], v[frame], spd[frame])
-        ax.set_title(f"Wind on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
-        frame_file = output_dir / f"frame_{frame:02d}.png"
-        plt.savefig(frame_file, dpi=300, bbox_inches="tight")
-        print(f"Saved frame {frame} as {frame_file}")
+    if False:
+        for frame in range(len(timestamps)):
+            quiver.set_UVC(u[frame], v[frame], spd[frame])
+            ax.set_title(f"Wind on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
+            frame_file = output_dir / f"frame_{frame:02d}.png"
+            plt.savefig(frame_file, dpi=300, bbox_inches="tight")
+            print(f"Saved frame {frame} as {frame_file}")
+
+    u_200 = features[:, :, :, 7]
+    u_700 = features[:, :, :, 8]
+    u_1000 = features[:, :, :, 9]
+    v_200 = features[:, :, :, 10]
+    v_700 = features[:, :, :, 11]
+    v_1000 = features[:, :, :, 12]
+
+    plot_u_v_200_700_1000_levels(lon, lat, u_200, v_200, u_700, v_700, u_1000, v_1000)
