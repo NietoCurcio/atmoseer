@@ -671,6 +671,29 @@ if __name__ == "__main__":
     from .WebSirenesKeys import WebSirenesKeys
     from .WebSirenesParser import WebSirenesParser
 
+    def create_map():
+        fig, ax = plt.subplots(figsize=(12, 6), subplot_kw={"projection": ccrs.PlateCarree()})
+        ax.add_feature(cfeature.LAND)
+        ax.add_feature(cfeature.OCEAN)
+        ax.add_feature(cfeature.COASTLINE)
+        ax.add_feature(cfeature.BORDERS, linestyle=":")
+        ax.add_feature(cfeature.LAKES, alpha=0.5)
+        ax.add_feature(cfeature.RIVERS)
+        return fig, ax
+
+    def get_features(timestamps: list[pd.Timestamp]):
+        features_list = []
+        for timestamp in timestamps:
+            features_path = (
+                Path(__file__).parent
+                / "features"
+                / f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
+            )
+            if not features_path.exists():
+                spatio_temporal_features._process_timestamp(timestamp)
+            features_list.append(np.load(features_path))
+        return np.stack(features_list, axis=0)
+
     FRAMES_DIR = Path("./features-frames")
     FRAMES_DIR.mkdir(exist_ok=True)
     TIMESTAMP = "2022-10-31T18:00:00"
@@ -701,33 +724,25 @@ if __name__ == "__main__":
     log.success(f"Saved heatmap as {FRAMES_DIR}/heatmap.png")
     plt.show()
 
-    timestamps = pd.date_range(start="2022-10-31 00:00:00", end="2022-10-31 23:00:00", freq="h")
-    features_list = []
-    for timestamp in tqdm(timestamps, desc="Loading features"):
-        features_path = (
-            Path(__file__).parent / "features" / f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
-        )
-        if not features_path.exists():
-            spatio_temporal_features._process_timestamp(timestamp)
-        features_list.append(np.load(features_path))
-
-    fig, ax = plt.subplots(figsize=(12, 6), subplot_kw={"projection": ccrs.PlateCarree()})
-    ax.add_feature(cfeature.LAND)
-    ax.add_feature(cfeature.OCEAN)
-    ax.add_feature(cfeature.COASTLINE)
-    ax.add_feature(cfeature.BORDERS, linestyle=":")
-    ax.add_feature(cfeature.LAKES, alpha=0.5)
-    ax.add_feature(cfeature.RIVERS)
-
     lats = spatio_temporal_features.sorted_latitudes_ascending[::-1]
     lons = spatio_temporal_features.sorted_longitudes_ascending
+    lon, lat = np.meshgrid(lons, lats)
     log.info(f"""
         Lats: {lats}
         Lons: {lons}
+        Lon meshgrid: {lon.shape}
+        Lat meshgrid: {lat.shape}
     """)
-    lon, lat = np.meshgrid(lons, lats)
 
-    features = np.stack(features_list, axis=0)
+    timestamps = pd.date_range(
+        start=timestamp.replace(hour=0, minute=0, second=0),
+        end=timestamp.replace(hour=23, minute=0, second=0),
+        freq="h",
+    )
+    features = get_features(timestamps)
+
+    fig, ax = create_map()
+
     u = features[:, :, :, 9]
     v = features[:, :, :, 12]
     spd = np.sqrt(u**2 + v**2)
@@ -783,13 +798,7 @@ if __name__ == "__main__":
 
     t = features[:, :, :, 6]
 
-    fig, ax = plt.subplots(figsize=(12, 6), subplot_kw={"projection": ccrs.PlateCarree()})
-    ax.add_feature(cfeature.LAND)
-    ax.add_feature(cfeature.OCEAN)
-    ax.add_feature(cfeature.COASTLINE)
-    ax.add_feature(cfeature.BORDERS, linestyle=":")
-    ax.add_feature(cfeature.LAKES, alpha=0.5)
-    ax.add_feature(cfeature.RIVERS)
+    fig, ax = create_map()
 
     contour = ax.pcolormesh(
         lon,
@@ -829,13 +838,7 @@ if __name__ == "__main__":
     tp = features[:, :, :, 0]
     log.info(f"tp shape: {tp.shape}")
 
-    fig, ax = plt.subplots(figsize=(12, 6), subplot_kw={"projection": ccrs.PlateCarree()})
-    ax.add_feature(cfeature.LAND)
-    ax.add_feature(cfeature.OCEAN)
-    ax.add_feature(cfeature.COASTLINE)
-    ax.add_feature(cfeature.BORDERS, linestyle=":")
-    ax.add_feature(cfeature.LAKES, alpha=0.5)
-    ax.add_feature(cfeature.RIVERS)
+    fig, ax = create_map()
 
     im = ax.imshow(
         tp[0],
