@@ -581,30 +581,22 @@ def plot_u_v_200_700_1000_levels(
     fig_3d = plt.figure(figsize=(16, 10))
     ax_3d = fig_3d.add_subplot(111, projection="3d")
 
-    lon_flat = lon.flatten()
-    lat_flat = lat.flatten()
+    lon_meshgrid, lat_meshgrid = np.meshgrid(lon, lat)
     frame = 19
 
-    u_200_flat = u_200[frame].flatten()
-    v_200_flat = v_200[frame].flatten()
-    u_700_flat = u_700[frame].flatten()
-    v_700_flat = v_700[frame].flatten()
-    u_1000_flat = u_1000[frame].flatten()
-    v_1000_flat = v_1000[frame].flatten()
-
-    level_200 = np.full_like(u_200_flat, 200)
-    level_700 = np.full_like(u_700_flat, 700)
-    level_1000 = np.full_like(u_1000_flat, 1000)
+    level_200 = np.full_like(u_200[frame], 200)
+    level_700 = np.full_like(u_700[frame], 700)
+    level_1000 = np.full_like(u_1000[frame], 1000)
 
     ax_3d.invert_zaxis()
 
     quiver_200 = ax_3d.quiver(
-        lon_flat,
-        lat_flat,
+        lon_meshgrid,
+        lat_meshgrid,
         level_200,
-        u_200_flat,
-        v_200_flat,
-        np.zeros_like(u_200_flat),
+        u_200[frame],
+        v_200[frame],
+        np.zeros_like(u_200[frame]),
         length=0.3,
         normalize=True,
         color="red",
@@ -612,12 +604,12 @@ def plot_u_v_200_700_1000_levels(
     )
 
     quiver_700 = ax_3d.quiver(
-        lon_flat,
-        lat_flat,
+        lon_meshgrid,
+        lat_meshgrid,
         level_700,
-        u_700_flat,
-        v_700_flat,
-        np.zeros_like(u_700_flat),
+        u_700[frame],
+        v_700[frame],
+        np.zeros_like(u_700[frame]),
         length=0.3,
         normalize=True,
         color="blue",
@@ -625,12 +617,12 @@ def plot_u_v_200_700_1000_levels(
     )
 
     quiver_1000 = ax_3d.quiver(
-        lon_flat,
-        lat_flat,
+        lon_meshgrid,
+        lat_meshgrid,
         level_1000,
-        u_1000_flat,
-        v_1000_flat,
-        np.zeros_like(u_1000_flat),
+        u_1000[frame],
+        v_1000[frame],
+        np.zeros_like(u_1000[frame]),
         length=0.3,
         normalize=True,
         color="green",
@@ -697,6 +689,7 @@ if __name__ == "__main__":
     FRAMES_DIR = Path("./features-frames")
     FRAMES_DIR.mkdir(exist_ok=True)
     TIMESTAMP = "2022-10-31T18:00:00"
+    INTERVAL_MS = 250
 
     spatio_temporal_features = SpatioTemporalFeatures(
         WebSirenesSquare(WebSirenesKeys(WebSirenesParser(), get_websirenes_coords())),
@@ -726,12 +719,9 @@ if __name__ == "__main__":
 
     lats = spatio_temporal_features.sorted_latitudes_ascending[::-1]
     lons = spatio_temporal_features.sorted_longitudes_ascending
-    lon, lat = np.meshgrid(lons, lats)
     log.info(f"""
         Lats: {lats}
         Lons: {lons}
-        Lon meshgrid: {lon.shape}
-        Lat meshgrid: {lat.shape}
     """)
 
     timestamps = pd.date_range(
@@ -752,16 +742,16 @@ if __name__ == "__main__":
         u: {u.shape}
         v: {v.shape}
         spd: {spd.shape}
-        lon meshgrid: {lon.shape}
-        lat meshgrid: {lat.shape}
+        lon meshgrid: {lons.shape}
+        lat meshgrid: {lats.shape}
     """)
 
-    assert u.shape[1:] == lon.shape, "Mismatch between u/v and lon/lat shapes"
-    assert v.shape[1:] == lat.shape, "Mismatch between v and lat shapes"
+    # assert u.shape[1:] == lon.shape, "Mismatch between u/v and lon/lat shapes"
+    # assert v.shape[1:] == lat.shape, "Mismatch between v and lat shapes"
 
     quiver = ax.quiver(
-        lon,
-        lat,
+        lons,
+        lats,
         u[0],
         v[0],
         spd[0],
@@ -772,37 +762,37 @@ if __name__ == "__main__":
 
     def _update_fn(frame):
         quiver.set_UVC(u[frame], v[frame], spd[frame])
+        ax.set_title(f"Wind on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
         return (quiver,)
 
     anim = animation.FuncAnimation(
-        fig,
-        _update_fn,
-        frames=len(timestamps),
-        blit=True,
+        fig, _update_fn, frames=len(timestamps), interval=INTERVAL_MS, blit=True
     )
     plt.colorbar(quiver, ax=ax, label="Wind Speed (m/s)", orientation="vertical")
     ax.set(xlabel="Longitude", ylabel="Latitude")
 
-    gif_file = "u_v_1000_hpa_wind.gif"
-    anim.save(f"{FRAMES_DIR}/{gif_file}", writer="pillow", fps=5)
+    gif_file = "u_v_1000_hpa_wind_non_mesh.gif"
+    anim.save(f"{FRAMES_DIR}/{gif_file}", writer="pillow", fps=1000 / INTERVAL_MS)
     # https://stackoverflow.com/questions/43776528/python-animation-figure-window-cannot-be-closed-automatically
     anim.event_source.stop()
     del anim
     log.success(f"Saved {FRAMES_DIR}/{gif_file}")
 
-    for frame in tqdm(range(len(timestamps)), desc="Saving wind frames"):
-        quiver.set_UVC(u[frame], v[frame], spd[frame])
-        ax.set_title(f"Wind on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
-        plt.savefig(f"{FRAMES_DIR}/frame_u_v_{frame:02d}.png", dpi=300, bbox_inches="tight")
-    log.success(f"Saved {len(timestamps)} frames as {FRAMES_DIR}/frame_u_v_*.png")
+    # for frame in tqdm(range(len(timestamps)), desc="Saving wind frames"):
+    #     quiver.set_UVC(u[frame], v[frame], spd[frame])
+    #     ax.set_title(f"Wind on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
+    #     plt.savefig(f"{FRAMES_DIR}/frame_u_v_{frame:02d}.png", dpi=300, bbox_inches="tight")
+    # log.success(f"Saved {len(timestamps)} frames as {FRAMES_DIR}/frame_u_v_*.png")
+
+    # exit(0)
 
     t = features[:, :, :, 6]
 
     fig, ax = create_map()
 
     contour = ax.pcolormesh(
-        lon,
-        lat,
+        lons,
+        lats,
         t[0],
         cmap="coolwarm",
         transform=ccrs.PlateCarree(),
@@ -811,20 +801,18 @@ if __name__ == "__main__":
 
     def _update_fn(frame):
         contour.set_array(t[frame].flatten())
+        ax.set_title(f"Temperature on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
         return (contour,)
 
     anim = animation.FuncAnimation(
-        fig,
-        _update_fn,
-        frames=len(timestamps),
-        blit=True,
+        fig, _update_fn, frames=len(timestamps), interval=INTERVAL_MS, blit=True
     )
 
     plt.colorbar(contour, ax=ax, label="Temperature (K)", orientation="vertical")
     ax.set(xlabel="Longitude", ylabel="Latitude")
 
     gif_file = "temperature_1000_hpa.gif"
-    anim.save(f"{FRAMES_DIR}/{gif_file}", writer="pillow", fps=5)
+    anim.save(f"{FRAMES_DIR}/{gif_file}", writer="pillow", fps=1000 / INTERVAL_MS)
     anim.event_source.stop()
     del anim
     log.success(f"Saved {FRAMES_DIR}/{gif_file}")
@@ -853,17 +841,16 @@ if __name__ == "__main__":
     plt.colorbar(im, ax=ax, label="Total Precipitation (mm)", orientation="vertical")
     ax.set(xlabel="Longitude", ylabel="Latitude")
 
-    def update(frame):
+    def _update_fn(frame):
         im.set_data(tp[frame])
         ax.set_title(f"Total Precipitation on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
         return (im,)
 
-    interval = 250
     anim = animation.FuncAnimation(
-        fig, update, frames=len(timestamps), interval=interval, blit=True
+        fig, _update_fn, frames=len(timestamps), interval=INTERVAL_MS, blit=True
     )
     gif_file = "total_precipitation.gif"
-    anim.save(f"{FRAMES_DIR}/{gif_file}", writer="pillow", fps=1000 / interval)
+    anim.save(f"{FRAMES_DIR}/{gif_file}", writer="pillow", fps=1000 / INTERVAL_MS)
     anim.event_source.stop()
     del anim
     log.success(f"Saved {FRAMES_DIR}/{gif_file}")
@@ -883,4 +870,4 @@ if __name__ == "__main__":
     v_700 = features[:, :, :, 11]
     v_1000 = features[:, :, :, 12]
 
-    plot_u_v_200_700_1000_levels(lon, lat, u_200, v_200, u_700, v_700, u_1000, v_1000)
+    plot_u_v_200_700_1000_levels(lons, lats, u_200, v_200, u_700, v_700, u_1000, v_1000)
