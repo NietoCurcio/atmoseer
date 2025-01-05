@@ -68,3 +68,51 @@ class INMETSquare(ERA5Square):
                 )
             precipitations.append(h1.item())
         return max(precipitations)
+
+
+if __name__ == "__main__":
+    # python -m src.spatiotemporal_builder.INMETSquare
+    # https://g1.globo.com/rj/rio-de-janeiro/noticia/2022/10/31/rio-entra-em-estagio-de-mobilizacao-por-previsao-de-chuva.ghtml
+    from .INMETCoords import get_inmet_coords
+    from .INMETParser import INMETParser
+    from .square import get_square
+
+    inmet_square = INMETSquare(INMETKeys(INMETParser(), get_inmet_coords()))
+    timestamp = pd.Timestamp("2022-10-31T18:00:00")
+    year = timestamp.year
+    month = timestamp.month
+    ds = xr.open_dataset(f"./data/reanalysis/ERA5-single-levels/monthly_data/RJ_{year}_{month}.nc")
+    print("xr.Dataset:")
+    print(ds)
+
+    ds = ds.sel(valid_time=timestamp)
+    lats = ds.latitude.values
+    lons = ds.longitude.values
+    print(f"Grid: {lats.shape[0]}x{lons.shape[0]}")
+    lat = lats[4]
+    lon = lons[7]
+
+    square = get_square(lat, lon, sorted(lats), sorted(lons))
+    print(f"""
+        square:
+        top_left={square.top_left}
+        bottom_left={square.bottom_left}
+        bottom_right={square.bottom_right}
+        top_right={square.top_right}
+        {square.top_left} --- {square.top_right}
+        | {" " * 48} |
+        {square.bottom_left} --- {square.bottom_right}
+    """)
+
+    keys = inmet_square.get_keys_in_square(square, set())
+    print(f"keys: {keys}")
+
+    precipitation = inmet_square.get_precipitation_in_square(square, keys, timestamp, ds)
+    print(f"precipitation: {precipitation}")
+
+    print(f"""
+        Precipitation in square:
+        {square.top_left} --- {square.top_right}
+        | {" " * 20} {precipitation:.2f} mm  {" " * 20} |
+        {square.bottom_left} --- {square.bottom_right}
+    """)

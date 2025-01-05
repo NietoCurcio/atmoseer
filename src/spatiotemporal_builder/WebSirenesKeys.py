@@ -59,7 +59,7 @@ class WebSirenesKeys:
         df.set_index("horaLeitura", inplace=True)
         return df
 
-    def _write_key(self, df: pd.DataFrame):
+    def _write_key(self, df: pd.DataFrame) -> None:
         row = df.iloc[0]
         assert isinstance(row["latitude"], str), f"{type(row['latitude'])}"
         assert isinstance(row["longitude"], str), f"{type(row['longitude'])}"
@@ -69,7 +69,7 @@ class WebSirenesKeys:
     def load_key(self, key: str) -> pd.DataFrame:
         return pd.read_parquet(f"{self.websirenes_keys_path}/{key}.parquet")
 
-    def build_keys(self, use_cache: bool = True):
+    def build_keys(self, use_cache: bool = True) -> None:
         """
         Builds datasets by key (latitude and longitude) for each station
 
@@ -137,3 +137,11 @@ class WebSirenesKeys:
             )
 
         log.success(f"Minimum and maximum dates written to {minimum_maximum_dates_path}")
+
+
+if __name__ == "__main__":
+    # python -m src.spatiotemporal_builder.WebSirenesKeys
+    from .WebSirenesCoords import get_websirenes_coords
+
+    websirenes_keys = WebSirenesKeys(WebSirenesParser(), get_websirenes_coords())
+    websirenes_keys.build_keys()

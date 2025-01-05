@@ -41,3 +41,8 @@ def get_inmet_coords():
     INMETCoordsSchemaLatLongStr.validate(inmet_coords)
 
     return inmet_coords
+
+
+if __name__ == "__main__":
+    # python -m src.spatiotemporal_builder.INMETCoords
+    print(get_inmet_coords())

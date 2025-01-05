@@ -70,7 +70,7 @@ class AlertarioParser:
         df = df.drop(columns=["Dia", "Hora", "HBV", "h04", "h24", "h96"])
         return df
 
-    def process_station(self, station: str):
+    def process_station(self, station: str) -> pd.DataFrame:
         station_dfs = []
         months = pd.date_range(pd.Timestamp("2013-01-01"), pd.Timestamp("2024-10-01"), freq="MS")
         for month in months:

@@ -29,3 +29,8 @@ def get_alertario_coords():
     AlertarioCoordsSchemaLatLongStr.validate(alertario_coords)
 
     return alertario_coords
+
+
+if __name__ == "__main__":
+    # python -m src.spatiotemporal_builder.AlertarioCoords
+    print(get_alertario_coords())

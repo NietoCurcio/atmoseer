@@ -77,6 +77,9 @@ class WebSirenesSquare(ERA5Square):
 
             m15 = df_web_filtered["m15"]
             h01 = df_web[df_web.index == time_upper_bound]["h01"]
+            # TODO, compare also m30, for 16h for example we sum 16h and 15h30
+            # compare sum of m30 (2 values), sum of m15 (4 values) and h01 (1 value)
+            # take the max
 
             if m15.size < 4 or m15.isnull().any():
                 # Websirenes (and also Alertario) have a time resolution of 15 minutes
@@ -104,3 +107,51 @@ class WebSirenesSquare(ERA5Square):
         if max_precipitation < 0:
             return super().get_era5_single_levels_precipitation_in_square(square, ds_time)
         return max_precipitation
+
+
+if __name__ == "__main__":
+    # python -m src.spatiotemporal_builder.WebSirenesSquare
+    # https://g1.globo.com/rj/rio-de-janeiro/noticia/2022/10/31/rio-entra-em-estagio-de-mobilizacao-por-previsao-de-chuva.ghtml
+    from .square import get_square
+    from .WebSirenesCoords import get_websirenes_coords
+    from .WebSirenesParser import WebSirenesParser
+
+    sirenes_square = WebSirenesSquare(WebSirenesKeys(WebSirenesParser(), get_websirenes_coords()))
+    timestamp = pd.Timestamp("2022-10-31T18:00:00")
+    year = timestamp.year
+    month = timestamp.month
+    ds = xr.open_dataset(f"./data/reanalysis/ERA5-single-levels/monthly_data/RJ_{year}_{month}.nc")
+    print("xr.Dataset:")
+    print(ds)
+
+    ds = ds.sel(valid_time=timestamp)
+    lats = ds.latitude.values
+    lons = ds.longitude.values
+    print(f"Grid: {lats.shape[0]}x{lons.shape[0]}")
+    lat = lats[4]
+    lon = lons[7]
+
+    square = get_square(lat, lon, sorted(lats), sorted(lons))
+    print(f"""
+        square:
+        top_left={square.top_left}
+        bottom_left={square.bottom_left}
+        bottom_right={square.bottom_right}
+        top_right={square.top_right}
+        {square.top_left} --- {square.top_right}
+        | {" " * 48} |
+        {square.bottom_left} --- {square.bottom_right}
+    """)
+
+    keys = sirenes_square.get_keys_in_square(square, set())
+    print(f"keys: {keys} ({len(keys)})")
+
+    precipitation = sirenes_square.get_precipitation_in_square(square, keys, timestamp, ds)
+    print(f"precipitation: {precipitation}")
+
+    print(f"""
+        Precipitation in square:
+        {square.top_left} --- {square.top_right}
+        | {" " * 20} {precipitation:.2f} mm  {" " * 20} |
+        {square.bottom_left} --- {square.bottom_right}
+    """)

@@ -167,3 +167,12 @@ class WebSirenesParser:
         WebSireneSchema.validate(df)
         df.set_index("horaLeitura", inplace=True)
         return df
+
+
+if __name__ == "__main__":
+    # python -m src.spatiotemporal_builder.WebSirenesParser
+    sirenes_parser = WebSirenesParser()
+    for file in sirenes_parser.list_files():
+        df = sirenes_parser.get_dataframe(str(sirenes_parser.websirenes_defesa_civil_path / file))
+        print(df)
+        break

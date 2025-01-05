@@ -8,6 +8,12 @@ __pycache__/
 notebooks/era5
 ./notebooks/copernicus
 
+src/spatiotemporal_builder/alertario
+src/spatiotemporal_builder/alertario-from-source
+src/spatiotemporal_builder/alertario_keys
+src/spatiotemporal_builder/keys_cache
+features-frames
+
 src/spatiotemporal_builder/features
 src/spatiotemporal_builder/target
 src/spatiotemporal_builder/websirenes_keys

@@ -30,3 +30,8 @@ def get_websirenes_coords() -> pd.DataFrame:
     WebSireneCoordsSchemaLatLongStr.validate(websirenes_coords)
 
     return websirenes_coords
+
+
+if __name__ == "__main__":
+    # python -m src.spatiotemporal_builder.WebSirenesCoords
+    print(get_websirenes_coords())

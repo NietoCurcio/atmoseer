@@ -38,7 +38,7 @@ class INMETKeys:
             if station_id not in existing_station_ids:
                 not_founds_in_coords.append({"name": file, "station_id": station_id})
         if not_founds_in_coords:
-            log.warning(f"Stations not found in websirenes coordinates: {not_founds_in_coords}")
+            log.warning(f"Stations not found in inmet coordinates: {not_founds_in_coords}")
         return not_founds_in_coords
 
     def _merge_by_id(
@@ -88,11 +88,6 @@ class INMETKeys:
 
             df = self._merge_by_id(self.inmet_coords, df, station_id)
             self._write_key(df)
-        log.info(f"""
-            Minimum date: {minimum_date}
-            Maximum date: {maximum_date}
-        """)
-        log.success(f"INMET keys built successfully in {self.inmet_keys_path}")
 
         minimum_maximum_dates_path = self.inmet_keys_path / "minimum_maximum_dates_inmet.json"
         with open(minimum_maximum_dates_path, "w") as f:
@@ -105,4 +100,19 @@ class INMETKeys:
                 indent=4,
             )
 
-        log.success(f"Minimum and maximum dates written to {minimum_maximum_dates_path}")
+        log.success(f"""
+            INMET keys built successfully:
+            Keys path: {self.inmet_keys_path}
+            Describe path: {'TODO see AlertaRioKeys.py'}
+            Minimum date: {minimum_date}
+            Maximum date: {maximum_date}
+            Minimum and maximum path: {minimum_maximum_dates_path}
+        """)
+
+
+if __name__ == "__main__":
+    # python -m src.spatiotemporal_builder.INMETKeys
+    from .INMETCoords import get_inmet_coords
+
+    inmet_keys = INMETKeys(INMETParser(), get_inmet_coords())
+    inmet_keys.build_keys()

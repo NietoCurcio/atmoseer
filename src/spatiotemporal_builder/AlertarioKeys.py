@@ -27,7 +27,7 @@ class AlertarioKeys:
         self.alertario_parser = alertario_parser
         self.alertario_coords = alertario_coords
 
-    def _serialize_describe(self, df: pd.DataFrame, describe_path: Path):
+    def _serialize_describe(self, df: pd.DataFrame, describe_path: Path) -> None:
         describe = df.describe()
         estacao_Desc = df["estacao_desc"].iloc[0]
         lattiude = df["latitude"].iloc[0]

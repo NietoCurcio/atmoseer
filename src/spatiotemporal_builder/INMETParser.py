@@ -29,3 +29,12 @@ class INMETParser:
         # ).dt.tz_convert(None)
         INMETSchema.validate(df)
         return df
+
+
+if __name__ == "__main__":
+    # python -m src.spatiotemporal_builder.INMETParser
+    inmet_parser = INMETParser()
+    for file in inmet_parser.list_files():
+        file_path = str(inmet_parser.inmet_path / file)
+        print(inmet_parser.get_dataframe(file_path))
+        break

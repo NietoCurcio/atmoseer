@@ -70,3 +70,19 @@ class TqdmLogger(io.StringIO):
 
 
 logger = Logger()
+
+if __name__ == "__main__":
+    # python -m src.spatiotemporal_builder.Logger
+    from tqdm import tqdm
+
+    log = logger.get_logger(__name__)
+    log.debug("This is a debug message")
+    log.info("This is an info message")
+    log.warning("This is a warning message")
+    log.error("This is an error message")
+    log.success("This is a success message")
+    for i in tqdm(range(100), file=TqdmLogger(log)):
+        pass
+    log.info("Reading the log file last 8 lines:")
+    with open("websirenes_spatiotemporal_log.log") as f:
+        print("".join(f.readlines()[-8:]))
