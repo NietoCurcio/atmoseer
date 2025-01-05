@@ -576,6 +576,8 @@ def plot_u_v_200_700_1000_levels(
     u_1000: npt.NDArray[np.float32],
     v_1000: npt.NDArray[np.float32],
 ):
+    plt.close("all")
+
     fig_3d = plt.figure(figsize=(16, 10))
     ax_3d = fig_3d.add_subplot(111, projection="3d")
 
@@ -622,7 +624,6 @@ def plot_u_v_200_700_1000_levels(
         label="700 hPa",
     )
 
-    # Plot arrows for 1000 hPa
     quiver_1000 = ax_3d.quiver(
         lon_flat,
         lat_flat,
@@ -645,7 +646,9 @@ def plot_u_v_200_700_1000_levels(
     ax_3d.set_title("3D Visualization of Wind at 200, 700, and 1000 hPa")
 
     ax_3d.view_init(elev=10, azim=120)
-
+    FRAMES_DIR = Path("./features-frames")
+    plt.savefig(f"{FRAMES_DIR}/u_v_200_700_1000_levels.png", dpi=300, bbox_inches="tight")
+    log.success(f"Saved {FRAMES_DIR}/u_v_200_700_1000_levels.png")
     plt.show()
 
 
@@ -668,43 +671,44 @@ if __name__ == "__main__":
     from .WebSirenesKeys import WebSirenesKeys
     from .WebSirenesParser import WebSirenesParser
 
-    websirenes_square = WebSirenesSquare(
-        WebSirenesKeys(WebSirenesParser(), get_websirenes_coords())
-    )
-    inmet_square = INMETSquare(INMETKeys(INMETParser(), get_inmet_coords()))
-    alertario_square = AlertarioSquare(AlertarioKeys(AlertarioParser(), get_alertario_coords()))
+    FRAMES_DIR = Path("./features-frames")
+    FRAMES_DIR.mkdir(exist_ok=True)
+    TIMESTAMP = "2022-10-31T18:00:00"
 
     spatio_temporal_features = SpatioTemporalFeatures(
-        websirenes_square, inmet_square, alertario_square
+        WebSirenesSquare(WebSirenesKeys(WebSirenesParser(), get_websirenes_coords())),
+        INMETSquare(INMETKeys(INMETParser(), get_inmet_coords())),
+        AlertarioSquare(AlertarioKeys(AlertarioParser(), get_alertario_coords())),
     )
 
-    timestamp = pd.Timestamp("2022-10-31T18:00:00")
+    timestamp = pd.Timestamp(TIMESTAMP)
     features_path = (
         Path(__file__).parent / "features" / f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
     )
 
     if not features_path.exists():
-        spatio_temporal_features._process_timestamp(timestamp, verbose=True)
+        spatio_temporal_features._process_timestamp(timestamp)
 
     features = np.load(features_path)
-    print(features.shape)
-
     precipitation = features[:, :, 0]
-    print(precipitation.shape)
+    log.info(f"precipitation shape (fixed hour {timestamp}): {precipitation.shape}")
 
+    plt.figure(figsize=(12, 6))
     sns.heatmap(precipitation, annot=True, cmap="coolwarm", cbar=True, fmt=".2f")
     plt.title(f"Heatmap of tp values by Latitude and Longitude at {timestamp}")
-    plt.savefig("frames/heatmap.png", dpi=300, bbox_inches="tight")
+
+    plt.savefig(f"{FRAMES_DIR}/heatmap.png", dpi=300, bbox_inches="tight")
+    log.success(f"Saved heatmap as {FRAMES_DIR}/heatmap.png")
     plt.show()
 
     timestamps = pd.date_range(start="2022-10-31 00:00:00", end="2022-10-31 23:00:00", freq="h")
     features_list = []
-    for timestamp in timestamps:
+    for timestamp in tqdm(timestamps, desc="Loading features"):
         features_path = (
             Path(__file__).parent / "features" / f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
         )
         if not features_path.exists():
-            spatio_temporal_features._process_timestamp(timestamp, verbose=True)
+            spatio_temporal_features._process_timestamp(timestamp)
         features_list.append(np.load(features_path))
 
     fig, ax = plt.subplots(figsize=(12, 6), subplot_kw={"projection": ccrs.PlateCarree()})
@@ -724,11 +728,14 @@ if __name__ == "__main__":
     v = features[:, :, :, 12]
     spd = np.sqrt(u**2 + v**2)
 
-    print(u.shape)
-    print(v.shape)
-    print(spd.shape)
-    print(lon.shape)
-    print(lat.shape)
+    log.info(f"""
+        Shapes:
+        u: {u.shape}
+        v: {v.shape}
+        spd: {spd.shape}
+        lon meshgrid: {lon.shape}
+        lat meshgrid: {lat.shape}
+    """)
 
     assert u.shape[1:] == lon.shape, "Mismatch between u/v and lon/lat shapes"
     assert v.shape[1:] == lat.shape, "Mismatch between v and lat shapes"
@@ -757,20 +764,18 @@ if __name__ == "__main__":
     plt.colorbar(quiver, ax=ax, label="Wind Speed (m/s)", orientation="vertical")
     ax.set(xlabel="Longitude", ylabel="Latitude")
 
-    gif_file = "MYSUPERGIFDALE.gif"
-    anim.save(gif_file, writer="pillow", fps=5)
-    print(f"Saved animation as {gif_file}")
+    gif_file = "u_v_1000_hpa_wind.gif"
+    anim.save(f"{FRAMES_DIR}/{gif_file}", writer="pillow", fps=5)
+    # https://stackoverflow.com/questions/43776528/python-animation-figure-window-cannot-be-closed-automatically
+    anim.event_source.stop()
+    del anim
+    log.success(f"Saved {FRAMES_DIR}/{gif_file}")
 
-    output_dir = Path("frames")
-    output_dir.mkdir(exist_ok=True)
-
-    if False:
-        for frame in range(len(timestamps)):
-            quiver.set_UVC(u[frame], v[frame], spd[frame])
-            ax.set_title(f"Wind on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
-            frame_file = output_dir / f"frame_{frame:02d}.png"
-            plt.savefig(frame_file, dpi=300, bbox_inches="tight")
-            print(f"Saved frame {frame} as {frame_file}")
+    for frame in tqdm(range(len(timestamps)), desc="Saving wind frames"):
+        quiver.set_UVC(u[frame], v[frame], spd[frame])
+        ax.set_title(f"Wind on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
+        plt.savefig(f"{FRAMES_DIR}/frame_u_v_{frame:02d}.png", dpi=300, bbox_inches="tight")
+    log.success(f"Saved {len(timestamps)} frames as {FRAMES_DIR}/frame_u_v_*.png")
 
     t = features[:, :, :, 6]
 
@@ -814,20 +819,117 @@ if __name__ == "__main__":
     plt.colorbar(contour, ax=ax, label="Temperature (K)", orientation="vertical")
     ax.set(xlabel="Longitude", ylabel="Latitude")
 
-    gif_file = "MYSUPERGIFDALE_TEMP.gif"
-    anim.save(gif_file, writer="pillow", fps=5)
-    print(f"Saved animation as {gif_file}")
+    gif_file = "temperature_1000_hpa.gif"
+    anim.save(f"{FRAMES_DIR}/{gif_file}", writer="pillow", fps=5)
+    anim.event_source.stop()
+    del anim
+    log.success(f"Saved {FRAMES_DIR}/{gif_file}")
 
-    output_dir = Path("frames2")
-    output_dir.mkdir(exist_ok=True)
+    for frame in tqdm(range(len(timestamps)), desc="Saving temp frames"):
+        contour.set_array(t[frame].flatten())
+        ax.set_title(f"Temperature on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
+        plt.savefig(f"{FRAMES_DIR}/frame_temperature_{frame:02d}.png", dpi=300, bbox_inches="tight")
+    log.success(f"Saved {len(timestamps)} frames as {FRAMES_DIR}/frame_temperature_*.png")
 
-    if True:
-        for frame in range(len(timestamps)):
-            contour.set_array(t[frame].flatten())
-            ax.set_title(f"Temperature on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
-            frame_file = output_dir / f"frame_{frame:02d}.png"
-            plt.savefig(frame_file, dpi=300, bbox_inches="tight")
-            print(f"Saved frame {frame} as {frame_file}")
+    tp = features[:, :, :, 0]
+    log.info(f"tp shape: {tp.shape}")
+    log.info(f"TP TYPE: {type(tp)}")
+    log.info(f"TP DTYPE: {tp.dtype}")
+    log.info(f"""
+        Lats: {lats}
+        Lons: {lons}
+    """)
+
+    fig, ax = plt.subplots(figsize=(12, 6), subplot_kw={"projection": ccrs.PlateCarree()})
+    ax.add_feature(cfeature.LAND)
+    ax.add_feature(cfeature.OCEAN)
+    ax.add_feature(cfeature.COASTLINE)
+    ax.add_feature(cfeature.BORDERS, linestyle=":")
+    ax.add_feature(cfeature.LAKES, alpha=0.5)
+    ax.add_feature(cfeature.RIVERS)
+
+    im = ax.imshow(
+        tp[0],
+        cmap="coolwarm",
+        origin="upper",
+        extent=[lons.min(), lons.max(), lats.min(), lats.max()],
+        vmin=tp.min(),
+        vmax=tp.max(),
+        alpha=0.5,
+        transform=ccrs.PlateCarree(),
+    )
+    plt.colorbar(im, ax=ax, label="Total Precipitation (mm)", orientation="vertical")
+    ax.set(xlabel="Longitude", ylabel="Latitude")
+
+    def update(frame):
+        im.set_data(tp[frame])
+        ax.set_title(f"Total Precipitation on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
+        return (im,)
+
+    interval = 250
+    anim = animation.FuncAnimation(
+        fig, update, frames=len(timestamps), interval=interval, blit=True
+    )
+    gif_file = "total_precipitation.gif"
+    anim.save(f"{FRAMES_DIR}/{gif_file}", writer="pillow", fps=1000 / interval)
+    anim.event_source.stop()
+    del anim
+    log.success(f"Saved {FRAMES_DIR}/{gif_file}")
+
+    for frame in tqdm(range(len(timestamps)), desc="Saving tp frames"):
+        im.set_data(tp[frame])
+        ax.set_title(f"Total Precipitation on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
+        plt.savefig(
+            f"{FRAMES_DIR}/frame_total_precipitation_{frame:02d}.png", dpi=300, bbox_inches="tight"
+        )
+    log.success(f"Saved {len(timestamps)} frames as {FRAMES_DIR}/frame_total_precipitation_*.png")
+
+    fig, ax = plt.subplots(figsize=(12, 6), subplot_kw={"projection": ccrs.PlateCarree()})
+    ax.add_feature(cfeature.LAND)
+    ax.add_feature(cfeature.OCEAN)
+    ax.add_feature(cfeature.COASTLINE)
+    ax.add_feature(cfeature.BORDERS, linestyle=":")
+    ax.add_feature(cfeature.LAKES, alpha=0.5)
+    ax.add_feature(cfeature.RIVERS)
+    contour = ax.pcolormesh(
+        lon,
+        lat,
+        tp[0],
+        cmap="coolwarm",
+        transform=ccrs.PlateCarree(),
+        alpha=0.5,
+        vmin=tp.min(),
+        vmax=tp.max(),
+    )
+
+    def _update_fn(frame):
+        contour.set_array(tp[frame].flatten())
+        ax.set_title(f"Total Precipitation on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
+        return (contour,)
+
+    anim = animation.FuncAnimation(
+        fig,
+        _update_fn,
+        frames=len(timestamps),
+        blit=True,
+    )
+
+    plt.colorbar(contour, ax=ax, label="Total Precipitation (mm)", orientation="vertical")
+    ax.set(xlabel="Longitude", ylabel="Latitude")
+
+    gif_file = "total_precipitation2.gif"
+    anim.save(f"{FRAMES_DIR}/{gif_file}", writer="pillow", fps=5)
+    anim.event_source.stop()
+    del anim
+    log.success(f"Saved {FRAMES_DIR}/{gif_file}")
+
+    for frame in tqdm(range(len(timestamps)), desc="Saving tp frames"):
+        contour.set_array(tp[frame].flatten())
+        ax.set_title(f"Total Precipitation on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
+        plt.savefig(
+            f"{FRAMES_DIR}/frame_total_precipitation2_{frame:02d}.png", dpi=300, bbox_inches="tight"
+        )
+    log.success(f"Saved {len(timestamps)} frames as {FRAMES_DIR}/frame_total_precipitation_*.png")
 
     u_200 = features[:, :, :, 7]
     u_700 = features[:, :, :, 8]
