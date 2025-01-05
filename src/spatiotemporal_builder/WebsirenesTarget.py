@@ -721,6 +721,10 @@ if __name__ == "__main__":
 
     lats = spatio_temporal_features.sorted_latitudes_ascending[::-1]
     lons = spatio_temporal_features.sorted_longitudes_ascending
+    log.info(f"""
+        Lats: {lats}
+        Lons: {lons}
+    """)
     lon, lat = np.meshgrid(lons, lats)
 
     features = np.stack(features_list, axis=0)
@@ -787,15 +791,6 @@ if __name__ == "__main__":
     ax.add_feature(cfeature.LAKES, alpha=0.5)
     ax.add_feature(cfeature.RIVERS)
 
-    # contour = ax.contourf(
-    #     lon,
-    #     lat,
-    #     t[0],
-    #     cmap="coolwarm",
-    #     transform=ccrs.PlateCarree(),
-    #     alpha=0.5,
-    # )
-
     contour = ax.pcolormesh(
         lon,
         lat,
@@ -833,12 +828,6 @@ if __name__ == "__main__":
 
     tp = features[:, :, :, 0]
     log.info(f"tp shape: {tp.shape}")
-    log.info(f"TP TYPE: {type(tp)}")
-    log.info(f"TP DTYPE: {tp.dtype}")
-    log.info(f"""
-        Lats: {lats}
-        Lons: {lons}
-    """)
 
     fig, ax = plt.subplots(figsize=(12, 6), subplot_kw={"projection": ccrs.PlateCarree()})
     ax.add_feature(cfeature.LAND)
@@ -881,53 +870,6 @@ if __name__ == "__main__":
         ax.set_title(f"Total Precipitation on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
         plt.savefig(
             f"{FRAMES_DIR}/frame_total_precipitation_{frame:02d}.png", dpi=300, bbox_inches="tight"
-        )
-    log.success(f"Saved {len(timestamps)} frames as {FRAMES_DIR}/frame_total_precipitation_*.png")
-
-    fig, ax = plt.subplots(figsize=(12, 6), subplot_kw={"projection": ccrs.PlateCarree()})
-    ax.add_feature(cfeature.LAND)
-    ax.add_feature(cfeature.OCEAN)
-    ax.add_feature(cfeature.COASTLINE)
-    ax.add_feature(cfeature.BORDERS, linestyle=":")
-    ax.add_feature(cfeature.LAKES, alpha=0.5)
-    ax.add_feature(cfeature.RIVERS)
-    contour = ax.pcolormesh(
-        lon,
-        lat,
-        tp[0],
-        cmap="coolwarm",
-        transform=ccrs.PlateCarree(),
-        alpha=0.5,
-        vmin=tp.min(),
-        vmax=tp.max(),
-    )
-
-    def _update_fn(frame):
-        contour.set_array(tp[frame].flatten())
-        ax.set_title(f"Total Precipitation on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
-        return (contour,)
-
-    anim = animation.FuncAnimation(
-        fig,
-        _update_fn,
-        frames=len(timestamps),
-        blit=True,
-    )
-
-    plt.colorbar(contour, ax=ax, label="Total Precipitation (mm)", orientation="vertical")
-    ax.set(xlabel="Longitude", ylabel="Latitude")
-
-    gif_file = "total_precipitation2.gif"
-    anim.save(f"{FRAMES_DIR}/{gif_file}", writer="pillow", fps=5)
-    anim.event_source.stop()
-    del anim
-    log.success(f"Saved {FRAMES_DIR}/{gif_file}")
-
-    for frame in tqdm(range(len(timestamps)), desc="Saving tp frames"):
-        contour.set_array(tp[frame].flatten())
-        ax.set_title(f"Total Precipitation on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
-        plt.savefig(
-            f"{FRAMES_DIR}/frame_total_precipitation2_{frame:02d}.png", dpi=300, bbox_inches="tight"
         )
     log.success(f"Saved {len(timestamps)} frames as {FRAMES_DIR}/frame_total_precipitation_*.png")
 
