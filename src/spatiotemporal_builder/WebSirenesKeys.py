@@ -32,6 +32,7 @@ class WebSirenesKeys:
             self.websirenes_keys_path.mkdir()
         self.websirenes_parser = websirenes_parser
         self.websirenes_coords = websirenes_coords
+        self.keys = {}
 
     def _not_founds_in_coords(self) -> list[StationNameId]:
         not_founds_in_coords: list[StationNameId] = []
@@ -67,7 +68,7 @@ class WebSirenesKeys:
         df.to_parquet(self.websirenes_keys_path / f"{key}.parquet")
 
     def load_key(self, key: str) -> pd.DataFrame:
-        return pd.read_parquet(f"{self.websirenes_keys_path}/{key}.parquet")
+        return self.keys[key]
 
     def build_keys(self, use_cache: bool = True) -> None:
         """
@@ -137,6 +138,13 @@ class WebSirenesKeys:
             )
 
         log.success(f"Minimum and maximum dates written to {minimum_maximum_dates_path}")
+
+    def initialize_keys(self):
+        key_files = [x.stem for x in Path(self.websirenes_keys_path).glob("*.parquet")]
+        for key_file in key_files:
+            self.keys[key_file] = pd.read_parquet(f"{self.websirenes_keys_path}/{key_file}.parquet")
+        assert len(key_files) == len(self.keys), f"It should have {len(key_files)} initialized"
+        log.success(f"Initialized {len(self.keys)} keys Sirenes successfully")
 
 
 if __name__ == "__main__":

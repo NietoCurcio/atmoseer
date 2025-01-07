@@ -137,6 +137,11 @@ def build_features(start_date: pd.Timestamp, end_date: pd.Timestamp, ignored_mon
             inmet_keys.build_keys()
             alertario_keys.build_keys()
 
+        if not settings.only_ERA5:
+            websirenes_keys.initialize_keys()
+            inmet_keys.initialize_keys()
+            alertario_keys.initialize_keys()
+
         spatio_temporal_features.build_timestamps_hourly(start_date, end_date, ignored_months)
 
         dataset_builder.build_netcdf(start_date, end_date, ignored_months)

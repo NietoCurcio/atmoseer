@@ -28,6 +28,7 @@ class INMETKeys:
             self.inmet_keys_path.mkdir()
         self.inmet_parser = inmet_parser
         self.inmet_coords = inmet_coords
+        self.keys = {}
 
     def _not_founds_in_coords(self) -> list[StationNameId]:
         not_founds_in_coords: list[StationNameId] = []
@@ -60,7 +61,7 @@ class INMETKeys:
         df.to_parquet(self.inmet_keys_path / f"{key}.parquet")
 
     def load_key(self, key: str) -> pd.DataFrame:
-        return pd.read_parquet(f"{self.inmet_keys_path}/{key}.parquet")
+        return self.keys[key]
 
     def build_keys(self, use_cache: bool = True):
         total_files = len(list(self.inmet_keys_path.glob("*.parquet")))
@@ -108,6 +109,13 @@ class INMETKeys:
             Maximum date: {maximum_date}
             Minimum and maximum path: {minimum_maximum_dates_path}
         """)
+
+    def initialize_keys(self):
+        key_files = [x.stem for x in Path(self.inmet_keys_path).glob("*.parquet")]
+        for key_file in key_files:
+            self.keys[key_file] = pd.read_parquet(f"{self.inmet_keys_path}/{key_file}.parquet")
+        assert len(key_files) == len(self.keys), f"It should have {len(key_files)} initialized"
+        log.success(f"Initialized {len(self.keys)} keys INMET successfully")
 
 
 if __name__ == "__main__":

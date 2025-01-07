@@ -19,6 +19,7 @@ class AlertarioSchema(pa.DataFrameModel):
 
 class AlertarioParser:
     rain_gauge_path = Path(__file__).parent / "alertario-from-source"
+    # rain_gauge_path = Path(__file__).parent / "alertario-pluv-2024"
 
     def get_region_of_interest(self) -> dict:
         ds = xr.open_dataset("./data/reanalysis/ERA5-single-levels/monthly_data/RJ_2018_1.nc")
@@ -55,24 +56,37 @@ class AlertarioParser:
         assert df[column].isna().sum() == 0, "Missing values after imputation should be zero"
         return df
 
-    def _get_df(self, file_path: Path) -> pd.DataFrame:
-        df = pd.read_csv(
-            file_path,
-            sep=r"\s{2,}",
-            engine="python",
-            skiprows=5,
-            names=["Dia", "Hora", "HBV", "m15", "h01", "h04", "h24", "h96"],
-        )
+    def _get_df(self, file_path: Path, year: int, month: int) -> pd.DataFrame:
+        if year >= 2024 and month == 11 or year >= 2024 and month == 12:
+            df = pd.read_csv(
+                file_path,
+                sep=r"\s{2,}",
+                engine="python",
+                skiprows=5,
+                names=["Dia", "Hora", "HBV", "m5", "m10", "m15", "h01", "h04", "h24", "h96"],
+            )
+        else:
+            df = pd.read_csv(
+                file_path,
+                sep=r"\s{2,}",
+                engine="python",
+                skiprows=5,
+                names=["Dia", "Hora", "HBV", "m15", "h01", "h04", "h24", "h96"],
+            )
         df["datetime"] = pd.to_datetime(df["Dia"] + " " + df["Hora"], format="%d/%m/%Y %H:%M:%S")
 
         df["m15"] = pd.to_numeric(df["m15"], errors="coerce")
         df["h01"] = pd.to_numeric(df["h01"], errors="coerce")
-        df = df.drop(columns=["Dia", "Hora", "HBV", "h04", "h24", "h96"])
+        if year >= 2024 and month == 11 or year >= 2024 and month == 12:
+            df = df.drop(columns=["Dia", "Hora", "HBV", "m5", "m10", "h04", "h24", "h96"])
+        else:
+            df = df.drop(columns=["Dia", "Hora", "HBV", "h04", "h24", "h96"])
         return df
 
     def process_station(self, station: str) -> pd.DataFrame:
         station_dfs = []
-        months = pd.date_range(pd.Timestamp("2013-01-01"), pd.Timestamp("2024-10-01"), freq="MS")
+        # months = pd.date_range(pd.Timestamp("2013-01-01"), pd.Timestamp("2024-10-01"), freq="MS")
+        months = pd.date_range(pd.Timestamp("2024-01-01"), pd.Timestamp("2024-12-01"), freq="MS")
         for month in months:
             current_year = month.year
             current_month = month.month
@@ -81,7 +95,7 @@ class AlertarioParser:
                 file_path = self.rain_gauge_path / file_name
                 if not file_path.exists():
                     raise FileNotFoundError(f"File {file_path} not found")
-                df = self._get_df(file_path)
+                df = self._get_df(file_path, current_year, current_month)
                 station_dfs.append(df)
             except Exception as e:
                 print(f"Error processing station {station} at {current_year}-{current_month}: {e}")

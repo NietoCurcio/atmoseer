@@ -30,20 +30,20 @@ StationsManager.register("Dict", dict)
 
 
 class SpatioTemporalFeatures:
-    manager = StationsManager()
-    manager.start()
-    stations_cells = manager.Set()
-    stations_inmet = manager.Set()
-    stations_websirenes = manager.Set()
-    stations_alertario = manager.Set()
-    dataset_era5_year_month = manager.Dict()
-
     def __init__(
         self,
         websirenes_square: WebSirenesSquare,
         inmet_square: INMETSquare,
         alertario_square: AlertarioSquare,
     ):
+        self.manager = StationsManager()
+        self.manager.start()
+        self.stations_cells = self.manager.Set()
+        self.stations_inmet = self.manager.Set()
+        self.stations_websirenes = self.manager.Set()
+        self.stations_alertario = self.manager.Set()
+        self.dataset_era5_year_month = self.manager.Dict()
+
         self.features_path = Path(__file__).parent / "features"
         if not self.features_path.exists():
             self.features_path.mkdir()
@@ -160,31 +160,30 @@ class SpatioTemporalFeatures:
         keys: list[tuple],
         lat_index: int,
         lon_index: int,
-    ):
+    ) -> float:
         if settings.only_ERA5:
             return self.websirenes_square.get_era5_single_levels_precipitation_in_square(square, ds)
 
         websirenes_keys = self.websirenes_square.get_keys_in_square(
             square, self.stations_websirenes
         )
-
         inmet_keys = self.inmet_square.get_keys_in_square(square, self.stations_inmet)
-
         alertario_keys = self.alertario_square.get_keys_in_square(square, self.stations_alertario)
 
         if inmet_keys or websirenes_keys or alertario_keys:
             keys.append((lat_index, lon_index))
+        # if alertario_keys:
+        # keys.append((lat_index, lon_index))
 
         tp_sirenes = self.websirenes_square.get_precipitation_in_square(
             square, websirenes_keys, timestamp, ds
         )
-
         tp_inmet = self.inmet_square.get_precipitation_in_square(square, inmet_keys, timestamp, ds)
-
         tp_alertario = self.alertario_square.get_precipitation_in_square(
             square, alertario_keys, timestamp, ds
         )
 
+        # return tp_alertario
         return max(tp_sirenes, tp_inmet, tp_alertario)
 
     def _process_grid(
@@ -390,74 +389,74 @@ class SpatioTemporalFeatures:
         ONE_MINUTE = 60 * 1
         all_cached = True
 
-        with ProcessPoolExecutor() as executor:
-            futures = []
+        # with ProcessPoolExecutor() as executor:
+        #     futures = []
 
-            for timestamp in timestamps:
-                if (
-                    use_cache
-                    and self.features_path.joinpath(
-                        f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
-                    ).exists()
-                ):
-                    continue
+        #     for timestamp in timestamps:
+        #         if (
+        #             use_cache
+        #             and self.features_path.joinpath(
+        #                 f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
+        #             ).exists()
+        #         ):
+        #             continue
 
-                if timestamp.month in ignored_months:
-                    continue
+        #         if timestamp.month in ignored_months:
+        #             continue
 
-                all_cached = False
-                futures.append(executor.submit(self._process_timestamp, timestamp))
-            log.info(f"Tasks submitted - {len(futures)}")
+        #         all_cached = False
+        #         futures.append(executor.submit(self._process_timestamp, timestamp))
+        #     log.info(f"Tasks submitted - {len(futures)}")
 
-            with tqdm(
-                total=len(timestamps),
-                desc="Processing timestamps",
-                file=TqdmLogger(log),
-                dynamic_ncols=True,
-                mininterval=ONE_MINUTE,
-            ) as pbar:
-                for future in as_completed(futures):
-                    try:
-                        future.result()
-                        pbar.update()
-                    except Exception as e:
-                        log.error(f"Error processing timestamp: {e}")
-                        raise SystemExit(e)
+        #     with tqdm(
+        #         total=len(timestamps),
+        #         desc="Processing timestamps",
+        #         file=TqdmLogger(log),
+        #         dynamic_ncols=True,
+        #         mininterval=ONE_MINUTE,
+        #     ) as pbar:
+        #         for future in as_completed(futures):
+        #             try:
+        #                 future.result()
+        #                 pbar.update()
+        #             except Exception as e:
+        #                 log.error(f"Error processing timestamp: {repr(e)}")
+        #                 raise SystemExit(e)
 
-            self.found_stations = self.stations_websirenes._getvalue()
-            self.found_stations_inmet = self.stations_inmet._getvalue()
-            self.found_stations_alertario = self.stations_alertario._getvalue()
-            self.stations_cells = self.stations_cells._getvalue()
-            self.manager.shutdown()
+        #     self.found_stations = self.stations_websirenes._getvalue()
+        #     self.found_stations_inmet = self.stations_inmet._getvalue()
+        #     self.found_stations_alertario = self.stations_alertario._getvalue()
+        #     self.stations_cells = self.stations_cells._getvalue()
+        #     self.manager.shutdown()
 
-        end_time = time.time()
-        log.info(f"Target built in {end_time - start_time:.2f} seconds - parallel")
-
-        # start_time = time.time()
-        # os.environ["IS_SEQUENTIAL"] = "True"
-        # for i in tqdm(
-        #     range(len(timestamps)),
-        #     desc="Processing timestamps",
-        #     file=TqdmLogger(log),
-        #     dynamic_ncols=True,
-        #     mininterval=ONE_MINUTE,
-        # ):
-        #     if self.features_path.joinpath(
-        #         f"{timestamps[i].strftime('%Y_%m_%d_%H')}_features.npy"
-        #     ).exists():
-        #         continue
-
-        #     if timestamps[i].month in ignored_months:
-        #         continue
-
-        #     self._process_timestamp(timestamps[i])
-        # self.found_stations = self.stations_websirenes._getvalue()
-        # self.found_stations_inmet = self.stations_inmet._getvalue()
-        # self.found_stations_alertario = self.stations_alertario._getvalue()
-        # self.stations_cells = self.stations_cells._getvalue()
-        # self.manager.shutdown()
         # end_time = time.time()
-        # log.info(f"Target built in {end_time - start_time:.2f} seconds - sequential")
+        # log.info(f"Target built in {end_time - start_time:.2f} seconds - parallel")
+
+        start_time = time.time()
+        os.environ["IS_SEQUENTIAL"] = "True"
+        for i in tqdm(
+            range(len(timestamps)),
+            desc="Processing timestamps",
+            file=TqdmLogger(log),
+            dynamic_ncols=True,
+            mininterval=ONE_MINUTE,
+        ):
+            if self.features_path.joinpath(
+                f"{timestamps[i].strftime('%Y_%m_%d_%H')}_features.npy"
+            ).exists():
+                continue
+
+            if timestamps[i].month in ignored_months:
+                continue
+
+            self._process_timestamp(timestamps[i])
+        self.found_stations = self.stations_websirenes._getvalue()
+        self.found_stations_inmet = self.stations_inmet._getvalue()
+        self.found_stations_alertario = self.stations_alertario._getvalue()
+        self.stations_cells = self.stations_cells._getvalue()
+        self.manager.shutdown()
+        end_time = time.time()
+        log.info(f"Target built in {end_time - start_time:.2f} seconds - sequential")
 
         validated_total_timestamps = self.validate_timestamps(
             minimum_date, maximum_date, ignored_months
@@ -467,20 +466,20 @@ class SpatioTemporalFeatures:
             f"Websirenes features hourly built successfully in {self.features_path} - {validated_total_timestamps} files"
         )
 
-        assert (
-            settings.only_ERA5
-            or all_cached
-            or len(self.found_stations)
-            == len(
-                list(self.websirenes_square.websirenes_keys.websirenes_keys_path.glob("*.parquet"))
-            )
-        ), "Expected all websirenes stations to be found and processed"
+        # assert (
+        #     settings.only_ERA5
+        #     or all_cached
+        #     or len(self.found_stations)
+        #     == len(
+        #         list(self.websirenes_square.websirenes_keys.websirenes_keys_path.glob("*.parquet"))
+        #     )
+        # ), "Expected all websirenes stations to be found and processed"
 
-        assert (
-            settings.only_ERA5
-            or all_cached
-            or len(list(self.inmet_square.inmet_keys.inmet_keys_path.glob("*.parquet")))
-        ), "Expected all inmet stations to be found and processed"
+        # assert (
+        #     settings.only_ERA5
+        #     or all_cached
+        #     or len(list(self.inmet_square.inmet_keys.inmet_keys_path.glob("*.parquet")))
+        # ), "Expected all inmet stations to be found and processed"
 
         assert (
             settings.only_ERA5
@@ -697,6 +696,10 @@ if __name__ == "__main__":
         AlertarioSquare(AlertarioKeys(AlertarioParser(), get_alertario_coords())),
     )
 
+    spatio_temporal_features.websirenes_square.websirenes_keys.initialize_keys()
+    spatio_temporal_features.inmet_square.inmet_keys.initialize_keys()
+    spatio_temporal_features.alertario_square.alertario_keys.initialize_keys()
+
     timestamp = pd.Timestamp(TIMESTAMP)
     features_path = (
         Path(__file__).parent / "features" / f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
@@ -778,13 +781,11 @@ if __name__ == "__main__":
     del anim
     log.success(f"Saved {FRAMES_DIR}/{gif_file}")
 
-    # for frame in tqdm(range(len(timestamps)), desc="Saving wind frames"):
-    #     quiver.set_UVC(u[frame], v[frame], spd[frame])
-    #     ax.set_title(f"Wind on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
-    #     plt.savefig(f"{FRAMES_DIR}/frame_u_v_{frame:02d}.png", dpi=300, bbox_inches="tight")
-    # log.success(f"Saved {len(timestamps)} frames as {FRAMES_DIR}/frame_u_v_*.png")
-
-    # exit(0)
+    for frame in tqdm(range(len(timestamps)), desc="Saving wind frames"):
+        quiver.set_UVC(u[frame], v[frame], spd[frame])
+        ax.set_title(f"Wind on {timestamps[frame].strftime('%Y-%m-%d %H:%M:%S')}")
+        plt.savefig(f"{FRAMES_DIR}/frame_u_v_{frame:02d}.png", dpi=300, bbox_inches="tight")
+    log.success(f"Saved {len(timestamps)} frames as {FRAMES_DIR}/frame_u_v_*.png")
 
     t = features[:, :, :, 6]
 

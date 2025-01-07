@@ -26,6 +26,7 @@ class AlertarioKeys:
             self.alertario_describe_path.mkdir()
         self.alertario_parser = alertario_parser
         self.alertario_coords = alertario_coords
+        self.keys = {}
 
     def _serialize_describe(self, df: pd.DataFrame, describe_path: Path) -> None:
         describe = df.describe()
@@ -43,7 +44,7 @@ class AlertarioKeys:
         df.to_parquet(self.alertario_keys_path / f"{key}.parquet")
 
     def load_key(self, key: str) -> pd.DataFrame:
-        return pd.read_parquet(f"{self.alertario_keys_path}/{key}.parquet")
+        return self.keys[key]
 
     def _merge_coords_by_estacao_desc(self, df: pd.DataFrame, estacao_desc: str) -> pd.DataFrame:
         station = self.alertario_coords[self.alertario_coords["estacao_desc"] == estacao_desc]
@@ -118,6 +119,13 @@ class AlertarioKeys:
             Maximum date: {maximum_date}
             Minimum and maximum path: {minimum_maximum_dates_path}
         """)
+
+    def initialize_keys(self):
+        key_files = [x.stem for x in Path(self.alertario_keys_path).glob("*.parquet")]
+        for key_file in key_files:
+            self.keys[key_file] = pd.read_parquet(f"{self.alertario_keys_path}/{key_file}.parquet")
+        assert len(key_files) == len(self.keys), f"It should have {len(key_files)} initialized"
+        log.success(f"Initialized {len(self.keys)} keys Alertario successfully")
 
 
 if __name__ == "__main__":
