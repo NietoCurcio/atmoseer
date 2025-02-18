@@ -54,7 +54,7 @@ class WebsirenesDataset:
         return data
 
     def _process_timestamp(
-        self, timestamp: pd.Timestamp, overlapping: bool = True
+        self, timestamp: pd.Timestamp
     ) -> tuple[Optional[npt.NDArray[np.float64]], Optional[npt.NDArray[np.float64]]]:
         year = timestamp.year
         month = timestamp.month
@@ -63,11 +63,7 @@ class WebsirenesDataset:
         if not self._has_timesteps(year, month, day, hour):
             return None, None
 
-        next_timestamp = (
-            timestamp + pd.Timedelta(hours=1)
-            if overlapping
-            else timestamp + pd.Timedelta(hours=self.TIMESTEPS)
-        )
+        next_timestamp = timestamp + pd.Timedelta(hours=self.TIMESTEPS)
         year_y = next_timestamp.year
         month_y = next_timestamp.month
         day_y = next_timestamp.day
@@ -90,7 +86,6 @@ class WebsirenesDataset:
         max_timestamp: pd.Timestamp,
         ignored_months: list[int],
         use_cache: bool = True,
-        overlapping: bool = True,
     ) -> None:
         if use_cache and self.dataset_path.exists():
             log.warning(
@@ -109,11 +104,7 @@ class WebsirenesDataset:
         )
         added_extra_hour = 1 if has_last_timestamp_plus_one_hour else 0
 
-        total_samples = (
-            validated_total_timestamps - self.TIMESTEPS + added_extra_hour
-            if overlapping
-            else validated_total_timestamps - (2 * self.TIMESTEPS) + 1 + added_extra_hour
-        )
+        total_samples = validated_total_timestamps - (2 * self.TIMESTEPS) + 1 + added_extra_hour
 
         timestamps = pd.date_range(start=min_timestamp, end=max_timestamp, freq="h")
 
@@ -121,26 +112,26 @@ class WebsirenesDataset:
             Total timestamps: {validated_total_timestamps}
             Min timestamp: {min_timestamp}
             Max timestamp: {max_timestamp}
-            Total samples: {total_samples} (overlapping: {overlapping})
+            Total samples: {total_samples}
         """)
 
-        data_x_list = []
-        data_y_list = []
+        data_x = []
+        data_y = []
         for timestamp in tqdm(timestamps, mininterval=60, file=TqdmLogger(log)):
             if timestamp.month in ignored_months:
                 continue
 
-            data_x, data_y = self._process_timestamp(timestamp, overlapping)
-            if data_x is None and data_y is None:
+            processed_x, processed_y = self._process_timestamp(timestamp)
+            if processed_x is None and processed_y is None:
                 continue
-            data_x_list.append(data_x)
-            data_y_list.append(data_y)
+            data_x.append(processed_x)
+            data_y.append(processed_y)
             # high space complexity, may need to investigate another approach
 
-        assert len(data_x_list) == len(data_y_list), "Mismatch between data_x and data_y lists"
+        assert len(data_x) == len(data_y), "Mismatch between data_x and data_y lists"
 
-        data_x = np.stack(data_x_list, axis=0)
-        data_y = np.stack(data_y_list, axis=0)
+        data_x = np.stack(data_x, axis=0)
+        data_y = np.stack(data_y, axis=0)
 
         print(f"data_x shape: {data_x.shape}")
         print(f"data_y shape: {data_y.shape}")
