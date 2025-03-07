@@ -410,10 +410,10 @@ class SpatioTemporalFeatures:
             "Not all cells processed failed to include last row and last column"
         )
 
-        profiler.disable()
+        # profiler.disable()
 
-        with open("profile_results.txt", "w") as f:
-            profiler.print_stats(stream=f)
+        # with open("profile_results.txt", "w") as f:
+        # profiler.print_stats(stream=f)
 
     def _process_timestamp(self, timestamp: pd.Timestamp):
         year = timestamp.year
