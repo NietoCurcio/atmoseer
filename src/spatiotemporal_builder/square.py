@@ -13,6 +13,9 @@ class Square(BaseModel):
     bottom_right: tuple[float, float]
     top_right: tuple[float, float]
 
+    def __hash__(self):
+        return hash((self.top_left, self.bottom_left, self.bottom_right, self.top_right))
+
 
 neighbor_cache = {}
 

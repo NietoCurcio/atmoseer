@@ -11,6 +11,8 @@ from .square import Square
 
 log = logger.get_logger(__name__)
 
+keys_cache = {}
+
 
 class INMETSquare(ERA5Square):
     def __init__(self, inmet_keys: INMETKeys) -> None:
@@ -19,6 +21,8 @@ class INMETSquare(ERA5Square):
     def get_keys_in_square(
         self, square: Square, stations_inmet: set, verbose: bool = False
     ) -> list[str]:
+        if square in keys_cache:
+            return keys_cache[square]
         keys = [x.stem for x in Path(self.inmet_keys.inmet_keys_path).glob("*.parquet")]
         inmet_keys = []
         for key in keys:
@@ -46,6 +50,7 @@ class INMETSquare(ERA5Square):
         if len(inmet_keys) > 0:
             stations_inmet.update(inmet_keys)
 
+        keys_cache[square] = inmet_keys
         return inmet_keys
 
     def get_precipitation_in_square(
@@ -67,17 +72,18 @@ class INMETSquare(ERA5Square):
             return super().get_era5_single_levels_precipitation_in_square(
                 square, ds_time, corner_data
             )
+
+        h1_era5 = super().get_era5_single_levels_precipitation_in_square(
+            square, ds_time, corner_data
+        )
+
         precipitations: list[float] = []
         for key in inmet_keys:
             df_web = self.inmet_keys.load_key(key)
             df_web_filtered = df_web[df_web.index == timestamp]
             h1 = df_web_filtered["precipitation"]
             if h1.isnull().all():
-                h1 = np.array(
-                    super().get_era5_single_levels_precipitation_in_square(
-                        square, ds_time, corner_data
-                    )
-                )
+                h1 = np.array(h1_era5)
             precipitations.append(h1.item())
         return max(precipitations)
 

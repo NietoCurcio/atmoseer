@@ -13,6 +13,9 @@ from .WebSirenesKeys import WebSirenesKeys
 log = logger.get_logger(__name__)
 
 
+keys_cache = {}
+
+
 class WebSirenesSquare(ERA5Square):
     def __init__(self, websirenes_keys: WebSirenesKeys) -> None:
         self.websirenes_keys = websirenes_keys
@@ -25,6 +28,9 @@ class WebSirenesSquare(ERA5Square):
         Args:
             square (Square): The square to check for keys
         """
+        if square in keys_cache:
+            return keys_cache[square]
+
         keys = [x.stem for x in Path(self.websirenes_keys.websirenes_keys_path).glob("*.parquet")]
         websirenes_keys = []
         for key in keys:
@@ -52,6 +58,8 @@ class WebSirenesSquare(ERA5Square):
         if len(websirenes_keys) > 0:
             stations_websirenes.update(websirenes_keys)
 
+        keys_cache[square] = websirenes_keys
+
         return websirenes_keys
 
     def get_precipitation_in_square(
@@ -74,6 +82,10 @@ class WebSirenesSquare(ERA5Square):
                 square, ds_time, corner_data
             )
 
+        h1_era5 = super().get_era5_single_levels_precipitation_in_square(
+            square, ds_time, corner_data
+        )
+
         precipitations_15_min_aggregated: list[float] = []
         for key in websirenes_keys:
             df_web = self.websirenes_keys.load_key(key)
@@ -91,7 +103,7 @@ class WebSirenesSquare(ERA5Square):
             # compare sum of m30 (2 values), sum of m15 (4 values) and h01 (1 value)
             # take the max
 
-            if m15.size < 4 or m15.isnull().any():
+            if m15.count() < 4:
                 # Websirenes (and also Alertario) have a time resolution of 15 minutes
                 # for 16h for example, we'll get four m15 values: 16h, 15h45, 15h30, 15h15
                 # to get this data we have two situations:
@@ -107,10 +119,7 @@ class WebSirenesSquare(ERA5Square):
                 # 15h15 = 0.00 mm precipitation
                 # If either of these situations happen:
                 # Compare the aggregated sum with the ERA5 data, we use the most significant value
-                m15_era5 = super().get_era5_single_levels_precipitation_in_square(
-                    square, ds_time, corner_data
-                )
-                m15 = np.array([m15.sum(), m15_era5]).max()
+                m15 = np.array([m15.sum(), h1_era5]).max()
             max_between_m15_and_h01 = np.array([m15.sum().item(), h01.sum().item()]).max()
             precipitations_15_min_aggregated.append(max_between_m15_and_h01.item())
 

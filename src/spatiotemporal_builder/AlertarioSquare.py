@@ -13,6 +13,9 @@ from .square import Square
 log = logger.get_logger(__name__)
 
 
+keys_cache = {}
+
+
 class AlertarioSquare(ERA5Square):
     def __init__(self, alertario_keys: AlertarioKeys) -> None:
         self.alertario_keys = alertario_keys
@@ -20,6 +23,9 @@ class AlertarioSquare(ERA5Square):
     def get_keys_in_square(
         self, square: Square, stations_alertario: set, verbose: bool = False
     ) -> list[str]:
+        if square in keys_cache:
+            return keys_cache[square]
+
         keys = [x.stem for x in Path(self.alertario_keys.alertario_keys_path).glob("*.parquet")]
         alertario_keys = []
         for key in keys:
@@ -47,6 +53,8 @@ class AlertarioSquare(ERA5Square):
         if len(alertario_keys) > 0:
             stations_alertario.update(alertario_keys)
 
+        keys_cache[square] = alertario_keys
+
         return alertario_keys
 
     def get_precipitation_in_square(
@@ -69,6 +77,10 @@ class AlertarioSquare(ERA5Square):
                 square, ds_time, corner_data
             )
 
+        h1_era5 = super().get_era5_single_levels_precipitation_in_square(
+            square, ds_time, corner_data
+        )
+
         precipitations_15_min_aggregated: list[float] = []
         for key in alertario_keys:
             df_alertario = self.alertario_keys.load_key(key)
@@ -84,12 +96,9 @@ class AlertarioSquare(ERA5Square):
             m15 = df_alertario_filtered["precipitation"]
             h01 = df_alertario[df_alertario.datetime == time_upper_bound]["h01"]
 
-            if m15.size < 4 or m15.isnull().any():
+            if m15.count() < 4:
                 # Please see WebSirenesSquare:get_precipitation_in_square for more information
-                m15_era5 = super().get_era5_single_levels_precipitation_in_square(
-                    square, ds_time, corner_data
-                )
-                m15 = np.array([m15.sum(), m15_era5]).max()
+                m15 = np.array([m15.sum(), h1_era5]).max()
 
             max_between_m15_and_h01 = np.array([m15.sum().item(), h01.max()]).max()
             # max_between_m15_and_h01 = np.array([m15.sum().item()]).max()
