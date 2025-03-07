@@ -1,4 +1,5 @@
 import re
+import warnings
 from pathlib import Path
 
 import pandas as pd
@@ -8,13 +9,60 @@ from sklearn.impute import KNNImputer
 
 from .Logger import logger
 
+warnings.filterwarnings("ignore")
+
 log = logger.get_logger(__name__)
 
 
 class AlertarioSchema(pa.DataFrameModel):
     datetime: pd.Timestamp
-    m15: float = pa.Field(nullable=False, ge=0)
+    precipitation: float = pa.Field(nullable=False, ge=0)
     h01: float = pa.Field(nullable=False, ge=0)
+
+
+def get_columns(filename):
+    columns_v1 = {
+        "string": "Dia         Hora      HBV   15 min   01 h   04 h   24 h   96 h",
+        "names": ["data", "hora", "HBV", "precipitation", "h01", "04h", "24h", "96h"],
+    }
+    columns_v2 = {
+        "string": "Dia         Hora      HBV   05 min   10 min   15 min   01 h   04 h   24 h   96 h",
+        "names": [
+            "data",
+            "hora",
+            "HBV",
+            "precipitation",
+            "10min",
+            "15min",
+            "h01",
+            "04h",
+            "24h",
+            "96h",
+        ],
+    }
+    with open(filename) as f:
+        data = f.read().splitlines()
+    line = data[4].strip()
+    if not len(data) > 4:
+        return None
+    if line == columns_v1["string"]:
+        return columns_v1["names"]
+    elif line == columns_v2["string"]:
+        return columns_v2["names"]
+    return None
+
+
+def load_station_data(station_name, filename):
+    names = get_columns(filename)
+    if not names:
+        print(f"Columns cannot be inferred from file {filename}.")
+        return pd.DataFrame()
+    df = pd.read_csv(filename, sep=r"\s+", skiprows=5, header=None, names=names)
+    rows_to_shift = df[df["HBV"] != "HBV"].index
+    df.loc[rows_to_shift, "HBV":] = df.loc[rows_to_shift, "HBV":].shift(1, axis=1)
+    df = df[["data", "hora", "precipitation", "h01"]]
+    df["station"] = station_name
+    return df
 
 
 class AlertarioParser:
@@ -85,8 +133,8 @@ class AlertarioParser:
 
     def process_station(self, station: str) -> pd.DataFrame:
         station_dfs = []
-        # months = pd.date_range(pd.Timestamp("2013-01-01"), pd.Timestamp("2024-10-01"), freq="MS")
-        months = pd.date_range(pd.Timestamp("2024-01-01"), pd.Timestamp("2024-12-01"), freq="MS")
+        months = pd.date_range(pd.Timestamp("2013-01-01"), pd.Timestamp("2024-10-01"), freq="MS")
+        # months = pd.date_range(pd.Timestamp("2024-01-01"), pd.Timestamp("2024-12-01"), freq="MS")
         for month in months:
             current_year = month.year
             current_month = month.month
@@ -95,14 +143,24 @@ class AlertarioParser:
                 file_path = self.rain_gauge_path / file_name
                 if not file_path.exists():
                     raise FileNotFoundError(f"File {file_path} not found")
-                df = self._get_df(file_path, current_year, current_month)
+                df = load_station_data(station, file_path)
+                df["datetime"] = df["data"] + " " + df["hora"]
+                df["datetime"] = pd.to_datetime(
+                    df["datetime"], dayfirst=True, errors="coerce", format="%d/%m/%Y %H:%M:%S"
+                )
+                df["precipitation"] = pd.to_numeric(df["precipitation"], errors="coerce")
+                df["h01"] = pd.to_numeric(df["h01"], errors="coerce")
+
+                df = df.drop(columns=["data", "hora"])
+                # df = df.set_index("datetime")
+                # df = df.sort_index()
                 station_dfs.append(df)
             except Exception as e:
                 print(f"Error processing station {station} at {current_year}-{current_month}: {e}")
                 raise e
         assert len(station_dfs) == len(months)
         df = pd.concat(station_dfs).sort_values(by="datetime").reset_index(drop=True)
-        df = self._impute_missing_values(df, AlertarioSchema.m15)
+        df = self._impute_missing_values(df, AlertarioSchema.precipitation)
         df = self._impute_missing_values(df, AlertarioSchema.h01)
         AlertarioSchema.validate(df)
         return df

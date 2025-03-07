@@ -19,6 +19,8 @@ log = logger.get_logger(__name__)
 class AlertarioKeys:
     def __init__(self, alertario_parser: AlertarioParser, alertario_coords: pd.DataFrame) -> None:
         self.alertario_keys_path = Path(__file__).parent / "alertario_keys"
+        # self.alertario_keys_path = Path(__file__).parent / "alertario_keys.old"
+        # self.alertario_keys_path = Path(__file__).parent / "alertario_keys-apenas-2024"
         if not self.alertario_keys_path.exists():
             self.alertario_keys_path.mkdir()
         self.alertario_describe_path = self.alertario_keys_path / "describe"

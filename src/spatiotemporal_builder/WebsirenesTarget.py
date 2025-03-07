@@ -95,6 +95,7 @@ class SpatioTemporalFeatures:
         log.info(
             f"Spatial resolution: {self.sorted_latitudes_ascending[1] - self.sorted_latitudes_ascending[0]:.2f} degrees"
         )
+        # TODO Log temporal resolution, easy to sutract [1] from [0] in timestamps of xr.Dataset
 
     def _write_features(self, features: npt.NDArray[np.float64], timestamp: pd.Timestamp):
         features_filename = self.features_path / f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
@@ -163,29 +164,23 @@ class SpatioTemporalFeatures:
     ) -> float:
         if settings.only_ERA5:
             return self.websirenes_square.get_era5_single_levels_precipitation_in_square(square, ds)
-
-        # websirenes_keys = self.websirenes_square.get_keys_in_square(
-        #     square, self.stations_websirenes
-        # )
+        websirenes_keys = self.websirenes_square.get_keys_in_square(
+            square, self.stations_websirenes
+        )
         inmet_keys = self.inmet_square.get_keys_in_square(square, self.stations_inmet)
         alertario_keys = self.alertario_square.get_keys_in_square(square, self.stations_alertario)
 
-        # if inmet_keys or websirenes_keys or alertario_keys:
-        #     keys.append((lat_index, lon_index))
-
-        if inmet_keys or alertario_keys:
+        if inmet_keys or websirenes_keys or alertario_keys:
             keys.append((lat_index, lon_index))
 
-        # tp_sirenes = self.websirenes_square.get_precipitation_in_square(
-        #     square, websirenes_keys, timestamp, ds
-        # )
+        tp_sirenes = self.websirenes_square.get_precipitation_in_square(
+            square, websirenes_keys, timestamp, ds
+        )
         tp_inmet = self.inmet_square.get_precipitation_in_square(square, inmet_keys, timestamp, ds)
         tp_alertario = self.alertario_square.get_precipitation_in_square(
             square, alertario_keys, timestamp, ds
         )
-
-        # return max(tp_sirenes, tp_inmet, tp_alertario)
-        return max(tp_inmet, tp_alertario)
+        return max(tp_sirenes, tp_inmet, tp_alertario)
 
     def _process_grid(
         self,
@@ -341,9 +336,9 @@ class SpatioTemporalFeatures:
         # the corner cell is processed twice, is the common point between the last row and the last column
         processed -= 1
         total_squares = len(top_down_lats) * len(left_right_lons)
-        assert (
-            processed == total_squares
-        ), "Not all cells processed failed to include last row and last column"
+        assert processed == total_squares, (
+            "Not all cells processed failed to include last row and last column"
+        )
 
     def _process_timestamp(self, timestamp: pd.Timestamp):
         year = timestamp.year
@@ -527,19 +522,19 @@ class SpatioTemporalFeatures:
                 continue
 
             features = np.load(file)
-            assert (
-                features.shape[0] == len(self.sorted_latitudes_ascending)
-            ), f"shape[0] should be {len(self.sorted_latitudes_ascending)} but is {features.shape[0]}"
-            assert (
-                features.shape[1] == len(self.sorted_longitudes_ascending)
-            ), f"shape[1] should be {len(self.sorted_longitudes_ascending)} but is {features.shape[1]}"
-            assert features.shape[2] == len(
-                self.features_tuple
-            ), f"shape[2] should be {len(self.features_tuple)} but is {features.shape[2]}"
+            assert features.shape[0] == len(self.sorted_latitudes_ascending), (
+                f"shape[0] should be {len(self.sorted_latitudes_ascending)} but is {features.shape[0]}"
+            )
+            assert features.shape[1] == len(self.sorted_longitudes_ascending), (
+                f"shape[1] should be {len(self.sorted_longitudes_ascending)} but is {features.shape[1]}"
+            )
+            assert features.shape[2] == len(self.features_tuple), (
+                f"shape[2] should be {len(self.features_tuple)} but is {features.shape[2]}"
+            )
 
-            assert np.all(
-                np.any(features != 0, axis=(1, 2))
-            ), f"Should not have one row with all values as zero for {file}"
+            assert np.all(np.any(features != 0, axis=(1, 2))), (
+                f"Should not have one row with all values as zero for {file}"
+            )
 
             total_files += 1
 
@@ -547,9 +542,9 @@ class SpatioTemporalFeatures:
             log.error(f"Missing timestamps: {not_found}")
             exit(1)
 
-        assert (
-            total_files == total_timestamps
-        ), "Mismatch between timestamps and files (ignoring specific months)"
+        assert total_files == total_timestamps, (
+            "Mismatch between timestamps and files (ignoring specific months)"
+        )
 
         log.success(
             f"""All timestamps found in target directory:
@@ -558,9 +553,7 @@ class SpatioTemporalFeatures:
             Ignoring months={ignored_months}
             Total timestamps={total_timestamps}
             Shape: {features.shape}
-            All rows have at least one non-zero value: {np.all(
-                np.any(features != 0, axis=(1, 2))
-            )}
+            All rows have at least one non-zero value: {np.all(np.any(features != 0, axis=(1, 2)))}
             """
         )
         return total_timestamps
@@ -647,6 +640,7 @@ def plot_u_v_200_700_1000_levels(
 if __name__ == "__main__":
     # python -m src.spatiotemporal_builder.WebsirenesTarget
     # https://g1.globo.com/rj/rio-de-janeiro/noticia/2022/10/31/rio-entra-em-estagio-de-mobilizacao-por-previsao-de-chuva.ghtml
+    # https://www.poder360.com.br/brasil/rio-de-janeiro-tem-mes-de-janeiro-mais-chuvoso-em-27-anos/#:~:text=Em%202024%2C%20houve%20registro%20de,pluviom%C3%A9trica%20de%20348%2C9%20mil%C3%ADmetros
     import cartopy.crs as ccrs
     import cartopy.feature as cfeature
     import matplotlib.animation as animation
@@ -686,9 +680,11 @@ if __name__ == "__main__":
             features_list.append(np.load(features_path))
         return np.stack(features_list, axis=0)
 
-    FRAMES_DIR = Path("./features-frames")
+    FRAMES_DIR = Path("./features-frames-delete-it")
     FRAMES_DIR.mkdir(exist_ok=True)
-    TIMESTAMP = "2022-10-31T18:00:00"
+    # TIMESTAMP = "2022-10-31T18:00:00"
+    # TIMESTAMP = "2024-01-13T18:00:00"
+    TIMESTAMP = "2024-01-13T18:00:00"
     INTERVAL_MS = 250
 
     spatio_temporal_features = SpatioTemporalFeatures(
@@ -697,9 +693,9 @@ if __name__ == "__main__":
         AlertarioSquare(AlertarioKeys(AlertarioParser(), get_alertario_coords())),
     )
 
-    spatio_temporal_features.websirenes_square.websirenes_keys.initialize_keys()
-    spatio_temporal_features.inmet_square.inmet_keys.initialize_keys()
-    spatio_temporal_features.alertario_square.alertario_keys.initialize_keys()
+    # spatio_temporal_features.websirenes_square.websirenes_keys.initialize_keys()
+    # spatio_temporal_features.inmet_square.inmet_keys.initialize_keys()
+    # spatio_temporal_features.alertario_square.alertario_keys.initialize_keys()
 
     timestamp = pd.Timestamp(TIMESTAMP)
     features_path = (
@@ -713,13 +709,93 @@ if __name__ == "__main__":
     precipitation = features[:, :, 0]
     log.info(f"precipitation shape (fixed hour {timestamp}): {precipitation.shape}")
 
-    plt.figure(figsize=(12, 6))
-    sns.heatmap(precipitation, annot=True, cmap="coolwarm", cbar=True, fmt=".2f")
-    plt.title(f"Heatmap of tp values by Latitude and Longitude at {timestamp}")
+    # plt.figure(figsize=(12, 6))
+    # sns.heatmap(precipitation, annot=True, cmap="coolwarm", cbar=True, fmt=".2f")
+    # plt.title(f"Heatmap of tp values by Latitude and Longitude at {timestamp}")
 
-    plt.savefig(f"{FRAMES_DIR}/heatmap.png", dpi=300, bbox_inches="tight")
+    # plt.savefig(f"{FRAMES_DIR}/heatmap.png", dpi=300, bbox_inches="tight")
     log.success(f"Saved heatmap as {FRAMES_DIR}/heatmap.png")
+    # plt.show()
+
+    log.info("MAKING A MAP WITH THE HEATMAP")
+    # ds = xr.open_dataset(
+    #     f"./data/reanalysis/ERA5-single-levels/monthly_data/RJ_{timestamp.year}_{timestamp.month}.nc"
+    # )
+    ds2 = xr.open_dataset(
+        f"./data/reanalysis/ERA5-pressure-levels/monthly_data/RJ_{timestamp.year}_{timestamp.month}.nc"
+    )
+    # ds = ds.sel(valid_time=timestamp)
+    ds2 = ds2.sel(valid_time=timestamp)
+
+    # precipitation = ds.tp.values * 1000
+    u = ds2.sel(pressure_level=1000).u.values
+    v = ds2.sel(pressure_level=1000).v.values
+
+    fig, ax = create_map()
+    print("felipe")
+    print(spatio_temporal_features.sorted_longitudes_ascending.shape)
+    print(spatio_temporal_features.sorted_latitudes_ascending[::-1].shape)
+    print(precipitation.shape)
+    heatmap = ax.pcolormesh(
+        spatio_temporal_features.sorted_longitudes_ascending,
+        spatio_temporal_features.sorted_latitudes_ascending[::-1],
+        precipitation,
+        cmap="coolwarm",
+        alpha=0.5,
+        transform=ccrs.PlateCarree(),
+    )
+    quiver = ax.quiver(
+        spatio_temporal_features.sorted_longitudes_ascending,
+        spatio_temporal_features.sorted_latitudes_ascending[::-1],
+        u,
+        v,
+        np.sqrt(u**2 + v**2),
+        scale=40,
+        cmap="cool",
+        transform=ccrs.PlateCarree(),
+    )
+    for i in range(precipitation.shape[0]):
+        for j in range(precipitation.shape[1]):
+            lon = spatio_temporal_features.sorted_longitudes_ascending[j]
+            lat = spatio_temporal_features.sorted_latitudes_ascending[::-1][i]
+            value = precipitation[i, j]
+            ax.text(lon, lat, f"{value:.2f}", ha="center", va="center", fontsize=10, color="black")
+    cbar = plt.colorbar(
+        heatmap,
+        ax=ax,
+        label="Total Precipitation (mm)",
+        orientation="vertical",
+        pad=0.01,
+        aspect=50,
+    )
+    # plt.colorbar(
+    #     quiver, ax=ax, label="Wind Speed (m/s)", orientation="horizontal", fraction=0.046, pad=0.04
+    # )
+    cbar_ax = fig.add_axes([0.35, 0.07, 0.40, 0.01])
+    cbar2 = fig.colorbar(
+        quiver, cax=cbar_ax, label="Wind Speed (m/s)", orientation="horizontal", fraction=0.01
+    )
+    # the quiver colorbar is taking too much space, it's too thick, making it thin:
+
+    ax.set(xlabel="Longitude", ylabel="Latitude")
+    # ax.set_title(f"Heatmap of tp values by Latitude and Longitude at {timestamp}")
+    # ax.set_title(f"{timestamp} - Tp and wind heatmap (1000 hPa)", loc="left", x=0.0)
+    ax.set_title("6:00 PM", fontsize=14)
+
+    cbar2.ax.tick_params(labelsize=14)
+    cbar.ax.tick_params(labelsize=14)
+    cbar.ax.set_ylabel(cbar.ax.get_ylabel(), fontsize=14)
+    cbar2.ax.set_xlabel(cbar2.ax.get_xlabel(), fontsize=14)
+
+    plt.savefig(f"{FRAMES_DIR}/heatmap_map_{TIMESTAMP}.png", dpi=300, bbox_inches="tight")
+    log.success(f"Saved heatmap with map as {FRAMES_DIR}/heatmap_map.png")
     plt.show()
+
+    # ds.close()
+    ds2.close()
+    plt.close("all")
+    plt.clf()
+    exit(0)
 
     lats = spatio_temporal_features.sorted_latitudes_ascending[::-1]
     lons = spatio_temporal_features.sorted_longitudes_ascending
@@ -739,6 +815,8 @@ if __name__ == "__main__":
 
     u = features[:, :, :, 9]
     v = features[:, :, :, 12]
+    # u = features[:, :, :, 8]
+    # v = features[:, :, :, 11]
     spd = np.sqrt(u**2 + v**2)
 
     log.info(f"""
@@ -759,7 +837,7 @@ if __name__ == "__main__":
         u[0],
         v[0],
         spd[0],
-        scale=60,
+        scale=40,
         cmap="cool",
         transform=ccrs.PlateCarree(),
     )
@@ -872,4 +950,4 @@ if __name__ == "__main__":
     v_700 = features[:, :, :, 11]
     v_1000 = features[:, :, :, 12]
 
-    plot_u_v_200_700_1000_levels(lons, lats, u_200, v_200, u_700, v_700, u_1000, v_1000)
+    # plot_u_v_200_700_1000_levels(lons, lats, u_200, v_200, u_700, v_700, u_1000, v_1000)

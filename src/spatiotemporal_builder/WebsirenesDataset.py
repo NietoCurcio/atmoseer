@@ -117,6 +117,8 @@ class WebsirenesDataset:
 
         data_x = []
         data_y = []
+        selected_timestamps = []
+
         for timestamp in tqdm(timestamps, mininterval=60, file=TqdmLogger(log)):
             if timestamp.month in ignored_months:
                 continue
@@ -126,6 +128,7 @@ class WebsirenesDataset:
                 continue
             data_x.append(processed_x)
             data_y.append(processed_y)
+            selected_timestamps.append(timestamp)
             # high space complexity, may need to investigate another approach
 
         assert len(data_x) == len(data_y), "Mismatch between data_x and data_y lists"
@@ -156,6 +159,7 @@ class WebsirenesDataset:
             coords={
                 "sample": sample,
                 "timestep": timestep,
+                "timestamp": ("sample", selected_timestamps),  # associate with sample dimension
                 "lat": self.websirenes_target.sorted_latitudes_ascending[::-1],
                 "lon": self.websirenes_target.sorted_longitudes_ascending,
                 "channel": channel,

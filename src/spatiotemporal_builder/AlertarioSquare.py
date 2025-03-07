@@ -71,7 +71,7 @@ class AlertarioSquare(ERA5Square):
                 & (df_alertario.datetime <= time_upper_bound)
             ]
 
-            m15 = df_alertario_filtered["m15"]
+            m15 = df_alertario_filtered["precipitation"]
             h01 = df_alertario[df_alertario.datetime == time_upper_bound]["h01"]
 
             if m15.size < 4 or m15.isnull().any():
@@ -79,7 +79,8 @@ class AlertarioSquare(ERA5Square):
                 m15_era5 = super().get_era5_single_levels_precipitation_in_square(square, ds_time)
                 m15 = np.array([m15.sum(), m15_era5]).max()
 
-            max_between_m15_and_h01 = np.array([m15.sum().item(), h01.sum().item()]).max()
+            max_between_m15_and_h01 = np.array([m15.sum().item(), h01.item()]).max()
+            # max_between_m15_and_h01 = np.array([m15.sum().item()]).max()
             precipitations_15_min_aggregated.append(max_between_m15_and_h01.item())
 
         return max(precipitations_15_min_aggregated)
