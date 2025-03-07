@@ -195,13 +195,13 @@ class SpatioTemporalFeatures:
         if inmet_keys or websirenes_keys or alertario_keys:
             keys.append((lat_index, lon_index))
 
-        tp_sirenes = self.websirenes_square.get_precipitation_in_square(
-            square, websirenes_keys, timestamp, ds
-        )
-        tp_inmet = self.inmet_square.get_precipitation_in_square(square, inmet_keys, timestamp, ds)
-        tp_alertario = self.alertario_square.get_precipitation_in_square(
-            square, alertario_keys, timestamp, ds
-        )
+        # tp_sirenes = self.websirenes_square.get_precipitation_in_square(
+        #     square, websirenes_keys, timestamp, ds
+        # )
+        # tp_inmet = self.inmet_square.get_precipitation_in_square(square, inmet_keys, timestamp, ds)
+        # tp_alertario = self.alertario_square.get_precipitation_in_square(
+        #     square, alertario_keys, timestamp, ds
+        # )
 
         with ThreadPoolExecutor() as executor:
             futures = [
