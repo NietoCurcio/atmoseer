@@ -234,18 +234,18 @@ class SpatioTemporalFeatures:
         ds_pressure_levels: xr.Dataset,
         timestamp: pd.Timestamp,
     ):
-        from line_profiler import LineProfiler
+        # from line_profiler import LineProfiler
 
-        profiler = LineProfiler()
+        # profiler = LineProfiler()
         # profiler.add_function(spatio_temporal_features.build_timestamps_hourly)
-        profiler.add_function(get_square)
-        profiler.add_function(self._get_precipitation_in_square)
-        profiler.add_function(self.websirenes_square.get_relative_humidity_in_square)
-        profiler.add_function(self.websirenes_square.get_temperature_in_square)
-        profiler.add_function(self.websirenes_square.get_u_component_in_square)
-        profiler.add_function(self.websirenes_square.get_v_component_in_square)
-        profiler.add_function(self.websirenes_square.get_w_component_in_square)
-        profiler.enable()
+        # profiler.add_function(get_square)
+        # profiler.add_function(self._get_precipitation_in_square)
+        # profiler.add_function(self.websirenes_square.get_relative_humidity_in_square)
+        # profiler.add_function(self.websirenes_square.get_temperature_in_square)
+        # profiler.add_function(self.websirenes_square.get_u_component_in_square)
+        # profiler.add_function(self.websirenes_square.get_v_component_in_square)
+        # profiler.add_function(self.websirenes_square.get_w_component_in_square)
+        # profiler.enable()
 
         top_down_lats = self.sorted_latitudes_ascending[::-1]
         left_right_lons = self.sorted_longitudes_ascending
