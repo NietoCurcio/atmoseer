@@ -44,7 +44,16 @@ class SpatioTemporalFeatures:
         inmet_square: INMETSquare,
         alertario_square: AlertarioSquare,
     ):
-        self.features_path = Path(__file__).parent / "features"
+        # folder_file = "features_era5_only_2011_2024"
+        # folder_file = "features_websirenes_only_2011-2024"
+        # folder_file = "features_inmet_only_2011-01_2024-10
+        # folder_file = "features_alertario_only_2011-01_2024-10"
+
+        # folder_file = "features_websirenes+inmet_2011_2024"
+        # folder_file = "features_inmet+alertario_2011-2024"
+        # folder_file = "features_websirenes+alertario_2011-2024"
+        folder_file = "features_websirenes+inmet+alertario_2011_2024"
+        self.features_path = Path(__file__).parent / folder_file
         if not self.features_path.exists():
             self.features_path.mkdir()
 
@@ -462,14 +471,14 @@ class SpatioTemporalFeatures:
             f"Websirenes features hourly built successfully in {self.features_path} - {validated_total_timestamps} files"
         )
 
-        # assert (
-        #     settings.only_ERA5
-        #     or all_cached
-        #     or len(self.found_stations)
-        #     == len(
-        #         list(self.websirenes_square.websirenes_keys.websirenes_keys_path.glob("*.parquet"))
-        #     )
-        # ), "Expected all websirenes stations to be found and processed"
+        assert (
+            settings.only_ERA5
+            or all_cached
+            or len(self.found_stations)
+            == len(
+                list(self.websirenes_square.websirenes_keys.websirenes_keys_path.glob("*.parquet"))
+            )
+        ), "Expected all websirenes stations to be found and processed"
 
         assert (
             settings.only_ERA5
@@ -497,6 +506,7 @@ class SpatioTemporalFeatures:
             log.success(
                 f"set {self.stations_cells} file created in {self.features_path / 'stations_cells.npy'}"
             )
+        log.success(f"all_cached FELIPE: {all_cached}")
 
     def validate_timestamps(
         self, min_timestamp: pd.Timestamp, max_timestamp: pd.Timestamp, ignored_months: list[int]
