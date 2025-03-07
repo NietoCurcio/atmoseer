@@ -138,7 +138,7 @@ def build_features(start_date: pd.Timestamp, end_date: pd.Timestamp, ignored_mon
             alertario_keys.build_keys()
 
         if not settings.only_ERA5:
-            # websirenes_keys.initialize_keys()
+            websirenes_keys.initialize_keys()
             inmet_keys.initialize_keys()
             alertario_keys.initialize_keys()
 

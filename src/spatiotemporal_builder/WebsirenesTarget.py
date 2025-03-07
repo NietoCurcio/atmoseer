@@ -52,7 +52,8 @@ class SpatioTemporalFeatures:
         # folder_file = "features_websirenes+inmet_2011_2024"
         # folder_file = "features_inmet+alertario_2011-2024"
         # folder_file = "features_websirenes+alertario_2011-2024"
-        folder_file = "features_websirenes+inmet+alertario_2011_2024"
+        # folder_file = "features_websirenes+inmet+alertario_2011_2024"
+        folder_file = "features"
         self.features_path = Path(__file__).parent / folder_file
         if not self.features_path.exists():
             self.features_path.mkdir()
@@ -394,74 +395,74 @@ class SpatioTemporalFeatures:
         ONE_MINUTE = 60 * 1
         all_cached = True
 
-        with ProcessPoolExecutor() as executor:
-            futures = []
+        # with ProcessPoolExecutor() as executor:
+        #     futures = []
 
-            for timestamp in timestamps:
-                if (
-                    use_cache
-                    and self.features_path.joinpath(
-                        f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
-                    ).exists()
-                ):
-                    continue
+        #     for timestamp in timestamps:
+        #         if (
+        #             use_cache
+        #             and self.features_path.joinpath(
+        #                 f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
+        #             ).exists()
+        #         ):
+        #             continue
 
-                if timestamp.month in ignored_months:
-                    continue
+        #         if timestamp.month in ignored_months:
+        #             continue
 
-                all_cached = False
-                futures.append(executor.submit(self._process_timestamp, timestamp))
-            log.info(f"Tasks submitted - {len(futures)}")
+        #         all_cached = False
+        #         futures.append(executor.submit(self._process_timestamp, timestamp))
+        #     log.info(f"Tasks submitted - {len(futures)}")
 
-            with tqdm(
-                total=len(timestamps),
-                desc="Processing timestamps",
-                file=TqdmLogger(log),
-                dynamic_ncols=True,
-                mininterval=ONE_MINUTE,
-            ) as pbar:
-                for future in as_completed(futures):
-                    try:
-                        future.result()
-                        pbar.update()
-                    except Exception as e:
-                        log.error(f"Error processing timestamp: {repr(e)}")
-                        raise SystemExit(e)
+        #     with tqdm(
+        #         total=len(timestamps),
+        #         desc="Processing timestamps",
+        #         file=TqdmLogger(log),
+        #         dynamic_ncols=True,
+        #         mininterval=ONE_MINUTE,
+        #     ) as pbar:
+        #         for future in as_completed(futures):
+        #             try:
+        #                 future.result()
+        #                 pbar.update()
+        #             except Exception as e:
+        #                 log.error(f"Error processing timestamp: {repr(e)}")
+        #                 raise SystemExit(e)
 
-            self.found_stations = self.stations_websirenes._getvalue()
-            self.found_stations_inmet = self.stations_inmet._getvalue()
-            self.found_stations_alertario = self.stations_alertario._getvalue()
-            self.stations_cells = self.stations_cells._getvalue()
-            self.manager.shutdown()
+        #     self.found_stations = self.stations_websirenes._getvalue()
+        #     self.found_stations_inmet = self.stations_inmet._getvalue()
+        #     self.found_stations_alertario = self.stations_alertario._getvalue()
+        #     self.stations_cells = self.stations_cells._getvalue()
+        #     self.manager.shutdown()
 
-        end_time = time.time()
-        log.info(f"Target built in {end_time - start_time:.2f} seconds - parallel")
-
-        # start_time = time.time()
-        # for i in tqdm(
-        #     range(len(timestamps)),
-        #     desc="Processing timestamps",
-        #     file=TqdmLogger(log),
-        #     dynamic_ncols=True,
-        #     mininterval=ONE_MINUTE,
-        # ):
-        #     if self.features_path.joinpath(
-        #         f"{timestamps[i].strftime('%Y_%m_%d_%H')}_features.npy"
-        #     ).exists():
-        #         continue
-
-        #     if timestamps[i].month in ignored_months:
-        #         continue
-
-        #     all_cached = False
-        #     self._process_timestamp(timestamps[i])
-        # self.found_stations = self.stations_websirenes._getvalue()
-        # self.found_stations_inmet = self.stations_inmet._getvalue()
-        # self.found_stations_alertario = self.stations_alertario._getvalue()
-        # self.stations_cells = self.stations_cells._getvalue()
-        # self.manager.shutdown()
         # end_time = time.time()
-        # log.info(f"Target built in {end_time - start_time:.2f} seconds - sequential")
+        # log.info(f"Target built in {end_time - start_time:.2f} seconds - parallel")
+
+        start_time = time.time()
+        for i in tqdm(
+            range(len(timestamps)),
+            desc="Processing timestamps",
+            file=TqdmLogger(log),
+            dynamic_ncols=True,
+            mininterval=ONE_MINUTE,
+        ):
+            if self.features_path.joinpath(
+                f"{timestamps[i].strftime('%Y_%m_%d_%H')}_features.npy"
+            ).exists():
+                continue
+
+            if timestamps[i].month in ignored_months:
+                continue
+
+            all_cached = False
+            self._process_timestamp(timestamps[i])
+        self.found_stations = self.stations_websirenes._getvalue()
+        self.found_stations_inmet = self.stations_inmet._getvalue()
+        self.found_stations_alertario = self.stations_alertario._getvalue()
+        self.stations_cells = self.stations_cells._getvalue()
+        self.manager.shutdown()
+        end_time = time.time()
+        log.info(f"Target built in {end_time - start_time:.2f} seconds - sequential")
 
         validated_total_timestamps = self.validate_timestamps(
             minimum_date, maximum_date, ignored_months
@@ -703,9 +704,9 @@ if __name__ == "__main__":
         AlertarioSquare(AlertarioKeys(AlertarioParser(), get_alertario_coords())),
     )
 
-    # spatio_temporal_features.websirenes_square.websirenes_keys.initialize_keys()
-    # spatio_temporal_features.inmet_square.inmet_keys.initialize_keys()
-    # spatio_temporal_features.alertario_square.alertario_keys.initialize_keys()
+    spatio_temporal_features.websirenes_square.websirenes_keys.initialize_keys()
+    spatio_temporal_features.inmet_square.inmet_keys.initialize_keys()
+    spatio_temporal_features.alertario_square.alertario_keys.initialize_keys()
 
     timestamp = pd.Timestamp(TIMESTAMP)
     features_path = (
@@ -799,7 +800,7 @@ if __name__ == "__main__":
 
     plt.savefig(f"{FRAMES_DIR}/heatmap_map_{TIMESTAMP}.png", dpi=300, bbox_inches="tight")
     log.success(f"Saved heatmap with map as {FRAMES_DIR}/heatmap_map.png")
-    plt.show()
+    # plt.show()
 
     # ds.close()
     ds2.close()

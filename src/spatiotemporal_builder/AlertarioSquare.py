@@ -79,7 +79,7 @@ class AlertarioSquare(ERA5Square):
                 m15_era5 = super().get_era5_single_levels_precipitation_in_square(square, ds_time)
                 m15 = np.array([m15.sum(), m15_era5]).max()
 
-            max_between_m15_and_h01 = np.array([m15.sum().item(), h01.item()]).max()
+            max_between_m15_and_h01 = np.array([m15.sum().item(), h01.max()]).max()
             # max_between_m15_and_h01 = np.array([m15.sum().item()]).max()
             precipitations_15_min_aggregated.append(max_between_m15_and_h01.item())
 
