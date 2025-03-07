@@ -61,8 +61,18 @@ class WebSirenesSquare(ERA5Square):
         timestamp: pd.Timestamp,
         ds_time: xr.Dataset,
     ) -> float:
+        corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
+        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+
+        corner_data = {
+            corner: ds_time.sel(latitude=lat, longitude=lon)
+            for corner, (lat, lon) in zip(corners, coords)
+        }
+
         if len(websirenes_keys) == 0:
-            return super().get_era5_single_levels_precipitation_in_square(square, ds_time)
+            return super().get_era5_single_levels_precipitation_in_square(
+                square, ds_time, corner_data
+            )
 
         precipitations_15_min_aggregated: list[float] = []
         for key in websirenes_keys:
@@ -97,7 +107,9 @@ class WebSirenesSquare(ERA5Square):
                 # 15h15 = 0.00 mm precipitation
                 # If either of these situations happen:
                 # Compare the aggregated sum with the ERA5 data, we use the most significant value
-                m15_era5 = super().get_era5_single_levels_precipitation_in_square(square, ds_time)
+                m15_era5 = super().get_era5_single_levels_precipitation_in_square(
+                    square, ds_time, corner_data
+                )
                 m15 = np.array([m15.sum(), m15_era5]).max()
             max_between_m15_and_h01 = np.array([m15.sum().item(), h01.sum().item()]).max()
             precipitations_15_min_aggregated.append(max_between_m15_and_h01.item())

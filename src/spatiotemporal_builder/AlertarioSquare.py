@@ -56,8 +56,18 @@ class AlertarioSquare(ERA5Square):
         timestamp: pd.Timestamp,
         ds_time: xr.Dataset,
     ) -> float:
+        corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
+        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+
+        corner_data = {
+            corner: ds_time.sel(latitude=lat, longitude=lon)
+            for corner, (lat, lon) in zip(corners, coords)
+        }
+
         if len(alertario_keys) == 0:
-            return super().get_era5_single_levels_precipitation_in_square(square, ds_time)
+            return super().get_era5_single_levels_precipitation_in_square(
+                square, ds_time, corner_data
+            )
 
         precipitations_15_min_aggregated: list[float] = []
         for key in alertario_keys:
@@ -76,7 +86,9 @@ class AlertarioSquare(ERA5Square):
 
             if m15.size < 4 or m15.isnull().any():
                 # Please see WebSirenesSquare:get_precipitation_in_square for more information
-                m15_era5 = super().get_era5_single_levels_precipitation_in_square(square, ds_time)
+                m15_era5 = super().get_era5_single_levels_precipitation_in_square(
+                    square, ds_time, corner_data
+                )
                 m15 = np.array([m15.sum(), m15_era5]).max()
 
             max_between_m15_and_h01 = np.array([m15.sum().item(), h01.max()]).max()

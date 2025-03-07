@@ -55,8 +55,18 @@ class INMETSquare(ERA5Square):
         timestamp: pd.Timestamp,
         ds_time: xr.Dataset,
     ) -> float:
+        corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
+        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+
+        corner_data = {
+            corner: ds_time.sel(latitude=lat, longitude=lon)
+            for corner, (lat, lon) in zip(corners, coords)
+        }
+
         if len(inmet_keys) == 0:
-            return super().get_era5_single_levels_precipitation_in_square(square, ds_time)
+            return super().get_era5_single_levels_precipitation_in_square(
+                square, ds_time, corner_data
+            )
         precipitations: list[float] = []
         for key in inmet_keys:
             df_web = self.inmet_keys.load_key(key)
@@ -64,7 +74,9 @@ class INMETSquare(ERA5Square):
             h1 = df_web_filtered["precipitation"]
             if h1.isnull().all():
                 h1 = np.array(
-                    super().get_era5_single_levels_precipitation_in_square(square, ds_time)
+                    super().get_era5_single_levels_precipitation_in_square(
+                        square, ds_time, corner_data
+                    )
                 )
             precipitations.append(h1.item())
         return max(precipitations)

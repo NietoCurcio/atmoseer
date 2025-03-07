@@ -14,6 +14,9 @@ class Square(BaseModel):
     top_right: tuple[float, float]
 
 
+neighbor_cache = {}
+
+
 def get_square(
     lat: float,
     lon: float,
@@ -37,6 +40,9 @@ def get_square(
     Note we can get out of bounds, that's when we return None.
     For example, there's no bottom neighbor for (3,3)
     """
+    if (lat, lon) in neighbor_cache:
+        return neighbor_cache[(lat, lon)]
+
     bottom_neighbor = get_bottom_neighbor(lat, lon, sorted_latitudes_ascending)
     if bottom_neighbor is None:
         return None
@@ -52,9 +58,11 @@ def get_square(
         return None
     lat_upper, lon_upper = upper_neighbor
 
-    return Square(
+    square = Square(
         top_left=(lat, lon),
         bottom_left=(lat_bottom, lon_bottom),
         bottom_right=(lat_right, lon_right),
         top_right=(lat_upper, lon_upper),
     )
+    neighbor_cache[(lat, lon)] = square
+    return square

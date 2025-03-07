@@ -18,6 +18,8 @@ class ERA5Square:
     def _find_nearest_non_null(
         self, ds_time: xr.Dataset, lat: float, lon: float, data_var: str, max_radius=1.0, step=0.1
     ) -> float:
+        log.error(f"NaN detected in {lat}-{lon}. This should not happen for ERA5")
+
         # This function is useful for ERA5Land where we don't have ocean data
         log.warning(f"Finding nearest non-null value called for lat={lat}, lon={lon}")
         radius = 0.0
@@ -44,23 +46,26 @@ class ERA5Square:
             exit(1)
         return median_ds_time
 
-    def get_relative_humidity_in_square(self, square: Square, ds_time: xr.Dataset):
+    def get_relative_humidity_in_square(
+        self, square: Square, ds_time: xr.Dataset, corner_data: dict
+    ):
         # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
-        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
-        corner_data = {
-            corner: ds_time.sel(latitude=lat, longitude=lon)
-            for corner, (lat, lon) in zip(corners, coords)
-        }
+        # coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        # corner_data = {
+        #     corner: ds_time.sel(latitude=lat, longitude=lon)
+        #     for corner, (lat, lon) in zip(corners, coords)
+        # }
 
         pressure_levels_length = len([1000, 700, 200])
-        assert (
-            corner_data["top_left"]["r"].size == pressure_levels_length
-        ), f"top_left['r'].size: {corner_data['top_left']['r'].size}"
+        assert corner_data["top_left"]["r"].size == pressure_levels_length, (
+            f"top_left['r'].size: {corner_data['top_left']['r'].size}"
+        )
 
         results = []
         for corner in corner_data:
             value = corner_data[corner]["r"].values
+            # value = corner_data[corner]["r"].compute().values
             if np.isnan(value).any():
                 lat, lon = dict(square)[corner]
                 value = self._find_nearest_non_null(ds_time, lat, lon, "r")
@@ -72,23 +77,26 @@ class ERA5Square:
         best_corner = corners[np.argmax(corner_sums)]
         return corner_data[best_corner]["r"].values
 
-    def get_temperature_in_square(self, square: Square, ds_time: xr.Dataset, verbose=False):
+    def get_temperature_in_square(
+        self, square: Square, ds_time: xr.Dataset, corner_data: dict, verbose=False
+    ):
         # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
-        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
-        corner_data = {
-            corner: ds_time.sel(latitude=lat, longitude=lon)
-            for corner, (lat, lon) in zip(corners, coords)
-        }
+        # coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        # corner_data = {
+        #     corner: ds_time.sel(latitude=lat, longitude=lon)
+        #     for corner, (lat, lon) in zip(corners, coords)
+        # }
 
         pressure_levels_length = len([1000, 700, 200])
-        assert (
-            corner_data["top_left"]["t"].size == pressure_levels_length
-        ), f"top_left['t'].size: {corner_data['top_left']['t'].size}"
+        assert corner_data["top_left"]["t"].size == pressure_levels_length, (
+            f"top_left['t'].size: {corner_data['top_left']['t'].size}"
+        )
 
         results = []
         for corner in corner_data:
             value = corner_data[corner]["t"].values
+            # value = corner_data[corner]["t"].compute().values
             if np.isnan(value).any():
                 lat, lon = dict(square)[corner]
                 value = self._find_nearest_non_null(ds_time, lat, lon, "t")
@@ -124,21 +132,22 @@ class ERA5Square:
 
         return corner_data[best_corner]["t"].values
 
-    def get_u_component_in_square(self, square: Square, ds_time: xr.Dataset):
+    def get_u_component_in_square(self, square: Square, ds_time: xr.Dataset, corner_data: dict):
         # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
-        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
-        corner_data = {
-            corner: ds_time.sel(latitude=lat, longitude=lon)
-            for corner, (lat, lon) in zip(corners, coords)
-        }
-        assert (
-            corner_data["top_left"]["u"].size == 3
-        ), f"top_left['u'].size: {corner_data['top_left']['u'].size}"
+        # coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        # corner_data = {
+        #     corner: ds_time.sel(latitude=lat, longitude=lon)
+        #     for corner, (lat, lon) in zip(corners, coords)
+        # }
+        assert corner_data["top_left"]["u"].size == 3, (
+            f"top_left['u'].size: {corner_data['top_left']['u'].size}"
+        )
 
         results = []
         for corner in corner_data:
             value = corner_data[corner]["u"].values
+            # value = corner_data[corner]["u"].compute().values
             if np.isnan(value).any():
                 lat, lon = dict(square)[corner]
                 value = self._find_nearest_non_null(ds_time, lat, lon, "u")
@@ -150,21 +159,22 @@ class ERA5Square:
         datazada = corner_data[best_corner]["u"].values
         return datazada
 
-    def get_v_component_in_square(self, square: Square, ds_time: xr.Dataset):
+    def get_v_component_in_square(self, square: Square, ds_time: xr.Dataset, corner_data: dict):
         # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
-        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
-        corner_data = {
-            corner: ds_time.sel(latitude=lat, longitude=lon)
-            for corner, (lat, lon) in zip(corners, coords)
-        }
-        assert (
-            corner_data["top_left"]["v"].size == 3
-        ), f"top_left['v'].size: {corner_data['top_left']['v'].size}"
+        # coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        # corner_data = {
+        #     corner: ds_time.sel(latitude=lat, longitude=lon)
+        #     for corner, (lat, lon) in zip(corners, coords)
+        # }
+        assert corner_data["top_left"]["v"].size == 3, (
+            f"top_left['v'].size: {corner_data['top_left']['v'].size}"
+        )
 
         results = []
         for corner in corner_data:
             value = corner_data[corner]["v"].values
+            # value = corner_data[corner]["v"].compute().values
             if np.isnan(value).any():
                 lat, lon = dict(square)[corner]
                 value = self._find_nearest_non_null(ds_time, lat, lon, "v")
@@ -175,21 +185,22 @@ class ERA5Square:
         best_corner = corners[np.argmax(corner_sums)]
         return corner_data[best_corner]["v"].values
 
-    def get_w_component_in_square(self, square: Square, ds_time: xr.Dataset):
+    def get_w_component_in_square(self, square: Square, ds_time: xr.Dataset, corner_data: dict):
         # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
-        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
-        corner_data = {
-            corner: ds_time.sel(latitude=lat, longitude=lon)
-            for corner, (lat, lon) in zip(corners, coords)
-        }
-        assert (
-            corner_data["top_left"]["w"].size == 3
-        ), f"top_left['w'].size: {corner_data['top_left']['w'].size}"
+        # coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        # corner_data = {
+        #     corner: ds_time.sel(latitude=lat, longitude=lon)
+        #     for corner, (lat, lon) in zip(corners, coords)
+        # }
+        assert corner_data["top_left"]["w"].size == 3, (
+            f"top_left['w'].size: {corner_data['top_left']['w'].size}"
+        )
 
         results = []
         for corner in corner_data:
             value = corner_data[corner]["w"].values
+            # value = corner_data[corner]["w"].compute().values
             if np.isnan(value).any():
                 lat, lon = dict(square)[corner]
                 value = self._find_nearest_non_null(ds_time, lat, lon, "w")
@@ -201,21 +212,26 @@ class ERA5Square:
         return corner_data[best_corner]["w"].values
 
     def get_era5_single_levels_precipitation_in_square(
-        self, square: Square, era5_at_time: xr.Dataset, data_var="tp", verbose=False
+        self,
+        square: Square,
+        era5_at_time: xr.Dataset,
+        corner_data: dict,
+        data_var="tp",
+        verbose=False,
     ) -> float:
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
         coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
 
-        corner_data = {
-            corner: era5_at_time.sel(latitude=lat, longitude=lon)
-            for corner, (lat, lon) in zip(corners, coords)
-        }
+        # corner_data = {
+        #     corner: era5_at_time.sel(latitude=lat, longitude=lon)
+        #     for corner, (lat, lon) in zip(corners, coords)
+        # }
 
         single_levels_length = 1
         for corner in corners:
-            assert (
-                corner_data[corner][data_var].size == single_levels_length
-            ), f"{corner}['{data_var}'].size: {corner_data[corner][{data_var}].size}"
+            assert corner_data[corner][data_var].size == single_levels_length, (
+                f"{corner}['{data_var}'].size: {corner_data[corner][{data_var}].size}"
+            )
 
         tp_values = [corner_data[corner][data_var].item() for corner in corners]
         max_tp = max(tp_values)

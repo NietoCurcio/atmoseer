@@ -1,6 +1,6 @@
 import os
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from multiprocessing.managers import BaseManager
 from pathlib import Path
 from typing import Optional
@@ -180,6 +180,18 @@ class SpatioTemporalFeatures:
         inmet_keys = self.inmet_square.get_keys_in_square(square, self.stations_inmet)
         alertario_keys = self.alertario_square.get_keys_in_square(square, self.stations_alertario)
 
+        # with ThreadPoolExecutor() as executor:
+        #     futures = [
+        #         executor.submit(
+        #             self.websirenes_square.get_keys_in_square, square, self.stations_websirenes
+        #         ),
+        #         executor.submit(self.inmet_square.get_keys_in_square, square, self.stations_inmet),
+        #         executor.submit(
+        #             self.alertario_square.get_keys_in_square, square, self.stations_alertario
+        #         ),
+        #     ]
+        #     websirenes_keys, inmet_keys, alertario_keys = [f.result() for f in futures]
+
         if inmet_keys or websirenes_keys or alertario_keys:
             keys.append((lat_index, lon_index))
 
@@ -190,6 +202,29 @@ class SpatioTemporalFeatures:
         tp_alertario = self.alertario_square.get_precipitation_in_square(
             square, alertario_keys, timestamp, ds
         )
+
+        with ThreadPoolExecutor() as executor:
+            futures = [
+                executor.submit(
+                    self.websirenes_square.get_precipitation_in_square,
+                    square,
+                    websirenes_keys,
+                    timestamp,
+                    ds,
+                ),
+                executor.submit(
+                    self.inmet_square.get_precipitation_in_square, square, inmet_keys, timestamp, ds
+                ),
+                executor.submit(
+                    self.alertario_square.get_precipitation_in_square,
+                    square,
+                    alertario_keys,
+                    timestamp,
+                    ds,
+                ),
+            ]
+            tp_sirenes, tp_inmet, tp_alertario = [f.result() for f in futures]
+
         return max(tp_sirenes, tp_inmet, tp_alertario)
 
     def _process_grid(
@@ -199,6 +234,19 @@ class SpatioTemporalFeatures:
         ds_pressure_levels: xr.Dataset,
         timestamp: pd.Timestamp,
     ):
+        from line_profiler import LineProfiler
+
+        profiler = LineProfiler()
+        # profiler.add_function(spatio_temporal_features.build_timestamps_hourly)
+        profiler.add_function(get_square)
+        profiler.add_function(self._get_precipitation_in_square)
+        profiler.add_function(self.websirenes_square.get_relative_humidity_in_square)
+        profiler.add_function(self.websirenes_square.get_temperature_in_square)
+        profiler.add_function(self.websirenes_square.get_u_component_in_square)
+        profiler.add_function(self.websirenes_square.get_v_component_in_square)
+        profiler.add_function(self.websirenes_square.get_w_component_in_square)
+        profiler.enable()
+
         top_down_lats = self.sorted_latitudes_ascending[::-1]
         left_right_lons = self.sorted_longitudes_ascending
 
@@ -220,24 +268,36 @@ class SpatioTemporalFeatures:
                     square, timestamp, ds_single_levels, keys, i, j
                 )
 
+                corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
+                coords = [
+                    square.top_left,
+                    square.bottom_left,
+                    square.bottom_right,
+                    square.top_right,
+                ]
+                corner_data = {
+                    corner: ds_pressure_levels.sel(latitude=lat, longitude=lon)
+                    for corner, (lat, lon) in zip(corners, coords)
+                }
+
                 # O(4) ~ O(1)
                 r1000, r700, r200 = self.websirenes_square.get_relative_humidity_in_square(
-                    square, ds_pressure_levels
+                    square, ds_pressure_levels, corner_data
                 )
 
                 # O(4) ~ O(1), all these below are the O(square)
                 t1000, t700, t200 = self.websirenes_square.get_temperature_in_square(
-                    square, ds_pressure_levels
+                    square, ds_pressure_levels, corner_data
                 )
                 u1000, u700, u200 = self.websirenes_square.get_u_component_in_square(
-                    square, ds_pressure_levels
+                    square, ds_pressure_levels, corner_data
                 )
 
                 v1000, v700, v200 = self.websirenes_square.get_v_component_in_square(
-                    square, ds_pressure_levels
+                    square, ds_pressure_levels, corner_data
                 )
                 w1000, w700, w200 = self.websirenes_square.get_w_component_in_square(
-                    square, ds_pressure_levels
+                    square, ds_pressure_levels, corner_data
                 )
 
                 speed200 = np.sqrt(u200**2 + v200**2)
@@ -349,6 +409,11 @@ class SpatioTemporalFeatures:
         assert processed == total_squares, (
             "Not all cells processed failed to include last row and last column"
         )
+
+        profiler.disable()
+
+        with open("profile_results.txt", "w") as f:
+            profiler.print_stats(stream=f)
 
     def _process_timestamp(self, timestamp: pd.Timestamp):
         year = timestamp.year
