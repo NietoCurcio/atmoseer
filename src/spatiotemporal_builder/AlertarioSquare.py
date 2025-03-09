@@ -77,16 +77,13 @@ class AlertarioSquare(ERA5Square):
                 square, ds_time, corner_data
             )
 
-        h1_era5 = super().get_era5_single_levels_precipitation_in_square(
-            square, ds_time, corner_data
-        )
+        h1_era5 = None
+        time_upper_bound = timestamp
+        time_lower_bound = timestamp - timedelta(minutes=45)
 
         precipitations_15_min_aggregated: list[float] = []
         for key in alertario_keys:
             df_alertario = self.alertario_keys.load_key(key)
-
-            time_upper_bound = timestamp
-            time_lower_bound = timestamp - timedelta(minutes=45)
 
             df_alertario_filtered = df_alertario[
                 (df_alertario.datetime >= time_lower_bound)
@@ -98,6 +95,10 @@ class AlertarioSquare(ERA5Square):
 
             if m15.count() < 4:
                 # Please see WebSirenesSquare:get_precipitation_in_square for more information
+                if h1_era5 is None:
+                    h1_era5 = super().get_era5_single_levels_precipitation_in_square(
+                        square, ds_time, corner_data
+                    )
                 m15 = np.array([m15.sum(), h1_era5]).max()
 
             max_between_m15_and_h01 = np.array([m15.sum().item(), h01.max()]).max()

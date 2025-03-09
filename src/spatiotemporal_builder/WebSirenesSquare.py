@@ -82,16 +82,13 @@ class WebSirenesSquare(ERA5Square):
                 square, ds_time, corner_data
             )
 
-        h1_era5 = super().get_era5_single_levels_precipitation_in_square(
-            square, ds_time, corner_data
-        )
+        h1_era5 = None
+        time_upper_bound = timestamp
+        time_lower_bound = timestamp - timedelta(minutes=45)
 
         precipitations_15_min_aggregated: list[float] = []
         for key in websirenes_keys:
             df_web = self.websirenes_keys.load_key(key)
-
-            time_upper_bound = timestamp
-            time_lower_bound = timestamp - timedelta(minutes=45)
 
             df_web_filtered = df_web[
                 (df_web.index >= time_lower_bound) & (df_web.index <= time_upper_bound)
@@ -119,6 +116,10 @@ class WebSirenesSquare(ERA5Square):
                 # 15h15 = 0.00 mm precipitation
                 # If either of these situations happen:
                 # Compare the aggregated sum with the ERA5 data, we use the most significant value
+                if h1_era5 is None:
+                    h1_era5 = super().get_era5_single_levels_precipitation_in_square(
+                        square, ds_time, corner_data
+                    )
                 m15 = np.array([m15.sum(), h1_era5]).max()
             max_between_m15_and_h01 = np.array([m15.sum().item(), h01.sum().item()]).max()
             precipitations_15_min_aggregated.append(max_between_m15_and_h01.item())

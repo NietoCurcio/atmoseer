@@ -73,9 +73,7 @@ class INMETSquare(ERA5Square):
                 square, ds_time, corner_data
             )
 
-        h1_era5 = super().get_era5_single_levels_precipitation_in_square(
-            square, ds_time, corner_data
-        )
+        h1_era5 = None
 
         precipitations: list[float] = []
         for key in inmet_keys:
@@ -83,6 +81,10 @@ class INMETSquare(ERA5Square):
             df_web_filtered = df_web[df_web.index == timestamp]
             h1 = df_web_filtered["precipitation"]
             if h1.isnull().all():
+                if h1_era5 is None:
+                    h1_era5 = super().get_era5_single_levels_precipitation_in_square(
+                        square, ds_time, corner_data
+                    )
                 h1 = np.array(h1_era5)
             precipitations.append(h1.item())
         return max(precipitations)
