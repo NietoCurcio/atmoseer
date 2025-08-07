@@ -90,11 +90,13 @@ class CDSDatasetDownloader:
 
     def _download_dataset_split_vars(self, month: int, year: int, pressure_level: str):
         # Define variable groups
-        group1 = ["relative_humidity", "specific_humidity", "temperature"]
-        group2 = ["u_component_of_wind", "v_component_of_wind", "vertical_velocity"]
+        group0 = ["u_component_of_wind", "v_component_of_wind"]
+        group1 = ["relative_humidity", "specific_humidity"]
+        group2 = ["temperature", "vertical_velocity"]
         group3 = ["specific_rain_water_content"]
+        group4 = ["temperature"]
 
-        groups = [group1, group2, group3]
+        groups = [group0, group1, group2, group3, group4]
         datasets = []
         for idx, group in enumerate(groups, start=1):
             target_path = Path(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}_grp{idx}.nc")
