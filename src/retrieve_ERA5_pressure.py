@@ -89,80 +89,63 @@ class CDSDatasetDownloader:
             yield xr.open_dataset(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}.nc")
 
     def _download_dataset(self, month: int, year: int, pressure_level: str):
-        day_ranges = [(1, 15), (16, 31)]
-        for start_day, end_day in day_ranges:
-            target_path_nc = Path(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}_{start_day}_{end_day}.nc")
-            if target_path_nc.is_file():
-                print(f"ERA5 data already downloaded for {pressure_level} hPa, month {month}, year {year}, days {start_day}-{end_day}")
-                continue
-            if not target_path_nc.parent.is_dir():
-                print(f"Creating directory {target_path_nc}")
-                target_path_nc.parent.mkdir(parents=True)
+        target_path_nc = Path(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}.nc")
+        if target_path_nc.is_file():
+            print(f"ERA5 data already downloaded for {pressure_level} hPa, month {month}, year {year}")
+            return
+        if not target_path_nc.parent.is_dir():
+            print(f"Creating directory {target_path_nc}")
+            target_path_nc.parent.mkdir(parents=True)
+        
+        request = {
+            "product_type": ["reanalysis"],
+            "format": "netcdf",
+            "variable": [
+                "fraction_of_cloud_cover",
+                "relative_humidity",
+                "specific_humidity",
+                "specific_rain_water_content",
+                "temperature",
+                "u_component_of_wind",
+                "v_component_of_wind",
+                "vertical_velocity"
+            ],
+            "year": [year],
+            "month": [month],
+            "day": [f"{day:02d}" for day in range(1, 32)],
+            "time": [f"{hour:02d}:00" for hour in range(24)],
+            "pressure_level": [pressure_level],
+            "data_format": "netcdf",
+            "download_format": "unarchived",
+            "area": [REGION_OF_INTEREST[key] for key in ['north', 'west', 'south', 'east']]
+        }
 
-            request = {
-                "product_type": ["reanalysis"],
-                "format": "netcdf",
-                "variable": [
-                    "relative_humidity",
-                    "specific_humidity",
-                    "specific_rain_water_content",
-                    "temperature",
-                    "u_component_of_wind",
-                    "v_component_of_wind",
-                    "vertical_velocity"
-                ],
-                "year": [year],
-                "month": [month],
-                "day": [f"{day:02d}" for day in range(start_day, end_day + 1)],
-                "time": [f"{hour:02d}:00" for hour in range(24)],
-                "pressure_level": [pressure_level],
-                "data_format": "netcdf",
-                "download_format": "unarchived",
-                "area": [REGION_OF_INTEREST[key] for key in ['north', 'west', 'south', 'east']]
-            }
-
-            print(f"Downloading ERA5 data at {pressure_level} hPa, month {month}, year {year}, days {start_day}-{end_day}...")
-            self.dataset_client.call_retrieve(
-                name="reanalysis-era5-pressure-levels",
-                request=request,
-                target=str(target_path_nc.resolve())
-            )
-            print(f"Downloaded ERA5 data at {pressure_level} hPa, month {month}, year {year}, days {start_day}-{end_day}")
+        print(f"Downloading ERA5 data at {pressure_level} hPa, month {month}, year {year}...")
+        self.dataset_client.call_retrieve(
+            name="reanalysis-era5-pressure-levels",
+            request=request,
+            target=str(target_path_nc.resolve())
+        )
+        print(f"Downloaded ERA5 data at {pressure_level} hPa, month {month}, year {year}")
 
     def download_and_merge_pressure_levels(self, pressure_levels: list[str]):
         print(f"Downloading and merging ERA5 data for pressure levels: {pressure_levels}")
         dates = list(self._get_dates_generator())
-        day_ranges = [(1, 15), (16, 31)]
         for year, month in tqdm(dates, desc="Downloading ERA5 monthly datasets"):
-            pressure_datasets = []
+            datasets = []
             for pressure_level in pressure_levels:
-                chunk_datasets = []
-                for start_day, end_day in day_ranges:
-                    chunk_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}_{start_day}_{end_day}.nc"
-                    if not Path(chunk_path).is_file():
-                        self._download_dataset(month, year, pressure_level)
-                    ds = xr.open_dataset(chunk_path)
-                    chunk_datasets.append(ds)
-                # Merge day chunks for this pressure level
-                merged_pressure_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}.nc"
-                merged_pressure_ds = xr.concat(chunk_datasets, dim="valid_time")
-                merged_pressure_ds.to_netcdf(merged_pressure_path)
-                pressure_datasets.append(merged_pressure_ds)
-                # Delete chunk files
-                for start_day, end_day in day_ranges:
-                    chunk_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}_{start_day}_{end_day}.nc"
-                    Path(chunk_path).unlink()
-                    print(f"Deleted {chunk_path}")
-            # Merge all pressure levels for this month
-            merged_month_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_merged.nc"
-            final_merged_ds = xr.concat(pressure_datasets, dim="pressure_level")
-            final_merged_ds.to_netcdf(merged_month_path)
-            print(f"Merged dataset saved to {merged_month_path}")
-            # Delete merged pressure level files
+                self._download_dataset(month, year, pressure_level)
+                nc_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}.nc"
+                ds = xr.open_dataset(nc_path)
+                datasets.append(ds)
+            merged_ds = xr.concat(datasets, dim="pressure_level")
+            merged_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_merged.nc"
+            merged_ds.to_netcdf(merged_path)
+            print(f"Merged dataset saved to {merged_path}")
             for pressure_level in pressure_levels:
-                merged_pressure_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}.nc"
-                Path(merged_pressure_path).unlink()
-                print(f"Deleted {merged_pressure_path}")
+                nc_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}.nc"
+                Path(nc_path).unlink()
+                print(f"Deleted {nc_path}")
 
     def check_datasets(self):
         target_dir = Path(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data")
