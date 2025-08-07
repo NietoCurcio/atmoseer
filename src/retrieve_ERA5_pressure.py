@@ -236,6 +236,8 @@ def valid_date(arg: str):
         raise argparse.ArgumentTypeError("Invalid date format. Please use YYYY-MM")
 
 def main(argv):
+    global download_folder
+
     parser = argparse.ArgumentParser(description='Retrieve ERA5 data between two given years.')
     parser.add_argument('-b', '--begin', type=valid_date, required=True, help='Begin date (YYYY-MM)')
     parser.add_argument('-e', '--end', type=valid_date, required=True, help='End date (YYYY-MM)')
@@ -256,7 +258,6 @@ def main(argv):
     REGION_OF_INTEREST['south'] = args.south
     REGION_OF_INTEREST['east'] = args.east
 
-    global download_folder
     download_folder = args.download_folder
 
     print(f"""
