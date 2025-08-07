@@ -88,10 +88,10 @@ class CDSDatasetDownloader:
         for year, month in self._get_dates_generator():
             yield xr.open_dataset(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}.nc")
 
-    def _download_dataset(self, month: int, year: int):
-        target_path_nc = Path(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}.nc")
+    def _download_dataset(self, month: int, year: int, pressure_level: str):
+        target_path_nc = Path(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}.nc")
         if target_path_nc.is_file():
-            print(f"ERA5 data already downloaded for the month {month} of year {year}")
+            print(f"ERA5 data already downloaded for {pressure_level} hPa, month {month}, year {year}")
             return
         if not target_path_nc.parent.is_dir():
             print(f"Creating directory {target_path_nc}")
@@ -102,7 +102,6 @@ class CDSDatasetDownloader:
             "format": "netcdf",
             "variable": [
                 "fraction_of_cloud_cover",
-                "geopotential",
                 "relative_humidity",
                 "specific_humidity",
                 "specific_rain_water_content",
@@ -115,31 +114,39 @@ class CDSDatasetDownloader:
             "month": [month],
             "day": [f"{day:02d}" for day in range(1, 32)],
             "time": [f"{hour:02d}:00" for hour in range(24)],
-            "pressure_level": [
-                "200",
-                "500",
-                "850",
-            ],
+            "pressure_level": [pressure_level],
             "data_format": "netcdf",
             "download_format": "unarchived",
             "area": [REGION_OF_INTEREST[key] for key in ['north', 'west', 'south', 'east']]
         }
 
-        print(f"Downloading ERA5 data at month {month} of year {year}...")
+        print(f"Downloading ERA5 data at {pressure_level} hPa, month {month}, year {year}...")
         self.dataset_client.call_retrieve(
             name="reanalysis-era5-pressure-levels",
             request=request,
             target=str(target_path_nc.resolve())
         )
-        print(f"Downloaded ERA5 data at month {month} of year {year}")
+        print(f"Downloaded ERA5 data at {pressure_level} hPa, month {month}, year {year}")
 
-    def download_datasets(self):
-        print(f"Downloading ERA5 data for the period {self.begin_year} to {self.end_year}...")
+    def download_and_merge_pressure_levels(self, pressure_levels: list[str]):
+        print(f"Downloading and merging ERA5 data for pressure levels: {pressure_levels}")
         dates = list(self._get_dates_generator())
         for year, month in tqdm(dates, desc="Downloading ERA5 monthly datasets"):
-            self._download_dataset(month, year)
-        print(f"Downloaded ERA5 data for the period {self.begin_year} to {self.end_year}")
-    
+            datasets = []
+            for pressure_level in pressure_levels:
+                self._download_dataset(month, year, pressure_level)
+                nc_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}.nc"
+                ds = xr.open_dataset(nc_path)
+                datasets.append(ds)
+            merged_ds = xr.concat(datasets, dim="pressure_level")
+            merged_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_merged.nc"
+            merged_ds.to_netcdf(merged_path)
+            print(f"Merged dataset saved to {merged_path}")
+            for pressure_level in pressure_levels:
+                nc_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}.nc"
+                Path(nc_path).unlink()
+                print(f"Deleted {nc_path}")
+
     def check_datasets(self):
         target_dir = Path(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data")
 
@@ -237,6 +244,12 @@ def main(argv):
     parser.add_argument('-south', '--south', type=float, default=REGION_OF_INTEREST['south'], help='Southernmost latitude')
     parser.add_argument('-east', '--east', type=float, default=REGION_OF_INTEREST['east'], help='Easternmost longitude')
     parser.add_argument('-d', '--download_folder', type=str, default=download_folder, help='Folder to download datasets')
+    parser.add_argument(
+        '-pl', '--pressure_levels',
+        type=str,
+        default="200,500,850",
+        help='Comma-separated list of pressure levels (e.g. "200,500,850")'
+    )
 
     args = parser.parse_args(argv[1:])
 
@@ -250,6 +263,8 @@ def main(argv):
 
     download_folder = args.download_folder
 
+    pressure_levels = [pl.strip() for pl in args.pressure_levels.split(',')]
+
     print(f"""
         Config:
         Begin year: {begin_year}
@@ -259,6 +274,7 @@ def main(argv):
         Prepend dataset: {prepend_dataset}
         Region of interest: {REGION_OF_INTEREST}
         Download folder: {download_folder}
+        Pressure levels: {pressure_levels}
     """)
 
     # ERA5 data goes back to the year 1940. 
@@ -272,7 +288,8 @@ def main(argv):
         end_year=end_year,
         end_month=end_month
     )
-    dataset_downloader.download_datasets()
+    pressure_levels = ["200", "500", "850"]
+    dataset_downloader.download_and_merge_pressure_levels(pressure_levels)
 
     dataset_downloader.check_datasets()
 
