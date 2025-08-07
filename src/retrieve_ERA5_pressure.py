@@ -7,6 +7,7 @@ from collections.abc import Generator
 import cdsapi
 import xarray as xr
 from xarray.core.dataset import Dataset
+from tqdm import tqdm
 
 import globals
 
@@ -15,6 +16,8 @@ For using the CDS API to download ERA-5 data consult: https://cds.climate.copern
 """
 
 REGION_OF_INTEREST = {'north': -22, 'west': -44, 'south': -23, 'east': -42}
+
+download_folder = 'ERA5_pressure_levels_2025'
 
 class DatasetClient:
     def __init__(self) -> None:
@@ -83,10 +86,10 @@ class CDSDatasetDownloader:
 
     def _get_datasets_generator(self) -> Generator[Dataset, None, None]:
         for year, month in self._get_dates_generator():
-            yield xr.open_dataset(f"{globals.NWP_DATA_DIR}ERA5_pressure_levels/montly_data/RJ_{year}_{month}.nc")
+            yield xr.open_dataset(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}.nc")
 
     def _download_dataset(self, month: int, year: int):
-        target_path_nc = Path(f"{globals.NWP_DATA_DIR}ERA5_pressure_levels/montly_data/RJ_{year}_{month}.nc")
+        target_path_nc = Path(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}.nc")
         if target_path_nc.is_file():
             print(f"ERA5 data already downloaded for the month {month} of year {year}")
             return
@@ -98,7 +101,11 @@ class CDSDatasetDownloader:
             "product_type": ["reanalysis"],
             "format": "netcdf",
             "variable": [
+                "fraction_of_cloud_cover",
+                "geopotential",
                 "relative_humidity",
+                "specific_humidity",
+                "specific_rain_water_content",
                 "temperature",
                 "u_component_of_wind",
                 "v_component_of_wind",
@@ -108,7 +115,21 @@ class CDSDatasetDownloader:
             "month": [month],
             "day": [f"{day:02d}" for day in range(1, 32)],
             "time": [f"{hour:02d}:00" for hour in range(24)],
-            "pressure_level": ["200", "700", "1000"],
+            "pressure_level": [
+                "1", "2", "3",
+                "5", "7", "10",
+                "20", "30", "50",
+                "70", "100", "125",
+                "150", "175", "200",
+                "225", "250", "300",
+                "350", "400", "450",
+                "500", "550", "600",
+                "650", "700", "750",
+                "775", "800", "825",
+                "850", "875", "900",
+                "925", "950", "975",
+                "1000"
+            ],
             "data_format": "netcdf",
             "download_format": "unarchived",
             "area": [REGION_OF_INTEREST[key] for key in ['north', 'west', 'south', 'east']]
@@ -124,12 +145,13 @@ class CDSDatasetDownloader:
 
     def download_datasets(self):
         print(f"Downloading ERA5 data for the period {self.begin_year} to {self.end_year}...")
-        for year, month in self._get_dates_generator():
+        dates = list(self._get_dates_generator())
+        for year, month in tqdm(dates, desc="Downloading ERA5 monthly datasets"):
             self._download_dataset(month, year)
         print(f"Downloaded ERA5 data for the period {self.begin_year} to {self.end_year}")
     
     def check_datasets(self):
-        target_dir = Path(f"{globals.NWP_DATA_DIR}ERA5_pressure_levels/montly_data")
+        target_dir = Path(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data")
 
         if not target_dir.is_dir():
             raise FileNotFoundError(f"Directory not found: {target_dir}")
@@ -161,7 +183,7 @@ class CDSDatasetDownloader:
         prepend_begin_year = int(prepend_dataset_name.split('_')[1])
         prepend_end_year = int(prepend_dataset_name.split('_')[-1].split('.')[0])
 
-        target_path = Path(f"{globals.NWP_DATA_DIR}ERA5_pressure_levels/RJ_{prepend_begin_year}_{self.end_year}.nc")
+        target_path = Path(f"{globals.NWP_DATA_DIR}{download_folder}/RJ_{prepend_begin_year}_{self.end_year}.nc")
         if target_path.is_file():
             print(f"ERA5 data already prepended for the period {prepend_begin_year} to {self.end_year}")
             return
@@ -183,14 +205,14 @@ class CDSDatasetDownloader:
         print(f"Prepending ERA5 data {prepend_begin_year}-{prepend_end_year} to {self.begin_year}-{self.end_year}...")
 
         prepend_ds = xr.open_dataset(prepend_dataset)
-        append_ds = xr.open_dataset(f"{globals.NWP_DATA_DIR}ERA5_pressure_levels/RJ_{self.begin_year}_{self.end_year}.nc")
+        append_ds = xr.open_dataset(f"{globals.NWP_DATA_DIR}{download_folder}/RJ_{self.begin_year}_{self.end_year}.nc")
 
         ds = prepend_ds.merge(append_ds)
         ds.to_netcdf(str(target_path.resolve()))
         print(f"ERA5 data prepended for the period {prepend_begin_year} to {self.end_year}")
 
     def merge_datasets(self):
-        target_path = Path(f"{globals.NWP_DATA_DIR}ERA5_pressure_levels/RJ_{self.begin_year}_{self.end_year}.nc")
+        target_path = Path(f"{globals.NWP_DATA_DIR}{download_folder}/RJ_{self.begin_year}_{self.end_year}.nc")
         if target_path.is_file():
             print(f"ERA5 data already merged for the period {self.begin_year} to {self.end_year}")
             return
@@ -222,6 +244,7 @@ def main(argv):
     parser.add_argument('-west', '--west', type=float, default=REGION_OF_INTEREST['west'], help='Westernmost longitude')
     parser.add_argument('-south', '--south', type=float, default=REGION_OF_INTEREST['south'], help='Southernmost latitude')
     parser.add_argument('-east', '--east', type=float, default=REGION_OF_INTEREST['east'], help='Easternmost longitude')
+    parser.add_argument('-d', '--download_folder', type=str, default=download_folder, help='Folder to download datasets')
 
     args = parser.parse_args(argv[1:])
 
@@ -233,6 +256,9 @@ def main(argv):
     REGION_OF_INTEREST['south'] = args.south
     REGION_OF_INTEREST['east'] = args.east
 
+    global download_folder
+    download_folder = args.download_folder
+
     print(f"""
         Config:
         Begin year: {begin_year}
@@ -241,6 +267,7 @@ def main(argv):
         End month: {end_month}
         Prepend dataset: {prepend_dataset}
         Region of interest: {REGION_OF_INTEREST}
+        Download folder: {download_folder}
     """)
 
     # ERA5 data goes back to the year 1940. 
