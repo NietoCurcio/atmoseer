@@ -89,17 +89,18 @@ class CDSDatasetDownloader:
             yield xr.open_dataset(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}.nc")
 
     def _download_dataset_split_vars(self, month: int, year: int, pressure_level: str):
-        # Define variable groups
-        group0 = ["u_component_of_wind", "v_component_of_wind"]
-        group1 = ["relative_humidity", "specific_humidity"]
-        group2 = ["temperature", "vertical_velocity"]
-        group3 = ["specific_rain_water_content"]
-        group4 = ["temperature"]
+        group1 = ["u_component_of_wind", "v_component_of_wind"]
+        group2 = ["relative_humidity", "specific_humidity"]
+        group3 = ["temperature", "vertical_velocity"]
+        group4 = ["specific_rain_water_content"]
+        group5 = ["temperature"]
 
-        groups = [group0, group1, group2, group3, group4]
+        groups = [group1, group2, group3, group4, group5]
         datasets = []
         for idx, group in enumerate(groups, start=1):
             target_path = Path(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}_grp{idx}.nc")
+            if not target_path.parent.exists():
+                target_path.parent.mkdir(parents=True, exist_ok=True)
             if not target_path.is_file():
                 request = {
                     "product_type": ["reanalysis"],
@@ -130,10 +131,10 @@ class CDSDatasetDownloader:
         print(f"Merged dataset saved to {merged_path}")
 
         # Optionally delete intermediate files
-        for idx in range(1, 4):
+        for idx in range(1, len(groups) + 1):
             target_path = Path(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}_grp{idx}.nc")
             target_path.unlink()
-            print(f"Deleted {target_path}")
+            print(f"Deleted variable group {target_path}")
 
     def download_and_merge_pressure_levels(self, pressure_levels: list[str]):
         print(f"Downloading and merging ERA5 data for pressure levels: {pressure_levels}")
@@ -152,7 +153,7 @@ class CDSDatasetDownloader:
             for pressure_level in pressure_levels:
                 nc_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}.nc"
                 Path(nc_path).unlink()
-                print(f"Deleted {nc_path}")
+                print(f"Deleted pressure {nc_path}")
 
     def check_datasets(self):
         target_dir = Path(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data")
