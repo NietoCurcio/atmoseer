@@ -1,3 +1,4 @@
+import time
 import sys
 import argparse
 from pathlib import Path
@@ -38,7 +39,8 @@ class DatasetClient:
         # it does not mean that we will not use grib format any time if needed
         # it also does not mean that the conversion from grib to netcdf is causing trouble
         # needs further investigation
-        MAX_RETRIES = 1
+        MAX_RETRIES = 5
+        base_sleep = 60
         for i in range(MAX_RETRIES):
             try:
                 self.clientCDS.retrieve(name=name, request=request, target=target)
@@ -59,6 +61,9 @@ class DatasetClient:
 
                 if i == MAX_RETRIES - 1:
                     raise e
+                sleep_time = base_sleep * (2 ** i)
+                print(f"Waiting {sleep_time} seconds before retrying...")
+                time.sleep(sleep_time)
 
                 # self.call_retrieve(name, request, target)
 
