@@ -140,14 +140,18 @@ class CDSDatasetDownloader:
         print(f"Downloading and merging ERA5 data for pressure levels: {pressure_levels}")
         dates = list(self._get_dates_generator())
         for year, month in tqdm(dates, desc="Downloading ERA5 monthly datasets"):
+            merged_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_merged.nc"
+            if Path(merged_path).is_file():
+                print(f"Merged file already exists for {year}-{month}, skipping.")
+                continue
             datasets = []
             for pressure_level in pressure_levels:
-                self._download_dataset_split_vars(month, year, pressure_level)
                 nc_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}.nc"
+                if not Path(nc_path).is_file():
+                    self._download_dataset_split_vars(month, year, pressure_level)
                 ds = xr.open_dataset(nc_path)
                 datasets.append(ds)
             merged_ds = xr.concat(datasets, dim="pressure_level")
-            merged_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_merged.nc"
             merged_ds.to_netcdf(merged_path)
             print(f"Merged dataset saved to {merged_path}")
             for pressure_level in pressure_levels:
