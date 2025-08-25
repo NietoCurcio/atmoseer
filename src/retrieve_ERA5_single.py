@@ -88,7 +88,7 @@ class CDSDatasetDownloader:
 
     def _get_datasets_generator(self) -> Generator[Dataset, None, None]:
         for year, month in self._get_dates_generator():
-            yield xr.open_dataset(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}.nc")
+            yield xr.open_dataset(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_merged.nc")
 
     def _download_dataset_split_vars(self, month: int, year: int):
         datasets = []
@@ -118,7 +118,7 @@ class CDSDatasetDownloader:
 
         # Merge all groups
         merged_ds = xr.merge(datasets)
-        merged_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}.nc"
+        merged_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_merged.nc"
         merged_ds.to_netcdf(merged_path)
         print(f"Merged dataset saved to {merged_path}")
 
@@ -131,7 +131,7 @@ class CDSDatasetDownloader:
     def download_and_merge_monthly(self):
         print("Downloading and merging ERA5 single level data...")
         for year, month in self._get_dates_generator():
-            merged_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}.nc"
+            merged_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_merged.nc"
             if Path(merged_path).is_file():
                 print(f"Merged file already exists for {year}-{month}, skipping.")
                 continue
@@ -144,7 +144,7 @@ class CDSDatasetDownloader:
         downloaded_files = list(target_dir.glob("*.nc"))
         expected_files = []
         for year, month in self._get_dates_generator():
-            expected_files.append(f"RJ_{year}_{month}.nc")
+            expected_files.append(f"RJ_{year}_{month}_merged.nc")
         print(f"len downloaded_files: {len(downloaded_files)}")
         print(f"len expected_files: {len(expected_files)}")
         missing_files = set(expected_files) - set([file.name for file in downloaded_files])
@@ -229,7 +229,7 @@ def main(argv):
     )
     dataset_downloader.download_and_merge_monthly()
     dataset_downloader.check_datasets()
-    dataset_downloader.merge_datasets()
+    # dataset_downloader.merge_datasets()
 
     if prepend_dataset:
         dataset_downloader.prepend_dataset(prepend_dataset)

@@ -91,7 +91,7 @@ class CDSDatasetDownloader:
 
     def _get_datasets_generator(self) -> Generator[Dataset, None, None]:
         for year, month in self._get_dates_generator():
-            yield xr.open_dataset(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}.nc")
+            yield xr.open_dataset(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_merged.nc")
 
     def _download_dataset_split_vars(self, month: int, year: int, pressure_level: str):
         group1 = ["u_component_of_wind", "v_component_of_wind"]
@@ -174,7 +174,7 @@ class CDSDatasetDownloader:
         expected_files = []
 
         for year, month in self._get_dates_generator():
-            expected_files.append(f"RJ_{year}_{month}.nc")
+            expected_files.append(f"RJ_{year}_{month}_merged.nc")
 
         print(f"len downloaded_files: {len(downloaded_files)}")
         print(f"len expected_files: {len(expected_files)}")
@@ -304,7 +304,6 @@ def main(argv):
         end_year=end_year,
         end_month=end_month
     )
-    pressure_levels = ["200", "500", "850"]
     dataset_downloader.download_and_merge_pressure_levels(pressure_levels)
 
     dataset_downloader.check_datasets()
