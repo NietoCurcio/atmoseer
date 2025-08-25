@@ -98,9 +98,8 @@ class CDSDatasetDownloader:
         group2 = ["relative_humidity", "specific_humidity"]
         group3 = ["temperature", "vertical_velocity"]
         group4 = ["specific_rain_water_content"]
-        group5 = ["temperature"]
 
-        groups = [group1, group2, group3, group4, group5]
+        groups = [group1, group2, group3, group4]
         datasets = []
         for idx, group in enumerate(groups, start=1):
             target_path = Path(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_{pressure_level}_grp{idx}.nc")
