@@ -8,6 +8,7 @@ from collections.abc import Generator
 import cdsapi
 import xarray as xr
 from xarray.core.dataset import Dataset
+from tqdm import tqdm
 
 import globals
 
@@ -130,7 +131,8 @@ class CDSDatasetDownloader:
 
     def download_and_merge_monthly(self):
         print("Downloading and merging ERA5 single level data...")
-        for year, month in self._get_dates_generator():
+        dates = list(self._get_dates_generator())
+        for year, month in tqdm(dates, desc="Downloading ERA5 monthly datasets"):
             merged_path = f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_merged.nc"
             if Path(merged_path).is_file():
                 print(f"Merged file already exists for {year}-{month}, skipping.")
