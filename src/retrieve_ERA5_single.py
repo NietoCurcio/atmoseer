@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 from collections.abc import Generator
+import zipfile
 
 import cdsapi
 import xarray as xr
@@ -46,7 +47,7 @@ class DatasetClient:
         for i in range(MAX_RETRIES):
             try:
                 self.clientCDS.retrieve(name=name, request=request, target=target)
-                print(f"Downloaded ERA5 data - {request['format']} format")
+                print(f"Downloaded ERA5 data - {request.get('data_format', 'unknown')} format")
                 break
             except Exception as e:
                 print("Failed to download ERA5 data.")
@@ -82,6 +83,31 @@ class CDSDatasetDownloader:
         for year, month in self._get_dates_generator():
             yield xr.open_dataset(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_merged.nc")
 
+    def open_dataset(target_path):
+        target_path = Path(target_path)
+
+        if not zipfile.is_zipfile(target_path):
+            return xr.open_dataset(target_path)
+
+        with zipfile.ZipFile(target_path, 'r') as z:
+            z.extractall(target_path.parent)
+            print(f"Extracted {target_path} to {target_path.parent}")
+            nc_files = [target_path.parent / name for name in z.namelist() if name.endswith('.nc')]
+            if not nc_files:
+                raise FileNotFoundError("No .nc file found after extracting zip!")
+            if len(nc_files) > 1:
+                print(f"Merging {len(nc_files)} NetCDF files from zip: {[f.name for f in nc_files]}")
+                datasets = [xr.open_dataset(f) for f in nc_files]
+                merged_ds = xr.merge(datasets)
+            else:
+                merged_ds = xr.open_dataset(nc_files[0])
+        merged_ds.to_netcdf(target_path)
+        print(f"Saved merged NetCDF to {target_path}")
+        for f in nc_files:
+            f.unlink()
+        print("Cleaned up extracted files.")
+        return merged_ds
+
     def _download_dataset_split_vars(self, month: int, year: int):
         datasets = []
         for idx, group in enumerate(VARIABLE_GROUPS, start=1):
@@ -91,7 +117,7 @@ class CDSDatasetDownloader:
             if not target_path.is_file():
                 request = {
                     "product_type": ["reanalysis"],
-                    "format": "netcdf",
+                    # "format": "netcdf",
                     "variable": group,
                     "year": [str(year)],
                     "month": [f"{month:02d}"],
@@ -107,7 +133,7 @@ class CDSDatasetDownloader:
                     request=request,
                     target=str(target_path.resolve())
                 )
-            ds = xr.open_dataset(target_path)
+            ds = self.open_dataset(target_path)
             datasets.append(ds)
 
         # Merge all groups
