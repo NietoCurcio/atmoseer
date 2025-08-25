@@ -99,13 +99,15 @@ class CDSDatasetDownloader:
                 target_path.parent.mkdir(parents=True, exist_ok=True)
             if not target_path.is_file():
                 request = {
-                    "product_type": "reanalysis",
+                    "product_type": ["reanalysis"],
                     "format": "netcdf",
                     "variable": group,
-                    "year": str(year),
+                    "year": [str(year)],
                     "month": [f"{month:02d}"],
                     "day": [f"{day:02d}" for day in range(1, 32)],
                     "time": [f"{hour:02d}:00" for hour in range(24)],
+                    "data_format": "netcdf",
+                    "download_format": "unarchived",
                     "area": [REGION_OF_INTEREST[key] for key in ['north', 'west', 'south', 'east']]
                 }
                 print(f"Downloading ERA5 group{idx} for month {month}, year {year}...")
