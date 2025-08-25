@@ -83,7 +83,7 @@ class CDSDatasetDownloader:
         for year, month in self._get_dates_generator():
             yield xr.open_dataset(f"{globals.NWP_DATA_DIR}{download_folder}/montly_data/RJ_{year}_{month}_merged.nc")
 
-    def open_dataset(target_path):
+    def open_dataset(self, target_path):
         target_path = Path(target_path)
 
         if not zipfile.is_zipfile(target_path):
