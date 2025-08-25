@@ -21,20 +21,11 @@ download_folder = 'ERA5_single_levels_2025'
 
 # Group variables to avoid CDS API request limits
 VARIABLE_GROUPS = [
-    [
-        "convective_available_potential_energy",
-        "convective_inhibition",
-        "total_column_water_vapour",
-        "total_cloud_cover",
-        "surface_net_solar_radiation"
-    ],
-    [
-        "geopotential",
-        "total_precipitation",
-        "2m_dewpoint_temperature",
-        "k_index",
-        "total_totals_index"
-    ]
+    ["convective_available_potential_energy", "convective_inhibition"],
+    ["total_column_water_vapour", "total_cloud_cover"],
+    ["surface_net_solar_radiation", "geopotential"],
+    ["total_precipitation", "2m_dewpoint_temperature"],
+    ["k_index", "total_totals_index"]
 ]
 
 class DatasetClient:
