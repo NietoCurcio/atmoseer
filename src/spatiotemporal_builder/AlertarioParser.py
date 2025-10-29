@@ -60,7 +60,10 @@ def load_station_data(station_name, filename):
     df = pd.read_csv(filename, sep=r"\s+", skiprows=5, header=None, names=names)
     rows_to_shift = df[df["HBV"] != "HBV"].index
     df.loc[rows_to_shift, "HBV":] = df.loc[rows_to_shift, "HBV":].shift(1, axis=1)
-    df = df[["data", "hora", "precipitation", "h01"]]
+    df = df[["data", "hora", "HBV", "precipitation", "h01"]]
+
+    df["HBV"] = df["HBV"].apply(lambda x: False if pd.isna(x) else True)
+
     df["station"] = station_name
     return df
 
@@ -104,6 +107,7 @@ class AlertarioParser:
         assert df[column].isna().sum() == 0, "Missing values after imputation should be zero"
         return df
 
+    # @deprecated
     def _get_df(self, file_path: Path, year: int, month: int) -> pd.DataFrame:
         if year >= 2024 and month == 11 or year >= 2024 and month == 12:
             df = pd.read_csv(
@@ -133,8 +137,8 @@ class AlertarioParser:
 
     def process_station(self, station: str) -> pd.DataFrame:
         station_dfs = []
-        months = pd.date_range(pd.Timestamp("2013-01-01"), pd.Timestamp("2024-10-01"), freq="MS")
-        # months = pd.date_range(pd.Timestamp("2024-01-01"), pd.Timestamp("2024-12-01"), freq="MS")
+        # months = pd.date_range(pd.Timestamp("2013-01-01"), pd.Timestamp("2024-10-01"), freq="MS")
+        months = pd.date_range(pd.Timestamp("2024-01-01"), pd.Timestamp("2024-12-01"), freq="MS")
         for month in months:
             current_year = month.year
             current_month = month.month
@@ -148,6 +152,13 @@ class AlertarioParser:
                 df["datetime"] = pd.to_datetime(
                     df["datetime"], dayfirst=True, errors="coerce", format="%d/%m/%Y %H:%M:%S"
                 )
+                df["datetime"] = df.apply(
+                    lambda row: row["datetime"] + pd.Timedelta(hours=2)
+                    if row["HBV"]
+                    else row["datetime"] + pd.Timedelta(hours=3),
+                    axis=1,
+                )
+                df = df.drop(columns=["HBV"])
                 df["precipitation"] = pd.to_numeric(df["precipitation"], errors="coerce")
                 df["h01"] = pd.to_numeric(df["h01"], errors="coerce")
 
