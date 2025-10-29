@@ -112,7 +112,7 @@ class SpatioTemporalFeatures:
         np.save(features_filename, features)
 
     def _get_grid_lats_lons(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
-        ds = self._get_era5_single_levels_dataset(2009, 6)
+        ds = self._get_era5_single_levels_dataset(2018, 1)
         lats = ds.coords["latitude"].values
         lons = ds.coords["longitude"].values
         return lats, lons
@@ -254,6 +254,13 @@ class SpatioTemporalFeatures:
         keys = []
         # O(len(top_down_lats) * len(left_right_lons))
         # O(top_down_lats * left_right_lons * logn)
+
+        print(top_down_lats)
+        # let's save top_down_lats and left_right_lons into numpy files:
+        np.save(self.features_path / "top_down_lats.npy", top_down_lats)
+        np.save(self.features_path / "left_right_lons.npy", left_right_lons)
+        log.success("top_down_lats and left_right_lons saved")
+
         for i, lat in enumerate(top_down_lats):
             for j, lon in enumerate(left_right_lons):
                 # O(logn), uses bisect
@@ -409,6 +416,7 @@ class SpatioTemporalFeatures:
         assert processed == total_squares, (
             "Not all cells processed failed to include last row and last column"
         )
+        assert not np.any(np.isnan(features)), "Features should not have nan values"
 
         # profiler.disable()
 
@@ -582,6 +590,9 @@ class SpatioTemporalFeatures:
         total_timestamps = 0
         total_files = 0
 
+        total_files_with_nan = 0
+        files_with_nan = []
+
         for timestamp in timestamps:
             if timestamp.month in ignored_months:
                 continue
@@ -598,6 +609,11 @@ class SpatioTemporalFeatures:
                 continue
 
             features = np.load(file)
+
+            if np.any(np.isnan(features)):
+                total_files_with_nan += 1
+                files_with_nan.append(file)
+
             assert features.shape[0] == len(self.sorted_latitudes_ascending), (
                 f"shape[0] should be {len(self.sorted_latitudes_ascending)} but is {features.shape[0]}"
             )
@@ -613,6 +629,16 @@ class SpatioTemporalFeatures:
             )
 
             total_files += 1
+
+        if total_files_with_nan > 0:
+            log.error(f"Total files with nan values: {total_files_with_nan}")
+            log.error(f"Files with nan values: {files_with_nan}")
+            log.error(f"Percentage of files with nan values: {total_files_with_nan / total_files}")
+
+            for file in files_with_nan:
+                os.remove(file)
+            log.error("Files with nan values removed")
+            exit(1)
 
         if not_found:
             log.error(f"Missing timestamps: {not_found}")
