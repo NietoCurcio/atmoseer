@@ -137,8 +137,8 @@ class AlertarioParser:
 
     def process_station(self, station: str) -> pd.DataFrame:
         station_dfs = []
-        # months = pd.date_range(pd.Timestamp("2013-01-01"), pd.Timestamp("2024-10-01"), freq="MS")
-        months = pd.date_range(pd.Timestamp("2024-01-01"), pd.Timestamp("2024-12-01"), freq="MS")
+        months = pd.date_range(pd.Timestamp("2013-01-01"), pd.Timestamp("2024-10-01"), freq="MS")
+        # months = pd.date_range(pd.Timestamp("2024-01-01"), pd.Timestamp("2024-12-01"), freq="MS")
         for month in months:
             current_year = month.year
             current_month = month.month
